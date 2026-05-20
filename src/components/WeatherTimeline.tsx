@@ -6,7 +6,7 @@ import { lttbWithPinnedPoints } from '../utils/lttb';
 interface WeatherTimelineProps {
   route: RouteData;
   weatherPoints: any[];
-  onHoverIndex: (index: number | null) => void;
+  onHoverDistance: (distanceKm: number | null) => void;
   xAxisMode: 'clock' | 'elapsed';
 }
 
@@ -17,7 +17,7 @@ function formatElapsed(ms: number): string {
   return h > 0 ? `${h}h ${String(m).padStart(2, '0')}m` : `${m}m`;
 }
 
-const WeatherTimeline: React.FC<WeatherTimelineProps> = ({ route, weatherPoints, onHoverIndex, xAxisMode }) => {
+const WeatherTimeline: React.FC<WeatherTimelineProps> = ({ route, weatherPoints, onHoverDistance, xAxisMode }) => {
   const [chartWidth, setChartWidth] = useState(800);
 
   const data = useMemo(() => {
@@ -75,18 +75,10 @@ const WeatherTimeline: React.FC<WeatherTimelineProps> = ({ route, weatherPoints,
           margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
           onMouseMove={(state) => {
             const rIdx = state.activeTooltipIndex != null ? Number(state.activeTooltipIndex) : NaN;
-            if (isNaN(rIdx)) { onHoverIndex(null); return; }
-            let nearest: number | null = null;
-            let nearestDist = Infinity;
-            data.forEach((pt, dsIdx) => {
-              if (pt.isSample && pt.weatherIdx != null) {
-                const dist = Math.abs(dsIdx - rIdx);
-                if (dist < nearestDist) { nearestDist = dist; nearest = pt.weatherIdx; }
-              }
-            });
-            onHoverIndex(nearest);
+            if (isNaN(rIdx) || !data[rIdx]) { onHoverDistance(null); return; }
+            onHoverDistance(data[rIdx].distance);
           }}
-          onMouseLeave={() => onHoverIndex(null)}
+          onMouseLeave={() => onHoverDistance(null)}
         >
           <defs>
             <linearGradient id="colorEle" x1="0" y1="0" x2="0" y2="1">

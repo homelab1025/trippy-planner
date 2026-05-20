@@ -25,11 +25,40 @@ test('can upload GPX and see route details', async ({ page }) => {
 
 test('has start date and start time inputs but no optimal start button', async ({ page }) => {
   await page.goto('/');
-  
+
   // Verify date and time inputs exist by label
   await expect(page.getByLabel('Start Date')).toBeVisible();
   await expect(page.getByLabel('Start Time')).toBeVisible();
-  
+
   // Verify the Optimal Start Time button is removed
   await expect(page.getByText('Find Optimal Start Time')).not.toBeVisible();
+});
+
+test('no pin markers on map after uploading GPX', async ({ page }) => {
+  await page.goto('/');
+  await page.setInputFiles('input[type="file"]', 'public/sample-route.gpx');
+  await expect(page.getByText('Sample Ride')).toBeVisible();
+  await expect(page.locator('.leaflet-overlay-pane svg path')).toBeVisible();
+  // Wait for weather API to respond so markers would appear in the pre-change implementation
+  await page.waitForTimeout(3000);
+  await expect(page.locator('.leaflet-marker-pane .leaflet-marker-icon')).toHaveCount(0);
+});
+
+test('subtle weather dots visible on map after uploading GPX', async ({ page }) => {
+  await page.goto('/');
+  await page.setInputFiles('input[type="file"]', 'public/sample-route.gpx');
+  await expect(page.getByText('Sample Ride')).toBeVisible();
+  // Leaflet renders CircleMarker as SVG <path> elements (arc commands), not <circle>
+  await expect(page.locator('.leaflet-overlay-pane svg path[fill="#888"]')).not.toHaveCount(0, { timeout: 10000 });
+});
+
+test('hover over timeline shows orange marker on map', async ({ page }) => {
+  await page.goto('/');
+  await page.setInputFiles('input[type="file"]', 'public/sample-route.gpx');
+  await expect(page.getByText('Sample Ride')).toBeVisible();
+  await expect(page.locator('.leaflet-overlay-pane svg path')).toBeVisible();
+  const timeline = page.locator('.timeline-container');
+  await timeline.hover({ position: { x: 200, y: 100 } });
+  // Leaflet renders CircleMarker as SVG <path> elements (arc commands), not <circle>
+  await expect(page.locator('.leaflet-overlay-pane svg path[fill="#FF6B00"]')).toBeVisible();
 });

@@ -28,7 +28,7 @@ function App() {
   const [startTime, setStartTime] = useState<Date>(new Date());
   const [weatherPoints, setWeatherPoints] = useState<(WeatherData & { point: RoutePoint; arrivalTime: Date })[]>([]);
   const [loading, setLoading] = useState(false);
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [hoveredPoint, setHoveredPoint] = useState<{ lat: number; lng: number } | null>(null);
   const [xAxisMode, setXAxisMode] = useState<'clock' | 'elapsed'>('clock');
 
   const todayStr = getLocalDateString(new Date());
@@ -110,6 +110,18 @@ function App() {
       updateWeather(route, avgSpeed, startTime);
     }
   }, [route, avgSpeed, startTime, updateWeather]);
+
+  function resolveDistanceToPoint(distanceKm: number): { lat: number; lng: number } {
+    const targetM = distanceKm * 1000;
+    const points = route!.points;
+    let lo = 0, hi = points.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (points[mid].distance < targetM) lo = mid + 1;
+      else hi = mid;
+    }
+    return { lat: points[lo].lat, lng: points[lo].lng };
+  }
 
   return (
     <div className="app-container">
@@ -229,7 +241,7 @@ function App() {
                 <p>Upload a GPX file to see your route</p>
               </div>
             ) : (
-              <MapComponent route={route} weatherPoints={weatherPoints} hoveredIndex={hoveredIndex} />
+              <MapComponent route={route} weatherPoints={weatherPoints} hoveredPoint={hoveredPoint} />
             )}
           </div>
 
@@ -240,7 +252,15 @@ function App() {
                 <p>Weather timeline will appear here</p>
               </div>
             ) : (
-              <WeatherTimeline route={route} weatherPoints={weatherPoints} onHoverIndex={setHoveredIndex} xAxisMode={xAxisMode} />
+              <WeatherTimeline
+                route={route}
+                weatherPoints={weatherPoints}
+                onHoverDistance={(distanceKm) => {
+                  if (distanceKm === null || !route) { setHoveredPoint(null); return; }
+                  setHoveredPoint(resolveDistanceToPoint(distanceKm));
+                }}
+                xAxisMode={xAxisMode}
+              />
             )}
           </div>
         </section>
