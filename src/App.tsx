@@ -29,6 +29,7 @@ function App() {
   const [weatherPoints, setWeatherPoints] = useState<(WeatherData & { point: RoutePoint; arrivalTime: Date })[]>([]);
   const [loading, setLoading] = useState(false);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [xAxisMode, setXAxisMode] = useState<'clock' | 'elapsed'>('clock');
 
   const todayStr = getLocalDateString(new Date());
   const maxDate = new Date();
@@ -156,10 +157,10 @@ function App() {
             <div className="datetime-row">
               <div className="input-group">
                 <label htmlFor="start-date">Start Date</label>
-                <input 
+                <input
                   id="start-date"
-                  type="date" 
-                  value={getLocalDateString(startTime)} 
+                  type="date"
+                  value={getLocalDateString(startTime)}
                   onChange={(e) => handleDateChange(e.target.value)}
                   min={todayStr}
                   max={maxDateStr}
@@ -167,13 +168,35 @@ function App() {
               </div>
               <div className="input-group">
                 <label htmlFor="start-time">Start Time</label>
-                <input 
+                <input
                   id="start-time"
-                  type="time" 
-                  value={getLocalTimeString(startTime)} 
+                  type="time"
+                  value={getLocalTimeString(startTime)}
                   onChange={(e) => handleTimeChange(e.target.value)}
                 />
               </div>
+            </div>
+            <div style={{ marginTop: '16px', display: 'flex', gap: '8px' }}>
+              <button
+                className={xAxisMode === 'clock' ? 'btn-primary' : ''}
+                style={xAxisMode === 'clock'
+                  ? { padding: '6px 16px', fontSize: '0.875rem' }
+                  : { padding: '6px 16px', fontSize: '0.875rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontWeight: '600' }
+                }
+                onClick={() => setXAxisMode('clock')}
+              >
+                Clock
+              </button>
+              <button
+                className={xAxisMode === 'elapsed' ? 'btn-primary' : ''}
+                style={xAxisMode === 'elapsed'
+                  ? { padding: '6px 16px', fontSize: '0.875rem' }
+                  : { padding: '6px 16px', fontSize: '0.875rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontWeight: '600' }
+                }
+                onClick={() => setXAxisMode('elapsed')}
+              >
+                Elapsed
+              </button>
             </div>
           </div>
 
@@ -217,7 +240,7 @@ function App() {
                 <p>Weather timeline will appear here</p>
               </div>
             ) : (
-              <WeatherTimeline route={route} weatherPoints={weatherPoints} onHoverIndex={setHoveredIndex} />
+              <WeatherTimeline route={route} weatherPoints={weatherPoints} onHoverIndex={setHoveredIndex} xAxisMode={xAxisMode} />
             )}
           </div>
         </section>

@@ -1,48 +1,75 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ComposedChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Line } from 'recharts';
 import type { RouteData } from '../utils/gpxParser';
+import { lttbWithPinnedPoints } from '../utils/lttb';
 
 interface WeatherTimelineProps {
   route: RouteData;
   weatherPoints: any[];
   onHoverIndex: (index: number | null) => void;
+  xAxisMode: 'clock' | 'elapsed';
 }
 
-const WeatherTimeline: React.FC<WeatherTimelineProps> = ({ route, weatherPoints, onHoverIndex }) => {
-  const { data, wxByRouteIndex } = useMemo(() => {
+function formatElapsed(ms: number): string {
+  const totalMinutes = Math.round(ms / 60000);
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  return h > 0 ? `${h}h ${String(m).padStart(2, '0')}m` : `${m}m`;
+}
+
+const WeatherTimeline: React.FC<WeatherTimelineProps> = ({ route, weatherPoints, onHoverIndex, xAxisMode }) => {
+  const [chartWidth, setChartWidth] = useState(800);
+
+  const data = useMemo(() => {
     const d = route.points.map(pt => ({
       distance: pt.distance / 1000,
       elevation: Math.round(pt.ele),
       temp: undefined as number | undefined,
+      time: undefined as number | undefined,
       isSample: false,
+      weatherIdx: undefined as number | undefined,
     }));
 
-    const wxByRouteIndex = new Map<number, number>();
     weatherPoints.forEach((wp, wIdx) => {
       const rIdx = route.points.indexOf(wp.point);
       if (rIdx >= 0) {
         d[rIdx].temp = wp.temp;
+        d[rIdx].time = wp.arrivalTime.getTime();
         d[rIdx].isSample = true;
-        wxByRouteIndex.set(rIdx, wIdx);
+        d[rIdx].weatherIdx = wIdx;
       }
     });
 
-    // Linearly interpolate temp between sample points so the line is continuous
-    const sampleIdxs = [...wxByRouteIndex.keys()].sort((a, b) => a - b);
+    const downsampled = lttbWithPinnedPoints(
+      d,
+      Math.max(chartWidth, weatherPoints.length),
+      p => p.isSample,
+      p => p.distance,
+      p => p.elevation
+    );
+
+    // Linearly interpolate temp and time between sample points so the line is continuous
+    const sampleIdxs = downsampled
+      .map((p, i) => (p.isSample ? i : -1))
+      .filter(i => i >= 0)
+      .sort((a, b) => a - b);
     for (let i = 0; i < sampleIdxs.length - 1; i++) {
       const lo = sampleIdxs[i], hi = sampleIdxs[i + 1];
-      const tLo = d[lo].temp!, tHi = d[hi].temp!;
+      const tLo = downsampled[lo].temp!, tHi = downsampled[hi].temp!;
+      const timeLo = downsampled[lo].time!, timeHi = downsampled[hi].time!;
       for (let j = lo + 1; j < hi; j++) {
-        d[j].temp = tLo + (tHi - tLo) * ((j - lo) / (hi - lo));
+        const t = (j - lo) / (hi - lo);
+        downsampled[j].temp = tLo + (tHi - tLo) * t;
+        downsampled[j].time = timeLo + (timeHi - timeLo) * t;
       }
     }
 
-    return { data: d, wxByRouteIndex };
-  }, [route, weatherPoints]);
+    return downsampled;
+  }, [route, weatherPoints, chartWidth]);
 
   return (
     <div style={{ width: '100%', height: '100%' }}>
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height="100%" onResize={(w) => setChartWidth(w)}>
         <ComposedChart
           data={data}
           margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
@@ -51,9 +78,11 @@ const WeatherTimeline: React.FC<WeatherTimelineProps> = ({ route, weatherPoints,
             if (isNaN(rIdx)) { onHoverIndex(null); return; }
             let nearest: number | null = null;
             let nearestDist = Infinity;
-            wxByRouteIndex.forEach((wIdx, sRIdx) => {
-              const d = Math.abs(sRIdx - rIdx);
-              if (d < nearestDist) { nearestDist = d; nearest = wIdx; }
+            data.forEach((pt, dsIdx) => {
+              if (pt.isSample && pt.weatherIdx != null) {
+                const dist = Math.abs(dsIdx - rIdx);
+                if (dist < nearestDist) { nearestDist = dist; nearest = pt.weatherIdx; }
+              }
             });
             onHoverIndex(nearest);
           }}
@@ -67,10 +96,13 @@ const WeatherTimeline: React.FC<WeatherTimelineProps> = ({ route, weatherPoints,
           </defs>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
           <XAxis
-            dataKey="distance"
+            dataKey="time"
             type="number"
             domain={['dataMin', 'dataMax']}
-            tickFormatter={(v) => `${Number(v).toFixed(0)}km`}
+            tickFormatter={(v) => xAxisMode === 'clock'
+              ? new Date(v).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+              : formatElapsed(v - (data[0]?.time ?? v))
+            }
             fontSize={11}
             tickLine={false}
             axisLine={false}
@@ -95,7 +127,13 @@ const WeatherTimeline: React.FC<WeatherTimelineProps> = ({ route, weatherPoints,
           />
           <Tooltip
             contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}
-            labelFormatter={(label) => `${Number(label).toFixed(1)} km`}
+            labelFormatter={(label, payload) => {
+              const km = (payload?.[0]?.payload?.distance as number | undefined)?.toFixed(1) ?? '?';
+              const timeStr = xAxisMode === 'clock'
+                ? new Date(Number(label)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                : formatElapsed(Number(label) - (data[0]?.time ?? Number(label)));
+              return `${timeStr} · ${km} km`;
+            }}
             formatter={(value, name) => name === 'Temp' ? [`${Math.round(Number(value))}°C`, name] : [value, name]}
           />
           <Area
