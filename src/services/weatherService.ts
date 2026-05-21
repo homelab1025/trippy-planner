@@ -10,7 +10,7 @@ export interface WeatherData {
 }
 
 export interface HttpClient {
-  get(url: string, config?: { params?: Record<string, unknown> }): Promise<{ data: unknown }>;
+  get(url: string, config?: { params?: any }): Promise<{ data: any }>;
 }
 
 export const fetchWeatherForPoint = async (
@@ -32,7 +32,7 @@ export const fetchWeatherForPoint = async (
       }
     });
 
-    const hourly = (response.data as any).hourly;
+    const hourly = response.data.hourly;
     const timeIndex = hourly.time.findIndex((t: string) => t === hourIso.slice(0, 16));
     
     if (timeIndex === -1) {
