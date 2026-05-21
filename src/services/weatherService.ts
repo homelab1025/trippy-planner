@@ -9,12 +9,21 @@ export interface WeatherData {
   condition: string;
 }
 
-export const fetchWeatherForPoint = async (lat: number, lon: number, timestamp: number): Promise<WeatherData> => {
+export interface HttpClient {
+  get(url: string, config?: { params?: Record<string, unknown> }): Promise<{ data: unknown }>;
+}
+
+export const fetchWeatherForPoint = async (
+  lat: number,
+  lon: number,
+  timestamp: number,
+  http: HttpClient = axios as HttpClient
+): Promise<WeatherData> => {
   const date = new Date(timestamp * 1000);
   const hourIso = date.toISOString().slice(0, 14) + '00'; // Round to the hour
 
   try {
-    const response = await axios.get(`https://api.open-meteo.com/v1/forecast`, {
+    const response = await http.get(`https://api.open-meteo.com/v1/forecast`, {
       params: {
         latitude: lat,
         longitude: lon,
@@ -23,7 +32,7 @@ export const fetchWeatherForPoint = async (lat: number, lon: number, timestamp: 
       }
     });
 
-    const hourly = response.data.hourly;
+    const hourly = (response.data as any).hourly;
     const timeIndex = hourly.time.findIndex((t: string) => t === hourIso.slice(0, 16));
     
     if (timeIndex === -1) {
