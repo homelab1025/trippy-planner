@@ -2,12 +2,21 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Coding Style
+
+Consider all the style guides in the contributing/styleguide folder. For each programming language being used in this project there is a MD file. If there isn't, tell the user and ask him whether to add the programming language as an exception to this rule in this CLAUDE.md file.
+
+Don't ask to do commits on your own, but let the user specify when to commit code.
+
 ## Commands
 
 ```bash
 npm run dev        # start dev server at http://localhost:5173
 npm run build      # type-check + Vite production build
 npm run lint       # ESLint
+npm run test       # run unit tests (Vitest, watch mode)
+npx vitest run     # run unit tests once (CI mode)
+npm run test:coverage              # unit test coverage report
 npx playwright test            # run all E2E tests (starts dev server automatically)
 npx playwright test --ui       # interactive test runner
 npx playwright test tests/app.spec.ts   # run a single test file
