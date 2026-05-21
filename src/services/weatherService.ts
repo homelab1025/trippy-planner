@@ -10,6 +10,7 @@ export interface WeatherData {
 }
 
 export interface HttpClient {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   get(url: string, config?: { params?: any }): Promise<{ data: any }>;
 }
 

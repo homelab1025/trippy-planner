@@ -15,6 +15,7 @@ function FitBounds({ route }: { route: RouteData }) {
 
 interface MapComponentProps {
   route: RouteData;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   weatherPoints: any[];
   hoveredPoint: { lat: number; lng: number } | null;
 }

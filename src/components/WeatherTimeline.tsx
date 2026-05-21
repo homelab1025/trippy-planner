@@ -5,6 +5,7 @@ import { lttbWithPinnedPoints } from '../utils/lttb';
 
 interface WeatherTimelineProps {
   route: RouteData;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   weatherPoints: any[];
   onHoverDistance: (distanceKm: number | null) => void;
   xAxisMode: 'clock' | 'elapsed';
@@ -144,6 +145,7 @@ const WeatherTimeline: React.FC<WeatherTimelineProps> = ({ route, weatherPoints,
             type="monotone"
             dataKey="temp"
             stroke="#ff7300"
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             dot={(props: any) => {
               if (!props.payload.isSample) return <g key={props.index} />;
               return <circle key={props.index} cx={props.cx} cy={props.cy} r={4} fill="#ff7300" stroke="white" strokeWidth={1.5} />;

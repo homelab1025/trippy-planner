@@ -29,6 +29,7 @@ export const parseGPX = (xmlText: string): RouteData => {
     lng: p.lon,
     ele: p.ele || 0,
     time: p.time,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     distance: i === 0 ? 0 : (track.distance as any).cumul[i - 1],
   }));
 
