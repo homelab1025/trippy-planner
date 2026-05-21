@@ -1,0 +1,72 @@
+import { describe, it, expect } from 'vitest';
+import { parseGPX } from './gpxParser';
+
+// Build a minimal GPX XML string from parts
+const gpx = (name: string, trkpts: string) => `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1">
+  <trk>
+    ${name ? `<name>${name}</name>` : ''}
+    <trkseg>${trkpts}</trkseg>
+  </trk>
+</gpx>`;
+
+const pt = (lat: number, lon: number, ele?: number) =>
+  `<trkpt lat="${lat}" lon="${lon}">${ele !== undefined ? `<ele>${ele}</ele>` : ''}</trkpt>`;
+
+// Five points: gains are 35→40 (+5) and 38→45 (+7), descents are ignored → totalElevationGain = 12m
+const VALID = gpx('Test Route', [
+  pt(48.8566, 2.3522, 35),
+  pt(48.8600, 2.3600, 40),
+  pt(48.8550, 2.3650, 38),
+  pt(48.8520, 2.3700, 45),
+  pt(48.8500, 2.3750, 42),
+].join('\n'));
+
+describe('parseGPX', () => {
+  it('returns correct name, point count, and elevation gain for a valid GPX', () => {
+    const result = parseGPX(VALID);
+    expect(result.name).toBe('Test Route');
+    expect(result.points).toHaveLength(5);
+    expect(result.totalElevationGain).toBeCloseTo(12, 0);
+  });
+
+  it('first point has distance 0 and subsequent distances increase monotonically', () => {
+    const { points } = parseGPX(VALID);
+    expect(points[0].distance).toBe(0);
+    for (let i = 1; i < points.length; i++) {
+      expect(points[i].distance).toBeGreaterThan(points[i - 1].distance);
+    }
+  });
+
+  it('elevation gain only counts positive deltas — descents are not subtracted', () => {
+    const descending = gpx('Descent', [
+      pt(48.85, 2.35, 100),
+      pt(48.86, 2.36, 80),
+      pt(48.87, 2.37, 60),
+    ].join('\n'));
+    expect(parseGPX(descending).totalElevationGain).toBe(0);
+  });
+
+  it('defaults elevation to 0 when ele attribute is absent', () => {
+    const noEle = gpx('No Ele', [
+      pt(48.85, 2.35),
+      pt(48.86, 2.36),
+    ].join('\n'));
+    const { points } = parseGPX(noEle);
+    expect(points[0].ele).toBe(0);
+    expect(points[1].ele).toBe(0);
+  });
+
+  it('falls back to "Untitled Route" when track name is missing', () => {
+    const noName = gpx('', [
+      pt(48.85, 2.35, 10),
+      pt(48.86, 2.36, 10),
+    ].join('\n'));
+    expect(parseGPX(noName).name).toBe('Untitled Route');
+  });
+
+  it('throws when the GPX file contains no tracks', () => {
+    expect(() => parseGPX(`<?xml version="1.0"?><gpx version="1.1"></gpx>`))
+      .toThrow('No tracks found in GPX file');
+  });
+});
