@@ -52,13 +52,13 @@ test('subtle weather dots visible on map after uploading GPX', async ({ page }) 
   await expect(page.locator('.leaflet-overlay-pane svg path[fill="#888"]')).not.toHaveCount(0, { timeout: 10000 });
 });
 
-test('hover over timeline shows orange marker on map', async ({ page }) => {
+test('hover over timeline shows polished orange marker on map', async ({ page }) => {
   await page.goto('/');
   await page.setInputFiles('input[type="file"]', 'public/sample-route.gpx');
   await expect(page.getByText('Sample Ride')).toBeVisible();
   await expect(page.locator('.leaflet-overlay-pane svg path')).toBeVisible();
   const timeline = page.locator('.timeline-container');
   await timeline.hover({ position: { x: 200, y: 100 } });
-  // Leaflet renders CircleMarker as SVG <path> elements (arc commands), not <circle>
-  await expect(page.locator('.leaflet-overlay-pane svg path[fill="#FF6B00"]')).toBeVisible();
+  // Two stacked CircleMarkers: glow ring + core dot, both fill="#FF6B00"
+  await expect(page.locator('.leaflet-overlay-pane svg path[fill="#FF6B00"]')).toHaveCount(2);
 });

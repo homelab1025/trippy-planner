@@ -46,13 +46,18 @@ const MapComponent: React.FC<MapComponentProps> = ({ route, weatherPoints, hover
         />
       ))}
 
-      {hoveredPoint && (
+      {hoveredPoint && (<>
         <CircleMarker
           center={[hoveredPoint.lat, hoveredPoint.lng]}
-          radius={9}
-          pathOptions={{ fillColor: '#FF6B00', fillOpacity: 1, stroke: false }}
+          radius={24}
+          pathOptions={{ fillColor: '#FF6B00', fillOpacity: 0.12, stroke: false }}
         />
-      )}
+        <CircleMarker
+          center={[hoveredPoint.lat, hoveredPoint.lng]}
+          radius={10}
+          pathOptions={{ fillColor: '#FF6B00', fillOpacity: 1, stroke: true, color: 'white', weight: 2.5 }}
+        />
+      </>)}
     </MapContainer>
   );
 };
