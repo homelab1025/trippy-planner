@@ -16,6 +16,7 @@ dist-ssr
 playwright-report/
 test-results/
 coverage/
+reports/
 
 # Local tool config
 .antigravitycli/

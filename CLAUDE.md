@@ -17,6 +17,7 @@ npm run lint       # ESLint
 npm run test       # run unit tests (Vitest, watch mode)
 npx vitest run     # run unit tests once (CI mode)
 npm run test:coverage              # unit test coverage report
+npm run test:mutation              # mutation testing (Stryker); HTML report at reports/mutation/mutation.html
 npx playwright test            # run all E2E tests (starts dev server automatically)
 npx playwright test --ui       # interactive test runner
 npx playwright test tests/app.spec.ts   # run a single test file
