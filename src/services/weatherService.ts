@@ -41,6 +41,7 @@ export const fetchWeatherForPoint = async (
       return mockFallback(timestamp);
     }
 
+    // TODO: this should be a structure that would be used for other weather providers as well
     return {
       temp: hourly.temperature_2m[timeIndex],
       feelsLike: hourly.apparent_temperature[timeIndex],

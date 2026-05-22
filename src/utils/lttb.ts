@@ -1,5 +1,6 @@
 // Largest Triangle Three Buckets downsampling (Sveinn Steinarsson, 2013).
 // Preserves visual peaks and troughs while reducing point count to `target`.
+// TODO: understand the algorithm, run mutation testing and address the survivors
 
 function lttb<T>(
   data: T[],
