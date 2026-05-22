@@ -1,4 +1,4 @@
-import gpxParser from 'gpxparser';
+import { XMLParser } from 'fast-xml-parser';
 
 export interface RoutePoint {
   lat: number;
@@ -15,25 +15,57 @@ export interface RouteData {
   name: string;
 }
 
-export const parseGPX = (xmlText: string): RouteData => {
-  const gpx = new gpxParser();
-  gpx.parse(xmlText);
+const xmlParser = new XMLParser({
+  ignoreAttributes: false,
+  attributeNamePrefix: '@_',
+  // Ensure trk/trkseg/trkpt are always arrays even when there's only one element
+  isArray: (name) => ['trk', 'trkseg', 'trkpt'].includes(name),
+});
 
-  if (gpx.tracks.length === 0) {
+function haversineMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371000;
+  const rad = Math.PI / 180;
+  const dLat = (lat2 - lat1) * rad;
+  const dLng = (lng2 - lng1) * rad;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+export const parseGPX = (xmlText: string): RouteData => {
+  const parsed = xmlParser.parse(xmlText) as Record<string, unknown>;
+  const gpx = parsed['gpx'] as Record<string, unknown> | undefined;
+  const tracks = gpx?.['trk'] as unknown[] | undefined;
+
+  if (!tracks || tracks.length === 0) {
     throw new Error('No tracks found in GPX file');
   }
 
-  const track = gpx.tracks[0];
-  const points: RoutePoint[] = track.points.map((p, i) => ({
-    lat: p.lat,
-    lng: p.lon,
-    ele: p.ele || 0,
-    time: p.time,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    distance: i === 0 ? 0 : (track.distance as any).cumul[i - 1],
-  }));
+  const trk = tracks[0] as Record<string, unknown>;
+  const name = trk['name'] != null ? String(trk['name']) : 'Untitled Route';
 
-  // Calculate elevation gain
+  const points: RoutePoint[] = [];
+  for (const seg of ((trk['trkseg'] as unknown[]) ?? [])) {
+    const s = seg as Record<string, unknown>;
+    for (const rawPt of ((s['trkpt'] as unknown[]) ?? [])) {
+      const pt = rawPt as Record<string, unknown>;
+      const lat = parseFloat(pt['@_lat'] as string);
+      const lng = parseFloat(pt['@_lon'] as string);
+      const ele = pt['ele'] != null ? Number(pt['ele']) : 0;
+      const timeStr = pt['time'] as string | undefined;
+      const prev = points[points.length - 1];
+      const distance = prev
+        ? prev.distance + haversineMeters(prev.lat, prev.lng, lat, lng)
+        : 0;
+      points.push({ lat, lng, ele, distance, time: timeStr ? new Date(timeStr) : undefined });
+    }
+  }
+
+  if (points.length === 0) {
+    throw new Error('No track points found in GPX file');
+  }
+
   let totalElevationGain = 0;
   for (let i = 1; i < points.length; i++) {
     const diff = points[i].ele - points[i - 1].ele;
@@ -42,8 +74,8 @@ export const parseGPX = (xmlText: string): RouteData => {
 
   return {
     points,
-    totalDistance: track.distance.total,
+    totalDistance: points[points.length - 1].distance,
     totalElevationGain,
-    name: track.name || 'Untitled Route',
+    name,
   };
 };
