@@ -6,6 +6,7 @@ let workerInstance: FakeWorker;
 class FakeWorker {
   private listeners: Map<string, Set<(e: unknown) => void>> = new Map();
   postMessage = vi.fn();
+  terminate = vi.fn();
 
   addEventListener(type: string, handler: (e: unknown) => void) {
     if (!this.listeners.has(type)) this.listeners.set(type, new Set());
@@ -39,10 +40,6 @@ const minimalRoute: RouteData = {
 };
 
 describe('parseGPXAsync', () => {
-  beforeEach(() => {
-    workerInstance.postMessage.mockClear();
-  });
-
   it('resolves with RouteData when the worker posts a success response', async () => {
     const promise = parseGPXAsync('<gpx/>');
     workerInstance.emit('message', { data: { type: 'success', data: minimalRoute } });
@@ -69,11 +66,24 @@ describe('parseGPXAsync', () => {
     expect(workerInstance.postMessage).toHaveBeenCalledWith(xml);
   });
 
-  it('removes event listeners after a successful response', async () => {
+  it('terminates the worker after a successful response', async () => {
     const promise = parseGPXAsync('<gpx/>');
     workerInstance.emit('message', { data: { type: 'success', data: minimalRoute } });
     await promise;
-    // Firing again should not resolve a second time or throw
-    workerInstance.emit('message', { data: { type: 'success', data: minimalRoute } });
+    expect(workerInstance.terminate).toHaveBeenCalledOnce();
+  });
+
+  it('terminates the worker after an error response', async () => {
+    const promise = parseGPXAsync('<bad/>');
+    workerInstance.emit('message', { data: { type: 'error', message: 'No tracks found' } });
+    await expect(promise).rejects.toThrow('No tracks found');
+    expect(workerInstance.terminate).toHaveBeenCalledOnce();
+  });
+
+  it('terminates the worker after a worker error event', async () => {
+    const promise = parseGPXAsync('<gpx/>');
+    workerInstance.emit('error', { message: 'Worker crashed' });
+    await expect(promise).rejects.toThrow('Worker crashed');
+    expect(workerInstance.terminate).toHaveBeenCalledOnce();
   });
 });

@@ -5,25 +5,18 @@ type WorkerResponse =
   | { type: 'success'; data: RouteData }
   | { type: 'error'; message: string };
 
-const worker = new GpxWorker();
-
 export function parseGPXAsync(xmlText: string): Promise<RouteData> {
   return new Promise((resolve, reject) => {
-    const onMessage = (e: MessageEvent<WorkerResponse>) => {
-      cleanup();
+    const worker = new GpxWorker();
+    worker.addEventListener('message', (e: MessageEvent<WorkerResponse>) => {
+      worker.terminate();
       if (e.data.type === 'success') resolve(e.data.data);
       else reject(new Error(e.data.message));
-    };
-    const onError = (e: ErrorEvent) => {
-      cleanup();
+    });
+    worker.addEventListener('error', (e: ErrorEvent) => {
+      worker.terminate();
       reject(new Error(e.message));
-    };
-    const cleanup = () => {
-      worker.removeEventListener('message', onMessage);
-      worker.removeEventListener('error', onError);
-    };
-    worker.addEventListener('message', onMessage);
-    worker.addEventListener('error', onError);
+    });
     worker.postMessage(xmlText);
   });
 }
