@@ -7,6 +7,6 @@
     "src/workers/**/*.ts",
     "!src/**/*.test.ts"
   ],
-  "reporters": ["html", "clear-text", "progress"],
+  "reporters": ["html", "json", "clear-text", "progress"],
   "coverageAnalysis": "perTest"
 }
