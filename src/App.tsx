@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { Upload, Map as MapIcon, CloudRain, Navigation } from 'lucide-react';
-import { parseGPX } from './utils/gpxParser';
+import { parseGPXAsync } from './workers/gpxWorkerClient';
 import type { RouteData, RoutePoint } from './utils/gpxParser';
 import { fetchWeatherForPoint } from './services/weatherService';
 import type { WeatherData } from './services/weatherService';
@@ -64,7 +64,7 @@ function App() {
     setLoading(true);
     try {
       const text = await file.text();
-      const parsedRoute = parseGPX(text);
+      const parsedRoute = await parseGPXAsync(text);
       setRoute(parsedRoute);
       
       // Initially calculate weather for key points (e.g., every 10km)
