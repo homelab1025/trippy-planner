@@ -2,8 +2,8 @@ import { describe, it, expect, vi } from 'vitest';
 import { fetchWeatherForPoint } from './weatherService';
 import type { HttpClient } from './weatherService';
 
-// 2025-06-15T14:00:00 UTC — the hourly slot the service will look up is '2025-06-15T14:00'
-const TS = new Date('2025-06-15T14:00:00.000Z').getTime() / 1000;
+// 2025-06-15T14:37:00 UTC — mid-hour so slice(0,14) rounding is exercised; slot is '2025-06-15T14:00'
+const TS = new Date('2025-06-15T14:37:00.000Z').getTime() / 1000;
 
 const makeStub = (weatherCode: number): HttpClient => ({
   get: vi.fn().mockResolvedValue({

@@ -69,4 +69,11 @@ describe('parseGPX', () => {
     expect(() => parseGPX(`<?xml version="1.0"?><gpx version="1.1"></gpx>`))
       .toThrow('No tracks found in GPX file');
   });
+
+  it('computes haversine distance to within 1 m for a two-point route', () => {
+    // Non-zero start avoids id=63/65 equivalence at origin.
+    // Diagonal movement kills the symmetric pairs (62/64, 67/72).
+    const twoPoint = gpx('D', [pt(1, 1), pt(2, 2)].join('\n'));
+    expect(parseGPX(twoPoint).totalDistance).toBeCloseTo(157_225.43, 0);
+  });
 });
