@@ -1,0 +1,12 @@
+{
+  "testRunner": "vitest",
+  "plugins": ["@stryker-mutator/vitest-runner"],
+  "mutate": [
+    "src/utils/**/*.ts",
+    "src/services/**/*.ts",
+    "src/workers/**/*.ts",
+    "!src/**/*.test.ts"
+  ],
+  "reporters": ["html", "clear-text", "progress"],
+  "coverageAnalysis": "perTest"
+}
