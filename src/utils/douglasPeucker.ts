@@ -1,9 +1,7 @@
 import type { RoutePoint } from './gpxParser';
-import { haversineMeters } from './haversineMeters';
+import { haversineMeters, EARTH_RADIUS_METERS } from './haversineMeters';
 
 export const DP_EPSILON_METERS = 5;
-
-const R = 6_371_000;
 
 function haversineBearing(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const rad = Math.PI / 180;
@@ -23,14 +21,14 @@ function perpDistanceMeters(p: RoutePoint, a: RoutePoint, b: RoutePoint): number
   const thetaAP = haversineBearing(a.lat, a.lng, p.lat, p.lng);
   const thetaAB = haversineBearing(a.lat, a.lng, b.lat, b.lng);
 
-  const sinXT = Math.sin(dAP / R) * Math.sin(thetaAP - thetaAB);
-  const dXT = Math.asin(Math.max(-1, Math.min(1, sinXT))) * R;
+  const sinXT = Math.sin(dAP / EARTH_RADIUS_METERS) * Math.sin(thetaAP - thetaAB);
+  const dXT = Math.asin(Math.max(-1, Math.min(1, sinXT))) * EARTH_RADIUS_METERS;
 
-  const cosXT = Math.cos(dXT / R);
+  const cosXT = Math.cos(dXT / EARTH_RADIUS_METERS);
   const dAT =
     cosXT === 0
       ? 0
-      : Math.acos(Math.max(-1, Math.min(1, Math.cos(dAP / R) / cosXT))) * R;
+      : Math.acos(Math.max(-1, Math.min(1, Math.cos(dAP / EARTH_RADIUS_METERS) / cosXT))) * EARTH_RADIUS_METERS;
 
   if (dAT > dAB) {
     const dBP = haversineMeters(b.lat, b.lng, p.lat, p.lng);
