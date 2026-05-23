@@ -31,6 +31,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [hoveredPoint, setHoveredPoint] = useState<{ lat: number; lng: number } | null>(null);
   const [xAxisMode, setXAxisMode] = useState<'clock' | 'elapsed'>('clock');
+  const [dpEpsilon, setDpEpsilon] = useState(DP_EPSILON_METERS);
 
   const todayStr = getLocalDateString(new Date());
   const maxDate = new Date();
@@ -65,9 +66,9 @@ function App() {
     setLoading(true);
     try {
       const text = await file.text();
-      const parsedRoute = await parseGPXAsync(text);
+      const parsedRoute = await parseGPXAsync(text, dpEpsilon);
       setRoute(parsedRoute);
-      
+
       // Initially calculate weather for key points (e.g., every 10km)
       await updateWeather(parsedRoute, avgSpeed, startTime);
     } catch (error) {
@@ -231,25 +232,34 @@ function App() {
             </div>
           )}
 
-          {route && (
-            <div className="glass-panel stats-card">
-              <h3>Tech Details</h3>
-              <div className="stats-grid">
-                <div className="stat-item">
-                  <span className="stat-label">DP Epsilon</span>
-                  <span className="stat-value">{DP_EPSILON_METERS} m</span>
-                </div>
-                <div className="stat-item">
-                  <span className="stat-label">Original Points</span>
-                  <span className="stat-value">{route.originalPointCount.toLocaleString()}</span>
-                </div>
-                <div className="stat-item">
-                  <span className="stat-label">Map Points</span>
-                  <span className="stat-value">{route.points.length.toLocaleString()}</span>
-                </div>
+          <div className="glass-panel stats-card">
+            <h3>Tech Details</h3>
+            <div className="stats-grid">
+              <div className="stat-item">
+                <span className="stat-label">DP Epsilon</span>
+                <span className="stat-value">
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={dpEpsilon}
+                    disabled={route !== null}
+                    onChange={(e) => setDpEpsilon(Math.max(1, Number(e.target.value)))}
+                    style={{ width: '60px' }}
+                  />
+                  {' '}m
+                </span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">Original Points</span>
+                <span className="stat-value">{route ? route.originalPointCount.toLocaleString() : '—'}</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">Map Points</span>
+                <span className="stat-value">{route ? route.points.length.toLocaleString() : '—'}</span>
               </div>
             </div>
-          )}
+          </div>
         </aside>
 
         <section className="display-area">
