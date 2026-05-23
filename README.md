@@ -27,8 +27,6 @@ A route weather planner for cyclists and hikers. Upload a GPX file, set your sta
 
 - **Cancel in-flight weather requests when inputs change.** Stale responses can race and overwrite newer results. Pass an `AbortSignal` through `weatherService.ts` and abort the previous batch whenever a new fetch starts.
 
-- **Memoize `positions` in `MapComponent`.** The `positions` array is recreated on every render even when `route` hasn't changed. Wrap with `useMemo`.
-
 ## Done
 
 - **Decimate the map polyline with Douglas-Peucker.** Douglas-Peucker at 5 m epsilon runs at parse time (inside the web worker). The decimated set is used for the map polyline, weather sampling, and LTTB chart input. Original point count is stored separately and displayed in the new Tech Details sidebar panel.
