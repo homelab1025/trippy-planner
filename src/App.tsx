@@ -236,15 +236,19 @@ function App() {
             <h3>Tech Details</h3>
             <div className="stats-grid">
               <div className="stat-item">
-                <span className="stat-label">DP Epsilon</span>
+                <label htmlFor="dp-epsilon" className="stat-label">DP Epsilon</label>
                 <span className="stat-value">
                   <input
+                    id="dp-epsilon"
                     type="number"
                     min="1"
                     step="1"
                     value={dpEpsilon}
                     disabled={route !== null}
-                    onChange={(e) => setDpEpsilon(Math.max(1, Number(e.target.value)))}
+                    onChange={(e) => {
+                      const n = Number(e.target.value);
+                      if (Number.isFinite(n)) setDpEpsilon(Math.max(1, n));
+                    }}
                     style={{ width: '60px' }}
                   />
                   {' '}m
