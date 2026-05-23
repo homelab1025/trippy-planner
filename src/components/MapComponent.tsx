@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Polyline, CircleMarker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -21,7 +21,11 @@ interface MapComponentProps {
 }
 
 const MapComponent: React.FC<MapComponentProps> = ({ route, weatherPoints, hoveredPoint }) => {
-  const positions = route.points.map(p => [p.lat, p.lng] as [number, number]);
+  // Stable reference prevents react-leaflet from calling setLatLngs on every hover re-render
+  const positions = useMemo(
+    () => route.points.map(p => [p.lat, p.lng] as [number, number]),
+    [route]
+  );
   const center = positions[0];
 
   return (
