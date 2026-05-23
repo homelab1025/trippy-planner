@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { parseGPX } from './gpxParser';
+import { DP_EPSILON_METERS } from './douglasPeucker';
 
 // Build a minimal GPX XML string from parts
 const gpx = (name: string, trkpts: string) => `<?xml version="1.0" encoding="UTF-8"?>
@@ -24,7 +25,7 @@ const VALID = gpx('Test Route', [
 
 describe('parseGPX', () => {
   it('returns correct name, point count, and elevation gain for a valid GPX', () => {
-    const result = parseGPX(VALID);
+    const result = parseGPX(VALID, DP_EPSILON_METERS);
     expect(result.name).toBe('Test Route');
     expect(result.points).toHaveLength(5);
     expect(result.originalPointCount).toBe(5);
@@ -32,7 +33,7 @@ describe('parseGPX', () => {
   });
 
   it('first point has distance 0 and subsequent distances increase monotonically', () => {
-    const { points } = parseGPX(VALID);
+    const { points } = parseGPX(VALID, DP_EPSILON_METERS);
     expect(points[0].distance).toBe(0);
     for (let i = 1; i < points.length; i++) {
       expect(points[i].distance).toBeGreaterThan(points[i - 1].distance);
@@ -45,7 +46,7 @@ describe('parseGPX', () => {
       pt(48.86, 2.36, 80),
       pt(48.87, 2.37, 60),
     ].join('\n'));
-    expect(parseGPX(descending).totalElevationGain).toBe(0);
+    expect(parseGPX(descending, DP_EPSILON_METERS).totalElevationGain).toBe(0);
   });
 
   it('defaults elevation to 0 when ele attribute is absent', () => {
@@ -53,7 +54,7 @@ describe('parseGPX', () => {
       pt(48.85, 2.35),
       pt(48.86, 2.36),
     ].join('\n'));
-    const { points } = parseGPX(noEle);
+    const { points } = parseGPX(noEle, DP_EPSILON_METERS);
     expect(points[0].ele).toBe(0);
     expect(points[1].ele).toBe(0);
   });
@@ -63,19 +64,17 @@ describe('parseGPX', () => {
       pt(48.85, 2.35, 10),
       pt(48.86, 2.36, 10),
     ].join('\n'));
-    expect(parseGPX(noName).name).toBe('Untitled Route');
+    expect(parseGPX(noName, DP_EPSILON_METERS).name).toBe('Untitled Route');
   });
 
   it('throws when the GPX file contains no tracks', () => {
-    expect(() => parseGPX(`<?xml version="1.0"?><gpx version="1.1"></gpx>`))
+    expect(() => parseGPX(`<?xml version="1.0"?><gpx version="1.1"></gpx>`, DP_EPSILON_METERS))
       .toThrow('No tracks found in GPX file');
   });
 
   it('computes haversine distance to within 1 m for a two-point route', () => {
-    // Non-zero start avoids id=63/65 equivalence at origin.
-    // Diagonal movement kills the symmetric pairs (62/64, 67/72).
     const twoPoint = gpx('D', [pt(1, 1), pt(2, 2)].join('\n'));
-    expect(parseGPX(twoPoint).totalDistance).toBeCloseTo(157_225.43, 0);
+    expect(parseGPX(twoPoint, DP_EPSILON_METERS).totalDistance).toBeCloseTo(157_225.43, 0);
   });
 
   it('records original point count and decimates collinear points on a meridian', () => {
@@ -86,7 +85,7 @@ describe('parseGPX', () => {
       pt(0.75, 10, 0),
       pt(1, 10, 0),
     ].join('\n'));
-    const result = parseGPX(MERIDIAN);
+    const result = parseGPX(MERIDIAN, DP_EPSILON_METERS);
     expect(result.originalPointCount).toBe(5);
     expect(result.points.length).toBeLessThan(result.originalPointCount);
     expect(result.points[0].lat).toBeCloseTo(0, 5);
