@@ -1,6 +1,6 @@
 import { XMLParser } from 'fast-xml-parser';
 import { haversineMeters } from './haversineMeters';
-import { douglasPeucker } from './douglasPeucker';
+import { douglasPeucker, fillGaps } from './douglasPeucker';
 
 export interface RoutePoint {
   lat: number;
@@ -26,7 +26,7 @@ const xmlParser = new XMLParser({
 });
 
 
-export const parseGPX = (xmlText: string, epsilon: number): RouteData => {
+export const parseGPX = (xmlText: string, epsilon: number, maxGapMeters: number): RouteData => {
   const parsed = xmlParser.parse(xmlText) as Record<string, unknown>;
   const gpx = parsed['gpx'] as Record<string, unknown> | undefined;
   const tracks = gpx?.['trk'] as unknown[] | undefined;
@@ -67,7 +67,8 @@ export const parseGPX = (xmlText: string, epsilon: number): RouteData => {
 
   const totalDistance = points[points.length - 1].distance;
   const originalPointCount = points.length;
-  const decimated = douglasPeucker(points, epsilon);
+  const simplified = douglasPeucker(points, epsilon);
+  const decimated = fillGaps(points, simplified, maxGapMeters);
 
   return {
     points: decimated,
