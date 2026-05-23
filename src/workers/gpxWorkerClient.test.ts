@@ -42,47 +42,47 @@ const minimalRoute: RouteData = {
 
 describe('parseGPXAsync', () => {
   it('resolves with RouteData when the worker posts a success response', async () => {
-    const promise = parseGPXAsync('<gpx/>');
+    const promise = parseGPXAsync('<gpx/>', 5);
     workerInstance.emit('message', { data: { type: 'success', data: minimalRoute } });
     await expect(promise).resolves.toEqual(minimalRoute);
   });
 
   it('rejects with the error message when the worker posts an error response', async () => {
-    const promise = parseGPXAsync('<bad/>');
+    const promise = parseGPXAsync('<bad/>', 5);
     workerInstance.emit('message', { data: { type: 'error', message: 'No tracks found' } });
     await expect(promise).rejects.toThrow('No tracks found');
   });
 
   it('rejects when the worker fires an error event', async () => {
-    const promise = parseGPXAsync('<gpx/>');
+    const promise = parseGPXAsync('<gpx/>', 5);
     workerInstance.emit('error', { message: 'Worker crashed' });
     await expect(promise).rejects.toThrow('Worker crashed');
   });
 
-  it('sends the raw XML string to the worker', async () => {
+  it('sends xml and epsilon to the worker as a structured message', async () => {
     const xml = '<gpx version="1.1"/>';
-    const promise = parseGPXAsync(xml);
+    const promise = parseGPXAsync(xml, 10);
     workerInstance.emit('message', { data: { type: 'success', data: minimalRoute } });
     await promise;
-    expect(workerInstance.postMessage).toHaveBeenCalledWith(xml);
+    expect(workerInstance.postMessage).toHaveBeenCalledWith({ xml, epsilon: 10 });
   });
 
   it('terminates the worker after a successful response', async () => {
-    const promise = parseGPXAsync('<gpx/>');
+    const promise = parseGPXAsync('<gpx/>', 5);
     workerInstance.emit('message', { data: { type: 'success', data: minimalRoute } });
     await promise;
     expect(workerInstance.terminate).toHaveBeenCalledOnce();
   });
 
   it('terminates the worker after an error response', async () => {
-    const promise = parseGPXAsync('<bad/>');
+    const promise = parseGPXAsync('<bad/>', 5);
     workerInstance.emit('message', { data: { type: 'error', message: 'No tracks found' } });
     await expect(promise).rejects.toThrow('No tracks found');
     expect(workerInstance.terminate).toHaveBeenCalledOnce();
   });
 
   it('terminates the worker after a worker error event', async () => {
-    const promise = parseGPXAsync('<gpx/>');
+    const promise = parseGPXAsync('<gpx/>', 5);
     workerInstance.emit('error', { message: 'Worker crashed' });
     await expect(promise).rejects.toThrow('Worker crashed');
     expect(workerInstance.terminate).toHaveBeenCalledOnce();
