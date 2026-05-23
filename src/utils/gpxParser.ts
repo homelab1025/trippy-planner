@@ -1,4 +1,6 @@
 import { XMLParser } from 'fast-xml-parser';
+import { haversineMeters } from './haversineMeters';
+import { douglasPeucker, DP_EPSILON_METERS } from './douglasPeucker';
 
 export interface RoutePoint {
   lat: number;
@@ -10,6 +12,7 @@ export interface RoutePoint {
 
 export interface RouteData {
   points: RoutePoint[];
+  originalPointCount: number;
   totalDistance: number;
   totalElevationGain: number;
   name: string;
@@ -22,16 +25,6 @@ const xmlParser = new XMLParser({
   isArray: (name) => ['trk', 'trkseg', 'trkpt'].includes(name),
 });
 
-function haversineMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  const R = 6371000;
-  const rad = Math.PI / 180;
-  const dLat = (lat2 - lat1) * rad;
-  const dLng = (lng2 - lng1) * rad;
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(dLng / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
 
 export const parseGPX = (xmlText: string): RouteData => {
   const parsed = xmlParser.parse(xmlText) as Record<string, unknown>;
@@ -72,9 +65,14 @@ export const parseGPX = (xmlText: string): RouteData => {
     if (diff > 0) totalElevationGain += diff;
   }
 
+  const totalDistance = points[points.length - 1].distance;
+  const originalPointCount = points.length;
+  const decimated = douglasPeucker(points, DP_EPSILON_METERS);
+
   return {
-    points,
-    totalDistance: points[points.length - 1].distance,
+    points: decimated,
+    originalPointCount,
+    totalDistance,
     totalElevationGain,
     name,
   };
