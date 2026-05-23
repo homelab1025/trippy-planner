@@ -102,6 +102,33 @@ describe('douglasPeucker', () => {
     expect(result).toHaveLength(3);
     expect(result).toContain(p);
   });
+
+  it('keeps all above-epsilon points across multiple recursive splits', () => {
+    // p1 and p3 are ~111 m cross-track; p2 is ~556 m cross-track (dominates first split).
+    // After splitting at p2, both sub-segments must be processed so p1 and p3 are kept.
+    // Mutation-133 drops the left sub-segment → p1 is silently discarded.
+    const a  = pt(0, 0);
+    const p1 = pt(0.001, 0.25);
+    const p2 = pt(0.005, 0.5);
+    const p3 = pt(0.001, 0.75);
+    const b  = pt(0, 1);
+    const result = douglasPeucker([a, p1, p2, p3, b], 50);
+    expect(result).toContain(p1);
+    expect(result).toContain(p2);
+    expect(result).toContain(p3);
+  });
+
+  it('removes a point just past segment end when the nearest endpoint distance is below epsilon', () => {
+    // A=(0,0), B=(0,0.1). P=(0,0.1001) is ~11m past B (dBP≈11m) but ~11.1km from A.
+    // perpDistanceMeters returns min(dAP,dBP)=~11m < epsilon=100m → P removed.
+    // Mutation-92 (max) returns ~11.1km → P kept (wrong).
+    const a = pt(0, 0);
+    const b = pt(0, 0.1);
+    const p = pt(0, 0.1001);
+    const result = douglasPeucker([a, p, b], 100);
+    expect(result).toHaveLength(2);
+    expect(result).not.toContain(p);
+  });
 });
 
 describe('fillGaps', () => {
@@ -188,5 +215,47 @@ describe('fillGaps', () => {
     const result = fillGaps(original, simplified, 500_000);
     // Would want 5 inserts but only 1 is available → clamps to 1
     expect(result).toHaveLength(3);
+  });
+
+  it('throws when the first simplified point is not a reference in original and gap exceeds maxGapMeters', () => {
+    const original = [mkPt(0), mkPt(200_000), mkPt(400_000)];
+    const ghost = mkPt(0); // separate object, not in original
+    const simplified = [ghost, original[2]]; // gap = 400_000 > 100_000
+    expect(() => fillGaps(original, simplified, 100_000)).toThrow(
+      'fillGaps: simplified must be a reference-subset of original'
+    );
+  });
+
+  it('throws when the second simplified point is not a reference in original and gap exceeds maxGapMeters', () => {
+    const original = [mkPt(0), mkPt(200_000), mkPt(400_000)];
+    const ghost = mkPt(400_000); // same distance value but different object reference
+    const simplified = [original[0], ghost]; // gap = 400_000 > 100_000
+    expect(() => fillGaps(original, simplified, 100_000)).toThrow(
+      'fillGaps: simplified must be a reference-subset of original'
+    );
+  });
+
+  it('does not insert when the gap is small even though base distance is large', () => {
+    // a.distance=900_000, b.distance=1_000_000 → gap=100_000 ≤ maxGap=500_000, no insert.
+    // Mutation (b+a): 1_900_000 > 500_000 → would wrongly insert.
+    const original = [mkPt(900_000), mkPt(950_000), mkPt(1_000_000)];
+    const simplified = [original[0], original[2]];
+    const result = fillGaps(original, simplified, 500_000);
+    expect(result).toHaveLength(2);
+    expect(result[0]).toBe(original[0]);
+    expect(result[1]).toBe(original[2]);
+  });
+
+  it('inserts the correct midpoint when simplified does not start at original[0]', () => {
+    // aIdx=1, bIdx=3 → gap=400_000 > 200_000. available=1 (original[2] only).
+    // numInserts=1. insertIdx = 1 + round(1*2/2) = 2 → original[2].
+    // Mutation-176 gives available=4 (bIdx+aIdx), mutation-193 gives insertIdx=3 (original[3]).
+    const original = [mkPt(0), mkPt(100_000), mkPt(300_000), mkPt(500_000), mkPt(700_000)];
+    const simplified = [original[1], original[3]]; // gap = 400_000
+    const result = fillGaps(original, simplified, 200_000);
+    expect(result).toHaveLength(3);
+    expect(result[0]).toBe(original[1]);
+    expect(result[1]).toBe(original[2]);
+    expect(result[2]).toBe(original[3]);
   });
 });
