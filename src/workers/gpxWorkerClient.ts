@@ -5,7 +5,7 @@ type WorkerResponse =
   | { type: 'success'; data: RouteData }
   | { type: 'error'; message: string };
 
-export function parseGPXAsync(gpxContent: string, epsilon: number): Promise<RouteData> {
+export function parseGPXAsync(gpxContent: string, epsilon: number, maxGapMeters: number): Promise<RouteData> {
   return new Promise((resolve, reject) => {
     const worker = new GpxWorker();
     worker.addEventListener('message', (e: MessageEvent<WorkerResponse>) => {
@@ -17,6 +17,6 @@ export function parseGPXAsync(gpxContent: string, epsilon: number): Promise<Rout
       worker.terminate();
       reject(new Error(e.message));
     });
-    worker.postMessage({ xml: gpxContent, epsilon });
+    worker.postMessage({ xml: gpxContent, epsilon, maxGapMeters });
   });
 }
