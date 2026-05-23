@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { Upload, Map as MapIcon, CloudRain, Navigation } from 'lucide-react';
 import { parseGPXAsync } from './workers/gpxWorkerClient';
 import type { RouteData, RoutePoint } from './utils/gpxParser';
+import { DP_EPSILON_METERS } from './utils/douglasPeucker';
 import { fetchWeatherForPoint } from './services/weatherService';
 import type { WeatherData } from './services/weatherService';
 import MapComponent from './components/MapComponent';
@@ -226,8 +227,24 @@ function App() {
                   <span className="stat-label">Elevation Gain</span>
                   <span className="stat-value">{Math.round(route.totalElevationGain)} m</span>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {route && (
+            <div className="glass-panel stats-card">
+              <h3>Tech Details</h3>
+              <div className="stats-grid">
                 <div className="stat-item">
-                  <span className="stat-label">Track Points</span>
+                  <span className="stat-label">DP Epsilon</span>
+                  <span className="stat-value">{DP_EPSILON_METERS} m</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-label">Original Points</span>
+                  <span className="stat-value">{route.originalPointCount.toLocaleString()}</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-label">Map Points</span>
                   <span className="stat-value">{route.points.length.toLocaleString()}</span>
                 </div>
               </div>
