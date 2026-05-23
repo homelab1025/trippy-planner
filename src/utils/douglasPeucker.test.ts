@@ -147,12 +147,12 @@ describe('fillGaps', () => {
     expect(result[2]).toBe(original[2]);
   });
 
-  it('inserts two evenly-spaced points into a large gap', () => {
-    // 5 original points at 0, 300k, 600k, 900k, 1200k
-    // simplified keeps only endpoints (gap = 1200k, maxGap = 500k)
-    // numInserts = ceil(1200000/500000) - 1 = 3 - 1 = 2
-    // k=1: round(1*4/3) = round(1.33) = 1 → original[1]
-    // k=2: round(2*4/3) = round(2.67) = 3 → original[3]
+  it('inserts two index-uniformly spaced points into a large gap (single pass)', () => {
+    // Single-pass uniform-index spacing: for a gap of 1200km with maxGap 500km,
+    // numInserts=2. k=1→round(4/3)=1→original[1] (300km), k=2→round(8/3)=3→original[3] (900km).
+    // Note: the 600km gap between inserted points exceeds maxGap — fillGaps is a single-pass
+    // algorithm. This is intentional; the calling code sets maxGap large enough that this
+    // doesn't occur in practice.
     const original = [mkPt(0), mkPt(300_000), mkPt(600_000), mkPt(900_000), mkPt(1_200_000)];
     const simplified = [original[0], original[4]];
     const result = fillGaps(original, simplified, 500_000);

@@ -80,6 +80,7 @@ export function fillGaps(
 ): RoutePoint[] {
   if (simplified.length < 2 || maxGapMeters <= 0) return simplified;
 
+  // Precondition: every element of `simplified` must be a reference found in `original`.
   // O(n) index lookup: object reference → position in original array
   const origIdx = new Map<RoutePoint, number>(original.map((p, i) => [p, i]));
 
@@ -94,8 +95,11 @@ export function fillGaps(
     const gapDist = b.distance - a.distance;
 
     if (gapDist > maxGapMeters) {
-      const aIdx = origIdx.get(a)!;
-      const bIdx = origIdx.get(b)!;
+      const aIdx = origIdx.get(a);
+      const bIdx = origIdx.get(b);
+      if (aIdx === undefined || bIdx === undefined) {
+        throw new Error('fillGaps: simplified must be a reference-subset of original');
+      }
       const available = bIdx - aIdx - 1;
 
       if (available > 0) {
