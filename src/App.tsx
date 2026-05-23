@@ -235,45 +235,37 @@ function App() {
 
           <div className="glass-panel stats-card">
             <h3>Tech Details</h3>
-            <div className="stats-grid">
-              <div className="stat-item">
-                <label htmlFor="dp-epsilon" className="stat-label">DP Epsilon</label>
-                <span className="stat-value">
-                  <input
-                    id="dp-epsilon"
-                    type="number"
-                    min="1"
-                    step="1"
-                    value={dpEpsilon}
-                    disabled={route !== null}
-                    onChange={(e) => {
-                      const n = Number(e.target.value);
-                      if (Number.isFinite(n)) setDpEpsilon(Math.max(1, n));
-                    }}
-                    style={{ width: '60px' }}
-                  />
-                  {' '}m
-                </span>
-              </div>
-              <div className="stat-item">
-                <label htmlFor="dp-max-gap" className="stat-label">Max Gap</label>
-                <span className="stat-value">
-                  <input
-                    id="dp-max-gap"
-                    type="number"
-                    min="1"
-                    step="10"
-                    value={dpMaxGap}
-                    disabled={route !== null}
-                    onChange={(e) => {
-                      const n = Number(e.target.value);
-                      if (Number.isFinite(n)) setDpMaxGap(Math.max(1, n));
-                    }}
-                    style={{ width: '60px' }}
-                  />
-                  {' '}m
-                </span>
-              </div>
+            <div className="input-group">
+              <label htmlFor="dp-epsilon">DP Epsilon (m)</label>
+              <input
+                id="dp-epsilon"
+                type="number"
+                min="1"
+                step="1"
+                value={dpEpsilon}
+                disabled={route !== null}
+                onChange={(e) => {
+                  const n = Number(e.target.value);
+                  if (Number.isFinite(n)) setDpEpsilon(Math.max(1, n));
+                }}
+              />
+            </div>
+            <div className="input-group" style={{ marginTop: '16px' }}>
+              <label htmlFor="dp-max-gap">Max Gap (m)</label>
+              <input
+                id="dp-max-gap"
+                type="number"
+                min="1"
+                step="10"
+                value={dpMaxGap}
+                disabled={route !== null}
+                onChange={(e) => {
+                  const n = Number(e.target.value);
+                  if (Number.isFinite(n)) setDpMaxGap(Math.max(1, n));
+                }}
+              />
+            </div>
+            <div className="stats-grid" style={{ marginTop: '20px' }}>
               <div className="stat-item">
                 <span className="stat-label">Original Points</span>
                 <span className="stat-value">{route ? route.originalPointCount.toLocaleString() : '—'}</span>
