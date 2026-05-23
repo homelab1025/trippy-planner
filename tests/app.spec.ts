@@ -52,6 +52,20 @@ test('subtle weather dots visible on map after uploading GPX', async ({ page }) 
   await expect(page.locator('.leaflet-overlay-pane svg path[fill="#888"]')).not.toHaveCount(0, { timeout: 10000 });
 });
 
+test('Tech Details shows parse time and file size after GPX upload', async ({ page }) => {
+  await page.goto('/');
+
+  const techPanel = page.locator('.stats-card').filter({ hasText: 'Tech Details' });
+  await expect(techPanel.getByText('Parse time')).toBeVisible();
+  await expect(techPanel.getByText('File')).toBeVisible();
+
+  await page.setInputFiles('input[type="file"]', 'public/sample-route.gpx');
+  await expect(page.getByText('Sample Ride')).toBeVisible();
+
+  await expect(techPanel.locator('.stat-value').filter({ hasText: /\d+ ms/ })).toBeVisible();
+  await expect(techPanel.locator('.stat-value').filter({ hasText: /\d+\.\d+ KB/ })).toBeVisible();
+});
+
 test('hover over timeline shows polished orange marker on map', async ({ page }) => {
   await page.goto('/');
   await page.setInputFiles('input[type="file"]', 'public/sample-route.gpx');

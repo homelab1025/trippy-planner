@@ -33,6 +33,7 @@ function App() {
   const [xAxisMode, setXAxisMode] = useState<'clock' | 'elapsed'>('clock');
   const [dpEpsilon, setDpEpsilon] = useState(DP_EPSILON_METERS);
   const [dpMaxGap, setDpMaxGap] = useState(DP_MAX_GAP_METERS);
+  const [parseMetrics, setParseMetrics] = useState<{ totalMs: number; fileSizeKb: number } | null>(null);
 
   const todayStr = getLocalDateString(new Date());
   const maxDate = new Date();
@@ -65,9 +66,15 @@ function App() {
     if (!file) return;
 
     setLoading(true);
+    setParseMetrics(null);
     try {
       const text = await file.text();
+      const fileSizeKb = file.size / 1024;
+      performance.mark('gpx-parse-start');
       const parsedRoute = await parseGPXAsync(text, dpEpsilon, dpMaxGap);
+      performance.mark('gpx-parse-end');
+      const measure = performance.measure('gpx-parse', 'gpx-parse-start', 'gpx-parse-end');
+      setParseMetrics({ totalMs: measure.duration, fileSizeKb });
       setRoute(parsedRoute);
 
       // Initially calculate weather for key points (e.g., every 10km)
@@ -273,6 +280,14 @@ function App() {
               <div className="stat-item">
                 <span className="stat-label">Map Points</span>
                 <span className="stat-value">{route ? route.points.length.toLocaleString() : '—'}</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">Parse time</span>
+                <span className="stat-value">{parseMetrics ? `${parseMetrics.totalMs.toFixed(0)} ms` : '—'}</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">File</span>
+                <span className="stat-value">{parseMetrics ? `${parseMetrics.fileSizeKb.toFixed(1)} KB` : '—'}</span>
               </div>
             </div>
           </div>

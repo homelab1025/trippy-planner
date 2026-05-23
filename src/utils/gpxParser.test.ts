@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { parseGPX } from './gpxParser';
 import { DP_EPSILON_METERS } from './douglasPeucker';
 
@@ -91,6 +91,20 @@ describe('parseGPX', () => {
     expect(result.points.length).toBeLessThan(result.originalPointCount);
     expect(result.points[0].lat).toBeCloseTo(0, 5);
     expect(result.points[result.points.length - 1].lat).toBeCloseTo(1, 5);
+  });
+
+  it('logs [gpx] timing lines for xml-parse, dp-simplify, fill-gaps, and elev-calc', () => {
+    const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    try {
+      parseGPX(VALID, DP_EPSILON_METERS, Infinity);
+      const logged = spy.mock.calls.map(c => c[0] as string);
+      expect(logged.some(s => /\[gpx\] xml-parse: \d+\.\d+ms/.test(s))).toBe(true);
+      expect(logged.some(s => /\[gpx\] dp-simplify: \d+\.\d+ms/.test(s))).toBe(true);
+      expect(logged.some(s => /\[gpx\] fill-gaps: \d+\.\d+ms/.test(s))).toBe(true);
+      expect(logged.some(s => /\[gpx\] elev-calc: \d+\.\d+ms/.test(s))).toBe(true);
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it('fillGaps re-inserts points on a collinear meridian when maxGapMeters is smaller than the route', () => {

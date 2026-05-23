@@ -27,7 +27,10 @@ const xmlParser = new XMLParser({
 
 
 export const parseGPX = (xmlText: string, epsilon: number, maxGapMeters: number): RouteData => {
+  let t0 = performance.now();
   const parsed = xmlParser.parse(xmlText) as Record<string, unknown>;
+  console.log(`[gpx] xml-parse: ${(performance.now() - t0).toFixed(2)}ms`);
+
   const gpx = parsed['gpx'] as Record<string, unknown> | undefined;
   const tracks = gpx?.['trk'] as unknown[] | undefined;
 
@@ -59,16 +62,24 @@ export const parseGPX = (xmlText: string, epsilon: number, maxGapMeters: number)
     throw new Error('No track points found in GPX file');
   }
 
+  t0 = performance.now();
   let totalElevationGain = 0;
   for (let i = 1; i < points.length; i++) {
     const diff = points[i].ele - points[i - 1].ele;
     if (diff > 0) totalElevationGain += diff;
   }
+  console.log(`[gpx] elev-calc: ${(performance.now() - t0).toFixed(2)}ms`);
 
   const totalDistance = points[points.length - 1].distance;
   const originalPointCount = points.length;
+
+  t0 = performance.now();
   const simplified = douglasPeucker(points, epsilon);
+  console.log(`[gpx] dp-simplify: ${(performance.now() - t0).toFixed(2)}ms`);
+
+  t0 = performance.now();
   const decimated = fillGaps(points, simplified, maxGapMeters);
+  console.log(`[gpx] fill-gaps: ${(performance.now() - t0).toFixed(2)}ms`);
 
   return {
     points: decimated,
