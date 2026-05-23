@@ -5,6 +5,7 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: 'node',
+    environmentMatchGlobs: [['src/components/**', 'jsdom']],
     exclude: ['node_modules', 'dist', 'tests'],
   },
 })
