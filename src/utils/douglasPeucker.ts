@@ -70,3 +70,44 @@ export function douglasPeucker(points: RoutePoint[], epsilon: number): RoutePoin
 
   return points.filter((_, i) => keep[i]);
 }
+
+export const DP_MAX_GAP_METERS = 500;
+
+export function fillGaps(
+  original: RoutePoint[],
+  simplified: RoutePoint[],
+  maxGapMeters: number
+): RoutePoint[] {
+  if (simplified.length < 2 || maxGapMeters <= 0) return simplified;
+
+  // O(n) index lookup: object reference → position in original array
+  const origIdx = new Map<RoutePoint, number>(original.map((p, i) => [p, i]));
+
+  const result: RoutePoint[] = [];
+
+  for (let si = 0; si < simplified.length; si++) {
+    result.push(simplified[si]);
+    if (si === simplified.length - 1) break;
+
+    const a = simplified[si];
+    const b = simplified[si + 1];
+    const gapDist = b.distance - a.distance;
+
+    if (gapDist > maxGapMeters) {
+      const aIdx = origIdx.get(a)!;
+      const bIdx = origIdx.get(b)!;
+      const available = bIdx - aIdx - 1;
+
+      if (available > 0) {
+        const numInserts = Math.min(Math.ceil(gapDist / maxGapMeters) - 1, available);
+        for (let k = 1; k <= numInserts; k++) {
+          // Uniform index spacing — guaranteed unique since numInserts <= available
+          const insertIdx = aIdx + Math.round((k * (bIdx - aIdx)) / (numInserts + 1));
+          result.push(original[insertIdx]);
+        }
+      }
+    }
+  }
+
+  return result;
+}

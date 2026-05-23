@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { douglasPeucker, DP_EPSILON_METERS } from './douglasPeucker';
+import { douglasPeucker, fillGaps, DP_EPSILON_METERS } from './douglasPeucker';
 import type { RoutePoint } from './gpxParser';
 
 function pt(lat: number, lng: number): RoutePoint {
@@ -101,5 +101,92 @@ describe('douglasPeucker', () => {
     const result = douglasPeucker([a, p, b], 5);
     expect(result).toHaveLength(3);
     expect(result).toContain(p);
+  });
+});
+
+describe('fillGaps', () => {
+  // Helper: create a RoutePoint with a specific cumulative distance
+  const mkPt = (distance: number): RoutePoint => ({ lat: 0, lng: 0, ele: 0, distance });
+
+  it('returns simplified unchanged when maxGapMeters <= 0', () => {
+    const original = [mkPt(0), mkPt(100), mkPt(200)];
+    const simplified = [original[0], original[2]];
+    expect(fillGaps(original, simplified, 0)).toBe(simplified);
+    expect(fillGaps(original, simplified, -1)).toBe(simplified);
+  });
+
+  it('returns simplified unchanged when it has fewer than 2 points', () => {
+    const original = [mkPt(0)];
+    const simplified = [original[0]];
+    expect(fillGaps(original, simplified, 100)).toBe(simplified);
+  });
+
+  it('returns simplified unchanged when no gap exceeds maxGapMeters', () => {
+    const original = [mkPt(0), mkPt(100), mkPt(200)];
+    const simplified = [original[0], original[2]]; // gap = 200
+    const result = fillGaps(original, simplified, 500_000);
+    expect(result).toHaveLength(2);
+    expect(result[0]).toBe(original[0]);
+    expect(result[1]).toBe(original[2]);
+  });
+
+  it('does not insert when gap equals maxGapMeters exactly', () => {
+    const original = [mkPt(0), mkPt(250_000), mkPt(500_000)];
+    const simplified = [original[0], original[2]]; // gap = 500_000
+    const result = fillGaps(original, simplified, 500_000); // not strictly greater
+    expect(result).toHaveLength(2);
+  });
+
+  it('inserts one point when gap is slightly over maxGapMeters', () => {
+    const original = [mkPt(0), mkPt(250_000), mkPt(500_001)];
+    const simplified = [original[0], original[2]]; // gap = 500_001
+    const result = fillGaps(original, simplified, 500_000);
+    expect(result).toHaveLength(3);
+    expect(result[0]).toBe(original[0]);
+    expect(result[1]).toBe(original[1]);
+    expect(result[2]).toBe(original[2]);
+  });
+
+  it('inserts two evenly-spaced points into a large gap', () => {
+    // 5 original points at 0, 300k, 600k, 900k, 1200k
+    // simplified keeps only endpoints (gap = 1200k, maxGap = 500k)
+    // numInserts = ceil(1200000/500000) - 1 = 3 - 1 = 2
+    // k=1: round(1*4/3) = round(1.33) = 1 → original[1]
+    // k=2: round(2*4/3) = round(2.67) = 3 → original[3]
+    const original = [mkPt(0), mkPt(300_000), mkPt(600_000), mkPt(900_000), mkPt(1_200_000)];
+    const simplified = [original[0], original[4]];
+    const result = fillGaps(original, simplified, 500_000);
+    expect(result).toHaveLength(4);
+    expect(result[0]).toBe(original[0]);
+    expect(result[1]).toBe(original[1]);
+    expect(result[2]).toBe(original[3]);
+    expect(result[3]).toBe(original[4]);
+  });
+
+  it('all result points are references to original array objects — no copies', () => {
+    const original = [mkPt(0), mkPt(300_000), mkPt(600_000), mkPt(900_000), mkPt(1_200_000)];
+    const simplified = [original[0], original[4]];
+    const result = fillGaps(original, simplified, 500_000);
+    for (const p of result) {
+      expect(original).toContain(p);
+    }
+  });
+
+  it('result points are in strictly increasing distance order', () => {
+    const original = [mkPt(0), mkPt(300_000), mkPt(600_000), mkPt(900_000), mkPt(1_200_000)];
+    const simplified = [original[0], original[4]];
+    const result = fillGaps(original, simplified, 500_000);
+    for (let i = 1; i < result.length; i++) {
+      expect(result[i].distance).toBeGreaterThan(result[i - 1].distance);
+    }
+  });
+
+  it('clamps inserts to available original points in the gap', () => {
+    // Only 1 original point between endpoints, but gap would call for 5 inserts
+    const original = [mkPt(0), mkPt(50_000), mkPt(3_000_000)];
+    const simplified = [original[0], original[2]]; // gap = 3_000_000, maxGap = 500_000
+    const result = fillGaps(original, simplified, 500_000);
+    // Would want 5 inserts but only 1 is available → clamps to 1
+    expect(result).toHaveLength(3);
   });
 });
