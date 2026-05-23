@@ -80,4 +80,26 @@ describe('douglasPeucker', () => {
       expect(points).toContain(p);
     }
   });
+
+  it('keeps a point when segment endpoints are identical (dAB = 0)', () => {
+    const a = pt(0, 0);
+    const b = pt(0, 0); // same as a
+    const p = pt(1, 0); // ~111 km from a
+    // With identical endpoints, perpDist = haversineMeters(a, p) >> epsilon
+    const result = douglasPeucker([a, p, b], 5);
+    expect(result).toHaveLength(3);
+    expect(result).toContain(p);
+  });
+
+  it('uses nearest endpoint distance when P projects beyond segment end', () => {
+    // A=(0,0), B=(0,0.1) — short equatorial segment (~11 km)
+    // P=(0,1)  — far past B along the equator, so foot is outside segment
+    // dBP ≈ 99 km, dAP ≈ 111 km → perpDist = min(dAP, dBP) ≈ 99 km >> epsilon=5
+    const a = pt(0, 0);
+    const b = pt(0, 0.1);
+    const p = pt(0, 1);
+    const result = douglasPeucker([a, p, b], 5);
+    expect(result).toHaveLength(3);
+    expect(result).toContain(p);
+  });
 });
