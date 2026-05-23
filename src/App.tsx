@@ -111,17 +111,19 @@ function App() {
     }
   }, [route, avgSpeed, startTime, updateWeather]);
 
-  function resolveDistanceToPoint(distanceKm: number): { lat: number; lng: number } {
+  // Stable reference prevents WeatherTimeline (React.memo'd) from re-rendering on every hover
+  const onHoverDistance = useCallback((distanceKm: number | null) => {
+    if (distanceKm === null || !route) { setHoveredPoint(null); return; }
     const targetM = distanceKm * 1000;
-    const points = route!.points;
+    const points = route.points;
     let lo = 0, hi = points.length - 1;
     while (lo < hi) {
       const mid = (lo + hi) >> 1;
       if (points[mid].distance < targetM) lo = mid + 1;
       else hi = mid;
     }
-    return { lat: points[lo].lat, lng: points[lo].lng };
-  }
+    setHoveredPoint({ lat: points[lo].lat, lng: points[lo].lng });
+  }, [route]);
 
   return (
     <div className="app-container">
@@ -255,10 +257,7 @@ function App() {
               <WeatherTimeline
                 route={route}
                 weatherPoints={weatherPoints}
-                onHoverDistance={(distanceKm) => {
-                  if (distanceKm === null || !route) { setHoveredPoint(null); return; }
-                  setHoveredPoint(resolveDistanceToPoint(distanceKm));
-                }}
+                onHoverDistance={onHoverDistance}
                 xAxisMode={xAxisMode}
               />
             )}

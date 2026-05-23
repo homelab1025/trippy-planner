@@ -159,4 +159,5 @@ const WeatherTimeline: React.FC<WeatherTimelineProps> = ({ route, weatherPoints,
   );
 };
 
-export default WeatherTimeline;
+// memo prevents re-renders when App re-renders due to hoveredPoint changes
+export default React.memo(WeatherTimeline);
