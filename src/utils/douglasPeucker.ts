@@ -38,32 +38,6 @@ function perpDistanceMeters(p: RoutePoint, a: RoutePoint, b: RoutePoint): number
   return Math.abs(dXT);
 }
 
-function simplify(
-  points: RoutePoint[],
-  start: number,
-  end: number,
-  epsilon: number,
-  keep: boolean[]
-): void {
-  if (end - start <= 1) return;
-
-  let maxDist = 0;
-  let maxIdx = start + 1;
-  for (let i = start + 1; i < end; i++) {
-    const d = perpDistanceMeters(points[i], points[start], points[end]);
-    if (d > maxDist) {
-      maxDist = d;
-      maxIdx = i;
-    }
-  }
-
-  if (maxDist > epsilon) {
-    keep[maxIdx] = true;
-    simplify(points, start, maxIdx, epsilon, keep);
-    simplify(points, maxIdx, end, epsilon, keep);
-  }
-}
-
 export function douglasPeucker(points: RoutePoint[], epsilon: number): RoutePoint[] {
   if (points.length === 0) return [];
 
@@ -71,7 +45,28 @@ export function douglasPeucker(points: RoutePoint[], epsilon: number): RoutePoin
   keep[0] = true;
   keep[points.length - 1] = true;
 
-  simplify(points, 0, points.length - 1, epsilon, keep);
+  const stack: [number, number][] = [[0, points.length - 1]];
+
+  while (stack.length > 0) {
+    const [start, end] = stack.pop()!;
+    if (end - start <= 1) continue;
+
+    let maxDist = 0;
+    let maxIdx = start + 1;
+    for (let i = start + 1; i < end; i++) {
+      const d = perpDistanceMeters(points[i], points[start], points[end]);
+      if (d > maxDist) {
+        maxDist = d;
+        maxIdx = i;
+      }
+    }
+
+    if (maxDist > epsilon) {
+      keep[maxIdx] = true;
+      stack.push([start, maxIdx]);
+      stack.push([maxIdx, end]);
+    }
+  }
 
   return points.filter((_, i) => keep[i]);
 }
