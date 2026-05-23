@@ -34,6 +34,7 @@ const { parseGPXAsync } = await import('./gpxWorkerClient');
 
 const minimalRoute: RouteData = {
   name: 'Test Route',
+  originalPointCount: 1,
   totalDistance: 1000,
   totalElevationGain: 50,
   points: [{ lat: 48.8, lng: 2.3, ele: 100, distance: 0 }],

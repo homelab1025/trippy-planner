@@ -27,6 +27,7 @@ describe('parseGPX', () => {
     const result = parseGPX(VALID);
     expect(result.name).toBe('Test Route');
     expect(result.points).toHaveLength(5);
+    expect(result.originalPointCount).toBe(5);
     expect(result.totalElevationGain).toBeCloseTo(12, 0);
   });
 
@@ -75,5 +76,20 @@ describe('parseGPX', () => {
     // Diagonal movement kills the symmetric pairs (62/64, 67/72).
     const twoPoint = gpx('D', [pt(1, 1), pt(2, 2)].join('\n'));
     expect(parseGPX(twoPoint).totalDistance).toBeCloseTo(157_225.43, 0);
+  });
+
+  it('records original point count and decimates collinear points on a meridian', () => {
+    const MERIDIAN = gpx('Meridian', [
+      pt(0, 10, 0),
+      pt(0.25, 10, 0),
+      pt(0.5, 10, 0),
+      pt(0.75, 10, 0),
+      pt(1, 10, 0),
+    ].join('\n'));
+    const result = parseGPX(MERIDIAN);
+    expect(result.originalPointCount).toBe(5);
+    expect(result.points.length).toBeLessThan(result.originalPointCount);
+    expect(result.points[0].lat).toBeCloseTo(0, 5);
+    expect(result.points[result.points.length - 1].lat).toBeCloseTo(1, 5);
   });
 });
