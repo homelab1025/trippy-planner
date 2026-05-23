@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { Upload, Map as MapIcon, CloudRain, Navigation } from 'lucide-react';
 import { parseGPXAsync } from './workers/gpxWorkerClient';
 import type { RouteData, RoutePoint } from './utils/gpxParser';
-import { DP_EPSILON_METERS } from './utils/douglasPeucker';
+import { DP_EPSILON_METERS, DP_MAX_GAP_METERS } from './utils/douglasPeucker';
 import { fetchWeatherForPoint } from './services/weatherService';
 import type { WeatherData } from './services/weatherService';
 import MapComponent from './components/MapComponent';
@@ -32,6 +32,7 @@ function App() {
   const [hoveredPoint, setHoveredPoint] = useState<{ lat: number; lng: number } | null>(null);
   const [xAxisMode, setXAxisMode] = useState<'clock' | 'elapsed'>('clock');
   const [dpEpsilon, setDpEpsilon] = useState(DP_EPSILON_METERS);
+  const [dpMaxGap, setDpMaxGap] = useState(DP_MAX_GAP_METERS);
 
   const todayStr = getLocalDateString(new Date());
   const maxDate = new Date();
@@ -66,7 +67,7 @@ function App() {
     setLoading(true);
     try {
       const text = await file.text();
-      const parsedRoute = await parseGPXAsync(text, dpEpsilon);
+      const parsedRoute = await parseGPXAsync(text, dpEpsilon, dpMaxGap);
       setRoute(parsedRoute);
 
       // Initially calculate weather for key points (e.g., every 10km)
@@ -248,6 +249,25 @@ function App() {
                     onChange={(e) => {
                       const n = Number(e.target.value);
                       if (Number.isFinite(n)) setDpEpsilon(Math.max(1, n));
+                    }}
+                    style={{ width: '60px' }}
+                  />
+                  {' '}m
+                </span>
+              </div>
+              <div className="stat-item">
+                <label htmlFor="dp-max-gap" className="stat-label">Max Gap</label>
+                <span className="stat-value">
+                  <input
+                    id="dp-max-gap"
+                    type="number"
+                    min="1"
+                    step="10"
+                    value={dpMaxGap}
+                    disabled={route !== null}
+                    onChange={(e) => {
+                      const n = Number(e.target.value);
+                      if (Number.isFinite(n)) setDpMaxGap(Math.max(1, n));
                     }}
                     style={{ width: '60px' }}
                   />
