@@ -71,7 +71,7 @@ export function douglasPeucker(points: RoutePoint[], epsilon: number): RoutePoin
   return points.filter((_, i) => keep[i]);
 }
 
-export const DP_MAX_GAP_METERS = 500;
+export const DP_MAX_GAP_METERS = 50;
 
 // Single-pass: sub-gaps up to ~maxGapMeters may remain after insertion.
 export function fillGaps(
