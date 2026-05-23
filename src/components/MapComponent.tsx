@@ -15,12 +15,10 @@ function FitBounds({ route }: { route: RouteData }) {
 
 interface MapComponentProps {
   route: RouteData;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  weatherPoints: any[];
   hoveredPoint: { lat: number; lng: number } | null;
 }
 
-const MapComponent: React.FC<MapComponentProps> = ({ route, weatherPoints, hoveredPoint }) => {
+const MapComponent: React.FC<MapComponentProps> = ({ route, hoveredPoint }) => {
   // Stable reference prevents react-leaflet from calling setLatLngs on every hover re-render
   const positions = useMemo(
     () => route.points.map(p => [p.lat, p.lng] as [number, number]),
@@ -40,15 +38,6 @@ const MapComponent: React.FC<MapComponentProps> = ({ route, weatherPoints, hover
       />
       <FitBounds route={route} />
       <Polyline positions={positions} color="#2d5a27" weight={5} opacity={0.7} />
-
-      {weatherPoints.map((wp, idx) => (
-        <CircleMarker
-          key={idx}
-          center={[wp.point.lat, wp.point.lng]}
-          radius={4}
-          pathOptions={{ fillColor: '#888', fillOpacity: 0.7, stroke: false }}
-        />
-      ))}
 
       {hoveredPoint && (<>
         <CircleMarker

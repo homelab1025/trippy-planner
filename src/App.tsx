@@ -243,7 +243,7 @@ function App() {
                 <p>Upload a GPX file to see your route</p>
               </div>
             ) : (
-              <MapComponent route={route} weatherPoints={weatherPoints} hoveredPoint={hoveredPoint} />
+              <MapComponent route={route} hoveredPoint={hoveredPoint} />
             )}
           </div>
 
