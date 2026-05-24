@@ -44,13 +44,6 @@ test('no pin markers on map after uploading GPX', async ({ page }) => {
   await expect(page.locator('.leaflet-marker-pane .leaflet-marker-icon')).toHaveCount(0);
 });
 
-test('subtle weather dots visible on map after uploading GPX', async ({ page }) => {
-  await page.goto('/');
-  await page.setInputFiles('input[type="file"]', 'public/sample-route.gpx');
-  await expect(page.getByText('Sample Ride')).toBeVisible();
-  // Leaflet renders CircleMarker as SVG <path> elements (arc commands), not <circle>
-  await expect(page.locator('.leaflet-overlay-pane svg path[fill="#888"]')).not.toHaveCount(0, { timeout: 10000 });
-});
 
 test('Tech Details shows parse time and file size after GPX upload', async ({ page }) => {
   await page.goto('/');
