@@ -10,8 +10,35 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  unit-test:
+    runs-on: self-hosted
+    container: node:24-alpine
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npx vitest run
+
+  e2e-test:
+    runs-on: self-hosted
+    container: mcr.microsoft.com/playwright:v1.60.0-noble
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run E2E tests
+        run: npx playwright test
+
   build:
     runs-on: self-hosted
+    needs: [unit-test, e2e-test]
     permissions:
       contents: read
       packages: write
