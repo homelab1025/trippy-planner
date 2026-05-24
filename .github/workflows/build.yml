@@ -12,29 +12,37 @@ env:
 jobs:
   unit-test:
     runs-on: self-hosted
-    container: node:24-alpine
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Install dependencies
-        run: npm ci
-
       - name: Run unit tests
-        run: npx vitest run
+        run: |
+          docker run --rm \
+            --user $(id -u):$(id -g) \
+            --env HOME=/tmp \
+            -v "${{ github.workspace }}:/app" \
+            -w /app \
+            node:24-alpine \
+            sh -c "npm ci && npx vitest run"
 
   e2e-test:
     runs-on: self-hosted
-    container: mcr.microsoft.com/playwright:v1.60.0-noble
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Install dependencies
-        run: npm ci
-
       - name: Run E2E tests
-        run: npx playwright test
+        run: |
+          docker run --rm \
+            --user $(id -u):$(id -g) \
+            --env HOME=/tmp \
+            --ipc=host \
+            --security-opt seccomp=unconfined \
+            -v "${{ github.workspace }}:/app" \
+            -w /app \
+            mcr.microsoft.com/playwright:v1.60.0-noble \
+            bash -c "npm ci && npx playwright test"
 
   build:
     runs-on: self-hosted
