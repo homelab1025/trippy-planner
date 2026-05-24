@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { Upload, Map as MapIcon, CloudRain, Navigation } from 'lucide-react';
+import { Upload, Map as MapIcon, CloudRain } from 'lucide-react';
+import logo from './assets/logo.png';
 import { parseGPXAsync } from './workers/gpxWorkerClient';
 import type { RouteData, RoutePoint } from './utils/gpxParser';
 import { DP_EPSILON_METERS, DP_MAX_GAP_METERS } from './utils/douglasPeucker';
@@ -139,7 +140,7 @@ function App() {
     <div className="app-container">
       <header className="header">
         <div className="logo">
-          <Navigation className="logo-icon" />
+          <img src={logo} alt="Trippy Planner" className="logo-icon" />
           <h1>Trippy Planner</h1>
         </div>
         
