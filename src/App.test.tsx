@@ -174,6 +174,7 @@ describe('App', () => {
     ));
     expect(fetchWeatherForPoint).not.toHaveBeenCalled();
     expect(screen.queryByText('Test Route')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('weather-timeline')).not.toBeInTheDocument();
   });
 
   it('weather fetch error does not crash — weatherPoints stays empty', async () => {
@@ -182,6 +183,11 @@ describe('App', () => {
     await uploadFile();
 
     await waitFor(() => expect(screen.getByText('Test Route')).toBeInTheDocument());
+    // Fetches were attempted (not silently skipped)
+    expect(fetchWeatherForPoint).toHaveBeenCalled();
+    // No wrong alert about GPX parsing failure
+    expect(window.alert).not.toHaveBeenCalled();
+    // WeatherTimeline renders (route was set despite weather failure)
     expect(screen.getByTestId('weather-timeline')).toBeInTheDocument();
   });
 });
