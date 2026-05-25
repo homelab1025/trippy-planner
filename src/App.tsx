@@ -90,7 +90,7 @@ function App() {
 
   const updateWeather = useCallback(async (currentRoute: RouteData, speed: number, start: Date) => {
     if (!currentRoute) return;
-    
+
     const pointsToQuery = [];
     const interval = currentRoute.totalDistance / 10;
     const seen = new Set();
@@ -108,12 +108,17 @@ function App() {
 
     const weatherResults = await Promise.all(
       pointsToQuery.map(async ({ point, arrivalTime }) => {
-        const weather = await fetchWeatherForPoint(point.lat, point.lng, arrivalTime.getTime() / 1000);
-        return { ...weather, point, arrivalTime };
+        try {
+          const weather = await fetchWeatherForPoint(point.lat, point.lng, arrivalTime.getTime() / 1000);
+          return { ...weather, point, arrivalTime };
+        } catch (error) {
+          console.error('Failed to fetch weather for point:', error);
+          return null;
+        }
       })
     );
 
-    setWeatherPoints(weatherResults);
+    setWeatherPoints(weatherResults.filter((result): result is NonNullable<typeof result> => result !== null));
   }, []);
 
   React.useEffect(() => {

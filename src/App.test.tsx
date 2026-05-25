@@ -163,4 +163,25 @@ describe('App', () => {
     fireEvent.click(screen.getByText('Clock'));
     expect(capturedXAxisMode).toBe('clock');
   });
+
+  it('parse error shows alert, does not set route, does not fetch weather', async () => {
+    vi.mocked(parseGPXAsync).mockRejectedValue(new Error('No tracks found'));
+    render(<App />);
+    await uploadFile();
+
+    await waitFor(() => expect(window.alert).toHaveBeenCalledWith(
+      'Failed to parse GPX file. Please ensure it is a valid track.'
+    ));
+    expect(fetchWeatherForPoint).not.toHaveBeenCalled();
+    expect(screen.queryByText('Test Route')).not.toBeInTheDocument();
+  });
+
+  it('weather fetch error does not crash — weatherPoints stays empty', async () => {
+    vi.mocked(fetchWeatherForPoint).mockRejectedValue(new Error('Network error'));
+    render(<App />);
+    await uploadFile();
+
+    await waitFor(() => expect(screen.getByText('Test Route')).toBeInTheDocument());
+    expect(screen.getByTestId('weather-timeline')).toBeInTheDocument();
+  });
 });
