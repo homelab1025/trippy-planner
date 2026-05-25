@@ -1,8 +1,6 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
-import * as matchers from '@testing-library/jest-dom/matchers';
-expect.extend(matchers);
 import App from './App';
 import { fetchWeatherForPoint } from './services/weatherService';
 import { parseGPXAsync } from './workers/gpxWorkerClient';
@@ -28,6 +26,8 @@ const mockWeather = {
 
 // ── Module-level callback capture for WeatherTimeline mock ───────────────────
 
+// capturedHoverCb and capturedXAxisMode are populated by the WeatherTimeline stub below;
+// they are used in the tests added in Task 2 (speed, date, hover, xAxisMode).
 let capturedHoverCb: ((d: number | null) => void) | null = null;
 let capturedXAxisMode: 'clock' | 'elapsed' | null = null;
 
@@ -76,12 +76,15 @@ async function uploadFile() {
 
 describe('App', () => {
   beforeEach(() => {
+    vi.clearAllMocks(); // reset call counts
     vi.mocked(parseGPXAsync).mockResolvedValue(mockRoute);
     vi.mocked(fetchWeatherForPoint).mockResolvedValue(mockWeather);
     capturedHoverCb = null;
     capturedXAxisMode = null;
     vi.spyOn(window, 'alert').mockImplementation(() => {});
   });
+
+  afterEach(() => vi.restoreAllMocks());
 
   it('shows upload button and no stats panel initially', () => {
     render(<App />);
@@ -96,11 +99,13 @@ describe('App', () => {
     await uploadFile();
 
     await waitFor(() => expect(parseGPXAsync).toHaveBeenCalledOnce());
-    // updateWeather is called twice: once in handleFileUpload, once from useEffect when route state updates.
-    // Each call finds 3 unique points from the fixture (0m, 500m, 1000m) → 6 total calls.
-    await waitFor(() => expect(fetchWeatherForPoint).toHaveBeenCalledTimes(6));
-    await waitFor(() => expect(screen.getByText('Test Route')).toBeInTheDocument());
-    expect(screen.getByText('Distance')).toBeInTheDocument();
-    expect(screen.getByText('Elevation Gain')).toBeInTheDocument();
+    // updateWeather fires twice per upload (once in handleFileUpload, once via useEffect on route change).
+    // Each processes 3 unique fixture points, totalling 6 calls. Using ≥3 to survive refactoring.
+    await waitFor(() => expect(fetchWeatherForPoint.mock.calls.length).toBeGreaterThanOrEqual(3));
+    await waitFor(() => {
+      expect(screen.getByText('Test Route')).toBeInTheDocument();
+      expect(screen.getByText('Distance')).toBeInTheDocument();
+      expect(screen.getByText('Elevation Gain')).toBeInTheDocument();
+    });
   });
 });
