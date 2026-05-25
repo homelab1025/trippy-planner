@@ -91,3 +91,45 @@ test('uploading a 2-point GPX renders map and shows ~0 elevation gain', async ({
   // Map should render without crash
   await expect(page.locator('.leaflet-overlay-pane svg path')).toBeVisible({ timeout: 10000 });
 });
+
+test('uploading a second file replaces the first route', async ({ page }) => {
+  await page.goto('/');
+  await page.setInputFiles('input[type="file"]', 'public/sample-route.gpx');
+  await expect(page.getByText('Sample Ride')).toBeVisible();
+
+  // Upload a second file
+  await page.setInputFiles('input[type="file"]', 'tests/fixtures/second-route.gpx');
+  await expect(page.getByText('Second Route')).toBeVisible();
+  await expect(page.getByText('Sample Ride')).not.toBeVisible();
+});
+
+test('clock/elapsed toggle changes button active state', async ({ page }) => {
+  await page.goto('/');
+
+  // Clock button is active by default (has btn-primary class)
+  const clockBtn = page.getByRole('button', { name: 'Clock' });
+  const elapsedBtn = page.getByRole('button', { name: 'Elapsed' });
+  await expect(clockBtn).toHaveClass(/btn-primary/);
+  await expect(elapsedBtn).not.toHaveClass(/btn-primary/);
+
+  await elapsedBtn.click();
+  await expect(elapsedBtn).toHaveClass(/btn-primary/);
+  await expect(clockBtn).not.toHaveClass(/btn-primary/);
+
+  await clockBtn.click();
+  await expect(clockBtn).toHaveClass(/btn-primary/);
+});
+
+test('changing speed rerenders timeline without crash', async ({ page }) => {
+  await page.goto('/');
+  await page.setInputFiles('input[type="file"]', 'public/sample-route.gpx');
+  await expect(page.getByText('Sample Ride')).toBeVisible();
+  await expect(page.locator('.timeline-container')).toBeVisible();
+
+  const speedInput = page.getByLabel('Average Speed (km/h)');
+  await speedInput.fill('10');
+  await speedInput.dispatchEvent('change');
+
+  // Timeline should still be rendered after speed update
+  await expect(page.locator('.timeline-container')).toBeVisible();
+});
