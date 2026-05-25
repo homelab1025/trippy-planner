@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act, cleanup } from '@testing-library/react';
 import App from './App';
 import { fetchWeatherForPoint } from './services/weatherService';
 import { parseGPXAsync } from './workers/gpxWorkerClient';
@@ -84,7 +84,10 @@ describe('App', () => {
     vi.spyOn(window, 'alert').mockImplementation(() => {});
   });
 
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => {
+    vi.restoreAllMocks();
+    cleanup();
+  });
 
   it('shows upload button and no stats panel initially', () => {
     render(<App />);
@@ -107,5 +110,57 @@ describe('App', () => {
       expect(screen.getByText('Distance')).toBeInTheDocument();
       expect(screen.getByText('Elevation Gain')).toBeInTheDocument();
     });
+  });
+
+  it('changing avg speed re-fetches weather', async () => {
+    render(<App />);
+    await uploadFile();
+    await waitFor(() => expect(fetchWeatherForPoint).toHaveBeenCalled());
+
+    vi.clearAllMocks();
+    vi.mocked(fetchWeatherForPoint).mockResolvedValue(mockWeather);
+
+    const speedInput = screen.getByLabelText('Average Speed (km/h)');
+    fireEvent.change(speedInput, { target: { value: '10' } });
+
+    await waitFor(() => expect(fetchWeatherForPoint).toHaveBeenCalled());
+  });
+
+  it('changing start date re-fetches weather', async () => {
+    render(<App />);
+    await uploadFile();
+    await waitFor(() => expect(fetchWeatherForPoint).toHaveBeenCalled());
+
+    vi.clearAllMocks();
+    vi.mocked(fetchWeatherForPoint).mockResolvedValue(mockWeather);
+
+    const dateInput = screen.getByLabelText('Start Date');
+    fireEvent.change(dateInput, { target: { value: '2026-05-26' } });
+
+    await waitFor(() => expect(fetchWeatherForPoint).toHaveBeenCalled());
+  });
+
+  it('onHoverDistance callback sets hoveredPoint via binary search', async () => {
+    render(<App />);
+    await uploadFile();
+    await waitFor(() => screen.getByTestId('weather-timeline'));
+
+    act(() => { capturedHoverCb!(0.5); }); // 0.5 km = 500 m → points[1]
+
+    const map = screen.getByTestId('map');
+    expect(map.dataset.hovered).toBe('48.005,2.005');
+  });
+
+  it('clicking Elapsed switches xAxisMode prop on WeatherTimeline', async () => {
+    render(<App />);
+    await uploadFile();
+    await waitFor(() => screen.getByTestId('weather-timeline'));
+    expect(capturedXAxisMode).toBe('clock');
+
+    fireEvent.click(screen.getByText('Elapsed'));
+    expect(capturedXAxisMode).toBe('elapsed');
+
+    fireEvent.click(screen.getByText('Clock'));
+    expect(capturedXAxisMode).toBe('clock');
   });
 });
