@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="test">
+  <trk>
+    <name>Second Route</name>
+    <trkseg>
+      <trkpt lat="51.5" lon="-0.1"><ele>20</ele></trkpt>
+      <trkpt lat="51.51" lon="-0.09"><ele>25</ele></trkpt>
+      <trkpt lat="51.52" lon="-0.08"><ele>30</ele></trkpt>
+    </trkseg>
+  </trk>
+</gpx>
