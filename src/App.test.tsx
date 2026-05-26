@@ -51,13 +51,19 @@ vi.mock('./components/MapComponent', () => ({
 }));
 
 vi.mock('./components/WeatherTimeline', () => ({
-  default: ({ onHoverDistance, xAxisMode }: {
+  default: ({ onHoverDistance, xAxisMode, weatherPoints }: {
     onHoverDistance: (d: number | null) => void;
     xAxisMode: 'clock' | 'elapsed';
+    weatherPoints: Array<{ temp: number }>;
   }) => {
     capturedHoverCb = onHoverDistance;
     capturedXAxisMode = xAxisMode;
-    return <div data-testid="weather-timeline" />;
+    return (
+      <div
+        data-testid="weather-timeline"
+        data-first-temp={weatherPoints[0]?.temp ?? ''}
+      />
+    );
   },
 }));
 
@@ -97,47 +103,52 @@ describe('App', () => {
     expect(screen.queryByText('Distance')).not.toBeInTheDocument();
   });
 
-  it('upload parses file, fetches weather, and shows route stats', async () => {
+  it('upload shows route stats, map, and weather timeline', async () => {
     render(<App />);
     await uploadFile();
 
-    await waitFor(() => expect(parseGPXAsync).toHaveBeenCalledOnce());
-    // updateWeather fires twice per upload (once in handleFileUpload, once via useEffect on route change).
-    // Each processes 3 unique fixture points, totalling 6 calls. Using ≥3 to survive refactoring.
-    await waitFor(() => expect(fetchWeatherForPoint.mock.calls.length).toBeGreaterThanOrEqual(3));
     await waitFor(() => {
       expect(screen.getByText('Test Route')).toBeInTheDocument();
       expect(screen.getByText('Distance')).toBeInTheDocument();
       expect(screen.getByText('Elevation Gain')).toBeInTheDocument();
+      expect(screen.getByTestId('map')).toBeInTheDocument();
+      expect(screen.getByTestId('weather-timeline')).toBeInTheDocument();
     });
   });
 
-  it('changing avg speed re-fetches weather', async () => {
+  it('changing avg speed re-fetches weather and updates display', async () => {
     render(<App />);
     await uploadFile();
-    await waitFor(() => expect(fetchWeatherForPoint).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(screen.getByTestId('weather-timeline').dataset.firstTemp).toBe('20')
+    );
 
-    vi.clearAllMocks();
-    vi.mocked(fetchWeatherForPoint).mockResolvedValue(mockWeather);
+    vi.mocked(fetchWeatherForPoint).mockResolvedValue({ ...mockWeather, temp: 30 });
+    fireEvent.change(screen.getByLabelText('Average Speed (km/h)'), { target: { value: '10' } });
 
-    const speedInput = screen.getByLabelText('Average Speed (km/h)');
-    fireEvent.change(speedInput, { target: { value: '10' } });
-
-    await waitFor(() => expect(fetchWeatherForPoint).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(screen.getByTestId('weather-timeline').dataset.firstTemp).toBe('30')
+    );
   });
 
-  it('changing start date re-fetches weather', async () => {
+  it('changing start date re-fetches weather and updates display', async () => {
     render(<App />);
     await uploadFile();
-    await waitFor(() => expect(fetchWeatherForPoint).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(screen.getByTestId('weather-timeline').dataset.firstTemp).toBe('20')
+    );
 
-    vi.clearAllMocks();
-    vi.mocked(fetchWeatherForPoint).mockResolvedValue(mockWeather);
+    // Pick a date 2 days from now — always different from today's default, always in picker range
+    const d = new Date();
+    d.setDate(d.getDate() + 2);
+    const twoDaysAhead = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-    const dateInput = screen.getByLabelText('Start Date');
-    fireEvent.change(dateInput, { target: { value: '2026-05-26' } });
+    vi.mocked(fetchWeatherForPoint).mockResolvedValue({ ...mockWeather, temp: 35 });
+    fireEvent.change(screen.getByLabelText('Start Date'), { target: { value: twoDaysAhead } });
 
-    await waitFor(() => expect(fetchWeatherForPoint).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(screen.getByTestId('weather-timeline').dataset.firstTemp).toBe('35')
+    );
   });
 
   it('onHoverDistance callback sets hoveredPoint via binary search', async () => {
