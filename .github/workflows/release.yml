@@ -96,7 +96,7 @@ jobs:
         run: |
           git add package.json package-lock.json
           git commit -m "chore: release v${{ steps.versions.outputs.release }}"
-          git tag "v${{ steps.versions.outputs.release }}"
+          git tag -a "v${{ steps.versions.outputs.release }}" -m "Release v${{ steps.versions.outputs.release }}"
         shell: bash
 
       - name: Set next SNAPSHOT version in package.json
