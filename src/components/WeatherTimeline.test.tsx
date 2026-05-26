@@ -60,9 +60,10 @@ describe('WeatherTimeline', () => {
         xAxisMode="clock"
       />
     );
-    // Trigger onMouseMove with activeTooltipIndex=0 → data[0].distance = 0 km
-    act(() => { capturedOnMouseMove?.({ activeTooltipIndex: 0 }); });
-    expect(onHoverDistance).toHaveBeenCalledWith(0);
+    // Trigger onMouseMove with activeTooltipIndex=1 → data[1].distance = 500 m = 0.5 km
+    // Using index 1 so the expected value (0.5) is visually distinct from the index itself
+    act(() => { capturedOnMouseMove?.({ activeTooltipIndex: 1 }); });
+    expect(onHoverDistance).toHaveBeenCalledWith(0.5);
   });
 
   it('calls onHoverDistance(null) on mouse leave', () => {
