@@ -1,0 +1,122 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump_type:
+        description: 'Version component to bump for next development cycle'
+        required: true
+        default: minor
+        type: choice
+        options: [major, minor, patch]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  release:
+    runs-on: self-hosted
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Compute versions
+        id: versions
+        run: |
+          CURRENT=$(node -p "require('./package.json').version")
+          if [[ "$CURRENT" != *-SNAPSHOT ]]; then
+            echo "ERROR: Expected a SNAPSHOT version, got: $CURRENT" && exit 1
+          fi
+          RELEASE=${CURRENT%-SNAPSHOT}
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$RELEASE"
+          case "${{ inputs.bump_type }}" in
+            major) NEXT="$((MAJOR+1)).0.0-SNAPSHOT" ;;
+            minor) NEXT="${MAJOR}.$((MINOR+1)).0-SNAPSHOT" ;;
+            patch) NEXT="${MAJOR}.${MINOR}.$((PATCH+1))-SNAPSHOT" ;;
+          esac
+          echo "release=$RELEASE" >> $GITHUB_OUTPUT
+          echo "next=$NEXT" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Set release version in package.json
+        run: npm version ${{ steps.versions.outputs.release }} --no-git-tag-version
+        shell: bash
+
+      - name: Run unit tests
+        run: |
+          docker run --rm \
+            --user $(id -u):$(id -g) \
+            --env HOME=/tmp \
+            -v "${{ github.workspace }}:/app" \
+            -w /app \
+            node:24-alpine \
+            sh -c "npm ci && npx vitest run"
+
+      - name: Run E2E tests
+        run: |
+          docker run --rm \
+            --user $(id -u):$(id -g) \
+            --env HOME=/tmp \
+            --ipc=host \
+            --security-opt seccomp=unconfined \
+            -v "${{ github.workspace }}:/app" \
+            -w /app \
+            mcr.microsoft.com/playwright:v1.60.0-noble \
+            bash -c "npm ci && npx playwright test"
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push release Docker image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.versions.outputs.release }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+
+      - name: Commit release version and tag
+        run: |
+          git add package.json package-lock.json
+          git commit -m "chore: release v${{ steps.versions.outputs.release }}"
+          git tag "v${{ steps.versions.outputs.release }}"
+        shell: bash
+
+      - name: Set next SNAPSHOT version in package.json
+        run: npm version ${{ steps.versions.outputs.next }} --no-git-tag-version --allow-same-version
+        shell: bash
+
+      - name: Commit next development version
+        run: |
+          git add package.json package-lock.json
+          git commit -m "chore: prepare for next development iteration ${{ steps.versions.outputs.next }}"
+        shell: bash
+
+      - name: Push commits and tag
+        run: git push origin HEAD:master --follow-tags
+        shell: bash
+
+      - name: Create GitHub Release
+        run: |
+          gh release create "v${{ steps.versions.outputs.release }}" \
+            --title "v${{ steps.versions.outputs.release }}" \
+            --generate-notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -2,7 +2,6 @@ name: Build
 
 on:
   push:
-    tags: ["*"]
     branches: ["master"]
 
 env:
@@ -57,7 +56,7 @@ jobs:
       - name: Set Release Version
         id: set_version
         run: |
-          VERSION=$(date +'%Y%m%d%H%M%S')-${{ github.sha }}
+          VERSION=$(node -p "require('./package.json').version")
           echo "version=$VERSION" >> $GITHUB_OUTPUT
         shell: bash
 
@@ -74,5 +73,4 @@ jobs:
           context: .
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ steps.set_version.outputs.version }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.set_version.outputs.version }}
