@@ -20,7 +20,7 @@ const mockRoute = {
 };
 
 const mockWeather = {
-  temp: 20, feelsLike: 18, precipProb: 10,
+  temp: 20, feelsLike: 18, precipProb: 10, precipitation: 0,
   windSpeed: 12, windDeg: 270, condition: 'Clear',
 };
 
@@ -54,7 +54,7 @@ vi.mock('./components/WeatherTimeline', () => ({
   default: ({ onHoverDistance, xAxisMode, weatherPoints }: {
     onHoverDistance: (d: number | null) => void;
     xAxisMode: 'clock' | 'elapsed';
-    weatherPoints: Array<{ temp: number }>;
+    weatherPoints: Array<{ temp: number; precipProb: number; precipitation: number }>;
   }) => {
     capturedHoverCb = onHoverDistance;
     capturedXAxisMode = xAxisMode;
@@ -62,6 +62,7 @@ vi.mock('./components/WeatherTimeline', () => ({
       <div
         data-testid="weather-timeline"
         data-first-temp={weatherPoints[0]?.temp ?? ''}
+        data-first-precip-prob={weatherPoints[0]?.precipProb ?? ''}
       />
     );
   },
@@ -128,6 +129,21 @@ describe('App', () => {
 
     await waitFor(() =>
       expect(screen.getByTestId('weather-timeline').dataset.firstTemp).toBe('30')
+    );
+  });
+
+  it('weather precipProb flows from service to WeatherTimeline weatherPoints', async () => {
+    render(<App />);
+    await uploadFile();
+    await waitFor(() =>
+      expect(screen.getByTestId('weather-timeline').dataset.firstPrecipProb).toBe('10')
+    );
+
+    vi.mocked(fetchWeatherForPoint).mockResolvedValue({ ...mockWeather, precipProb: 75 });
+    fireEvent.change(screen.getByLabelText('Average Speed (km/h)'), { target: { value: '10' } });
+
+    await waitFor(() =>
+      expect(screen.getByTestId('weather-timeline').dataset.firstPrecipProb).toBe('75')
     );
   });
 
