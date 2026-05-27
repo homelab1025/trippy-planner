@@ -60,10 +60,12 @@ const WeatherTimeline: React.FC<WeatherTimelineProps> = ({ route, weatherPoints,
       .sort((a, b) => a - b);
     for (let i = 0; i < sampleIdxs.length - 1; i++) {
       const lo = sampleIdxs[i], hi = sampleIdxs[i + 1];
-      const tLo = downsampled[lo].temp!, tHi = downsampled[hi].temp!;
-      const ppLo = downsampled[lo].precipProb!, ppHi = downsampled[hi].precipProb!;
-      const pLo = downsampled[lo].precipitation!, pHi = downsampled[hi].precipitation!;
-      const timeLo = downsampled[lo].time!, timeHi = downsampled[hi].time!;
+      const tLo = downsampled[lo].temp, tHi = downsampled[hi].temp;
+      const ppLo = downsampled[lo].precipProb, ppHi = downsampled[hi].precipProb;
+      const pLo = downsampled[lo].precipitation, pHi = downsampled[hi].precipitation;
+      const timeLo = downsampled[lo].time, timeHi = downsampled[hi].time;
+      if (tLo == null || tHi == null || ppLo == null || ppHi == null ||
+          pLo == null || pHi == null || timeLo == null || timeHi == null) continue;
       for (let j = lo + 1; j < hi; j++) {
         const t = (j - lo) / (hi - lo);
         downsampled[j].temp = tLo + (tHi - tLo) * t;
