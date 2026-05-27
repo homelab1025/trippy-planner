@@ -24,7 +24,7 @@ export const fetchWeatherForPoint = async (
   timestamp: number,
   http: HttpClient = axios as HttpClient,
   label = '',
-): Promise<WeatherData> => {
+): Promise<WeatherData | null> => {
   const date = new Date(timestamp * 1000);
   const hourIso = date.toISOString().slice(0, 14) + '00'; // Round to the hour
   const dateStr = date.toISOString().slice(0, 10); // YYYY-MM-DD (UTC, consistent with hourIso)
@@ -42,10 +42,9 @@ export const fetchWeatherForPoint = async (
 
     const hourly = response.data.hourly;
     const timeIndex = hourly.time.findIndex((t: string) => t === hourIso.slice(0, 16));
-    
+
     if (timeIndex === -1) {
-      // Fallback if exact hour not found
-      return mockFallback(timestamp);
+      return null;
     }
 
     if (_debug) {
@@ -60,7 +59,6 @@ export const fetchWeatherForPoint = async (
       });
     }
 
-    // TODO: this should be a structure that would be used for other weather providers as well
     return {
       temp: hourly.temperature_2m[timeIndex],
       feelsLike: hourly.apparent_temperature[timeIndex],
@@ -72,7 +70,7 @@ export const fetchWeatherForPoint = async (
     };
   } catch (error) {
     console.error('Weather API error:', error);
-    return mockFallback(timestamp);
+    return null;
   }
 };
 
@@ -82,17 +80,4 @@ const getWeatherCondition = (code: number): string => {
   if (code < 70) return 'Rain';
   if (code < 80) return 'Snow';
   return 'Storm';
-};
-
-const mockFallback = (timestamp: number): WeatherData => {
-  const hour = new Date(timestamp * 1000).getHours();
-  return {
-    temp: 20 + Math.sin((hour - 6) * Math.PI / 12) * 5,
-    feelsLike: 18,
-    precipProb: 10,
-    precipitation: 0,
-    windSpeed: 12,
-    windDeg: 270,
-    condition: 'Sunny (Fallback)',
-  };
 };
