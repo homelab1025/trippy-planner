@@ -26,6 +26,8 @@ A route weather planner for cyclists and hikers. Upload a GPX file, set your sta
 - **Debounce weather refetch on input changes.** Changing `avgSpeed` or `startTime` immediately triggers 11 parallel API calls per keystroke. Add a ~500ms debounce to the `useEffect` in `App.tsx`.
 
 - **Cancel in-flight weather requests when inputs change.** Stale responses can race and overwrite newer results. Pass an `AbortSignal` through `weatherService.ts` and abort the previous batch whenever a new fetch starts.
+- **Show the climbs in the weather timeline**
+- Provide support for multiple weather forecast providers and let the user choose.
 
 ## Done
 
