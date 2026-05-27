@@ -9,7 +9,6 @@ export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
     __BUILD_DATE__: JSON.stringify(new Date().toISOString()),
-    __GIT_SHA__: JSON.stringify(process.env.VITE_GIT_SHA ?? 'local'),
   },
   test: {
     environment: 'node',

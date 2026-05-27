@@ -3,8 +3,6 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
-ARG GIT_SHA=unknown
-ENV VITE_GIT_SHA=$GIT_SHA
 RUN npm run build
 
 FROM nginx:stable-alpine

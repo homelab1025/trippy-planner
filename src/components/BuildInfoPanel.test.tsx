@@ -23,10 +23,4 @@ describe('BuildInfoPanel', () => {
     expect(metas[0]?.textContent).toMatch(/\d+ \w+ \d{4} \d{2}:\d{2}/)
   })
 
-  it('renders the git SHA in a monospace span', () => {
-    const { container } = render(<BuildInfoPanel />)
-    const sha = container.querySelector('.build-info-sha')
-    expect(sha).toBeTruthy()
-    expect(sha?.textContent?.length).toBeGreaterThan(0)
-  })
 })
