@@ -80,9 +80,6 @@ function App() {
       const measure = performance.measure('gpx-parse', 'gpx-parse-start', 'gpx-parse-end');
       setParseMetrics({ totalMs: measure.duration, fileSizeKb });
       setRoute(parsedRoute);
-
-      // Initially calculate weather for key points (e.g., every 10km)
-      await updateWeather(parsedRoute, avgSpeed, startTime);
     } catch (error) {
       console.error('Failed to parse GPX:', error);
       const message = error instanceof Error ? error.message : 'Failed to parse GPX file. Please ensure it is a valid track.';
