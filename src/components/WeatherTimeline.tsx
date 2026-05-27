@@ -19,7 +19,7 @@ function formatElapsed(ms: number): string {
   return h > 0 ? `${h}h ${String(m).padStart(2, '0')}m` : `${m}m`;
 }
 
-const WeatherTimeline: React.FC<WeatherTimelineProps> = ({ route, weatherPoints, onHoverDistance, xAxisMode }) => {
+const WeatherTimeline: React.FC<WeatherTimelineProps> = ({ route, weatherPoints, onHoverDistance, xAxisMode, weatherAvailable }) => {
   const [chartWidth, setChartWidth] = useState(800);
 
   const data = useMemo(() => {
@@ -80,7 +80,7 @@ const WeatherTimeline: React.FC<WeatherTimelineProps> = ({ route, weatherPoints,
   }, [route, weatherPoints, chartWidth]);
 
   return (
-    <div style={{ width: '100%', height: '100%' }}>
+    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
       <ResponsiveContainer width="100%" height="100%" onResize={(w) => setChartWidth(w)}>
         <ComposedChart
           data={data}
@@ -201,6 +201,20 @@ const WeatherTimeline: React.FC<WeatherTimelineProps> = ({ route, weatherPoints,
           />
         </ComposedChart>
       </ResponsiveContainer>
+      {weatherAvailable === false && (
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          pointerEvents: 'none',
+        }}>
+          <span style={{ color: '#888', fontSize: '0.875rem', fontWeight: 500 }}>
+            Weather data unavailable for the selected date
+          </span>
+        </div>
+      )}
     </div>
   );
 };
