@@ -38,6 +38,7 @@ function App() {
   const [parseMetrics, setParseMetrics] = useState<{ totalMs: number; fileSizeKb: number } | null>(null);
   const [weatherDebug, setWeatherDebugState] = useState(false);
   const [techDetailsOpen, setTechDetailsOpen] = useState(false);
+  const [weatherAvailable, setWeatherAvailable] = useState<boolean | null>(null);
 
   const todayStr = getLocalDateString(new Date());
   const maxDate = new Date();
@@ -92,6 +93,8 @@ function App() {
   const updateWeather = useCallback(async (currentRoute: RouteData, speed: number, start: Date) => {
     if (!currentRoute) return;
 
+    setWeatherAvailable(null);
+
     const pointsToQuery = [];
     const interval = currentRoute.totalDistance / 10;
     const seen = new Set();
@@ -112,6 +115,7 @@ function App() {
         const label = String(i + 1);
         try {
           const weather = await fetchWeatherForPoint(point.lat, point.lng, arrivalTime.getTime() / 1000, undefined, label);
+          if (weather === null) return null;
           return { ...weather, point, arrivalTime, label };
         } catch (error) {
           console.error('Failed to fetch weather for point:', error);
@@ -120,7 +124,9 @@ function App() {
       })
     );
 
-    setWeatherPoints(weatherResults.filter((result): result is NonNullable<typeof result> => result !== null));
+    const filtered = weatherResults.filter((result): result is NonNullable<typeof result> => result !== null);
+    setWeatherPoints(filtered);
+    setWeatherAvailable(filtered.length > 0);
   }, []);
 
   React.useEffect(() => {
@@ -284,6 +290,7 @@ function App() {
                 weatherPoints={weatherPoints}
                 onHoverDistance={onHoverDistance}
                 xAxisMode={xAxisMode}
+                weatherAvailable={weatherAvailable}
               />
             )}
           </div>
