@@ -64,6 +64,7 @@ vi.mock('./components/WeatherTimeline', () => ({
         data-testid="weather-timeline"
         data-first-temp={weatherPoints[0]?.temp ?? ''}
         data-first-precip-prob={weatherPoints[0]?.precipProb ?? ''}
+        data-first-precipitation={weatherPoints[0]?.precipitation ?? ''}
       />
     );
   },
@@ -145,6 +146,21 @@ describe('App', () => {
 
     await waitFor(() =>
       expect(screen.getByTestId('weather-timeline').dataset.firstPrecipProb).toBe('75')
+    );
+  });
+
+  it('weather precipitation flows from service to WeatherTimeline weatherPoints', async () => {
+    render(<App />);
+    await uploadFile();
+    await waitFor(() =>
+      expect(screen.getByTestId('weather-timeline').dataset.firstPrecipitation).toBe('0')
+    );
+
+    vi.mocked(fetchWeatherForPoint).mockResolvedValue({ ...mockWeather, precipitation: 3.5 });
+    fireEvent.change(screen.getByLabelText('Average Speed (km/h)'), { target: { value: '10' } });
+
+    await waitFor(() =>
+      expect(screen.getByTestId('weather-timeline').dataset.firstPrecipitation).toBe('3.5')
     );
   });
 
