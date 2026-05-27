@@ -26,6 +26,8 @@ const WeatherTimeline: React.FC<WeatherTimelineProps> = ({ route, weatherPoints,
       distance: pt.distance / 1000,
       elevation: Math.round(pt.ele),
       temp: undefined as number | undefined,
+      precipProb: undefined as number | undefined,
+      precipitation: undefined as number | undefined,
       time: undefined as number | undefined,
       isSample: false,
       weatherIdx: undefined as number | undefined,
@@ -35,6 +37,8 @@ const WeatherTimeline: React.FC<WeatherTimelineProps> = ({ route, weatherPoints,
       const rIdx = route.points.indexOf(wp.point);
       if (rIdx >= 0) {
         d[rIdx].temp = wp.temp;
+        d[rIdx].precipProb = wp.precipProb;
+        d[rIdx].precipitation = wp.precipitation;
         d[rIdx].time = wp.arrivalTime.getTime();
         d[rIdx].isSample = true;
         d[rIdx].weatherIdx = wIdx;
@@ -57,10 +61,14 @@ const WeatherTimeline: React.FC<WeatherTimelineProps> = ({ route, weatherPoints,
     for (let i = 0; i < sampleIdxs.length - 1; i++) {
       const lo = sampleIdxs[i], hi = sampleIdxs[i + 1];
       const tLo = downsampled[lo].temp!, tHi = downsampled[hi].temp!;
+      const ppLo = downsampled[lo].precipProb!, ppHi = downsampled[hi].precipProb!;
+      const pLo = downsampled[lo].precipitation!, pHi = downsampled[hi].precipitation!;
       const timeLo = downsampled[lo].time!, timeHi = downsampled[hi].time!;
       for (let j = lo + 1; j < hi; j++) {
         const t = (j - lo) / (hi - lo);
         downsampled[j].temp = tLo + (tHi - tLo) * t;
+        downsampled[j].precipProb = ppLo + (ppHi - ppLo) * t;
+        downsampled[j].precipitation = pLo + (pHi - pLo) * t;
         downsampled[j].time = timeLo + (timeHi - timeLo) * t;
       }
     }
