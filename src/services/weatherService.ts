@@ -50,6 +50,7 @@ export const fetchWeatherForPoint = async (
     if (_debug) {
       console.log('[weather]', {
         lat, lon,
+        date: dateStr,
         hour: hourIso.slice(0, 16),
         timeIndex,
         temp: hourly.temperature_2m[timeIndex],
