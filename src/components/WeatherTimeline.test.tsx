@@ -61,6 +61,8 @@ describe('WeatherTimeline', () => {
         weatherPoints={[mockWeatherPoint]}
         onHoverDistance={onHoverDistance}
         xAxisMode="clock"
+        avgSpeed={20}
+        startTime={new Date('2026-05-24T08:00:00')}
       />
     );
     // Trigger onMouseMove with activeTooltipIndex=1 → data[1].distance = 500 m = 0.5 km
@@ -77,6 +79,8 @@ describe('WeatherTimeline', () => {
         weatherPoints={[mockWeatherPoint]}
         onHoverDistance={onHoverDistance}
         xAxisMode="clock"
+        avgSpeed={20}
+        startTime={new Date('2026-05-24T08:00:00')}
       />
     );
     act(() => { capturedOnMouseLeave?.(); });
@@ -91,6 +95,8 @@ describe('WeatherTimeline', () => {
           weatherPoints={[]}
           onHoverDistance={vi.fn()}
           xAxisMode="clock"
+          avgSpeed={20}
+          startTime={new Date('2026-05-24T08:00:00')}
         />
       )
     ).not.toThrow();
@@ -103,6 +109,8 @@ describe('WeatherTimeline', () => {
         weatherPoints={[]}
         onHoverDistance={vi.fn()}
         xAxisMode="clock"
+        avgSpeed={20}
+        startTime={new Date('2026-05-24T08:00:00')}
         weatherAvailable={false}
       />
     );
@@ -116,6 +124,8 @@ describe('WeatherTimeline', () => {
         weatherPoints={[mockWeatherPoint]}
         onHoverDistance={vi.fn()}
         xAxisMode="clock"
+        avgSpeed={20}
+        startTime={new Date('2026-05-24T08:00:00')}
         weatherAvailable={true}
       />
     );
