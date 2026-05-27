@@ -15,6 +15,9 @@ export interface HttpClient {
   get(url: string, config?: { params?: any }): Promise<{ data: any }>;
 }
 
+let _debug = false;
+export const setWeatherDebug = (enabled: boolean) => { _debug = enabled; };
+
 export const fetchWeatherForPoint = async (
   lat: number,
   lon: number,
@@ -42,6 +45,16 @@ export const fetchWeatherForPoint = async (
     if (timeIndex === -1) {
       // Fallback if exact hour not found
       return mockFallback(timestamp);
+    }
+
+    if (_debug) {
+      console.log('[weather]', {
+        lat, lon,
+        hour: hourIso.slice(0, 16),
+        timeIndex,
+        temp: hourly.temperature_2m[timeIndex],
+        precipProb: hourly.precipitation_probability[timeIndex],
+      });
     }
 
     // TODO: this should be a structure that would be used for other weather providers as well

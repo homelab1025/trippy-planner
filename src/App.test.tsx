@@ -39,6 +39,7 @@ vi.mock('./workers/gpxWorkerClient', () => ({
 
 vi.mock('./services/weatherService', () => ({
   fetchWeatherForPoint: vi.fn(),
+  setWeatherDebug: vi.fn(),
 }));
 
 vi.mock('./components/MapComponent', () => ({

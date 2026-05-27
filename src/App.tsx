@@ -4,7 +4,7 @@ import logo from './assets/logo.png';
 import { parseGPXAsync } from './workers/gpxWorkerClient';
 import type { RouteData, RoutePoint } from './utils/gpxParser';
 import { DP_EPSILON_METERS, DP_MAX_GAP_METERS } from './utils/douglasPeucker';
-import { fetchWeatherForPoint } from './services/weatherService';
+import { fetchWeatherForPoint, setWeatherDebug } from './services/weatherService';
 import type { WeatherData } from './services/weatherService';
 import MapComponent from './components/MapComponent';
 import WeatherTimeline from './components/WeatherTimeline';
@@ -36,6 +36,7 @@ function App() {
   const [dpEpsilon, setDpEpsilon] = useState(DP_EPSILON_METERS);
   const [dpMaxGap, setDpMaxGap] = useState(DP_MAX_GAP_METERS);
   const [parseMetrics, setParseMetrics] = useState<{ totalMs: number; fileSizeKb: number } | null>(null);
+  const [weatherDebug, setWeatherDebugState] = useState(false);
 
   const todayStr = getLocalDateString(new Date());
   const maxDate = new Date();
@@ -128,6 +129,10 @@ function App() {
       updateWeather(route, avgSpeed, startTime);
     }
   }, [route, avgSpeed, startTime, updateWeather]);
+
+  React.useEffect(() => {
+    setWeatherDebug(weatherDebug);
+  }, [weatherDebug]);
 
   // Stable reference prevents WeatherTimeline (React.memo'd) from re-rendering on every hover
   const onHoverDistance = useCallback((distanceKm: number | null) => {
@@ -331,6 +336,15 @@ function App() {
                 <span className="stat-label">File</span>
                 <span className="stat-value">{parseMetrics ? `${parseMetrics.fileSizeKb.toFixed(1)} KB` : '—'}</span>
               </div>
+            </div>
+            <div className="input-group" style={{ marginTop: '16px', flexDirection: 'row', alignItems: 'center', gap: '8px' }}>
+              <input
+                id="weather-debug"
+                type="checkbox"
+                checked={weatherDebug}
+                onChange={(e) => setWeatherDebugState(e.target.checked)}
+              />
+              <label htmlFor="weather-debug" style={{ marginBottom: 0, cursor: 'pointer' }}>Weather debug</label>
             </div>
           </div>
           <BuildInfoPanel />
