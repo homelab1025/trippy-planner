@@ -52,10 +52,11 @@ vi.mock('./components/MapComponent', () => ({
 }));
 
 vi.mock('./components/WeatherTimeline', () => ({
-  default: ({ onHoverDistance, xAxisMode, weatherPoints }: {
+  default: ({ onHoverDistance, xAxisMode, weatherPoints, weatherAvailable }: {
     onHoverDistance: (d: number | null) => void;
     xAxisMode: 'clock' | 'elapsed';
     weatherPoints: Array<{ temp: number; precipProb: number; precipitation: number }>;
+    weatherAvailable: boolean | null;
   }) => {
     capturedHoverCb = onHoverDistance;
     capturedXAxisMode = xAxisMode;
@@ -65,6 +66,7 @@ vi.mock('./components/WeatherTimeline', () => ({
         data-first-temp={weatherPoints[0]?.temp ?? ''}
         data-first-precip-prob={weatherPoints[0]?.precipProb ?? ''}
         data-first-precipitation={weatherPoints[0]?.precipitation ?? ''}
+        data-weather-available={String(weatherAvailable)}
       />
     );
   },
@@ -231,5 +233,22 @@ describe('App', () => {
     expect(window.alert).not.toHaveBeenCalled();
     // WeatherTimeline renders (route was set despite weather failure)
     expect(screen.getByTestId('weather-timeline')).toBeInTheDocument();
+  });
+
+  it('passes weatherAvailable=true to WeatherTimeline when weather fetch succeeds', async () => {
+    render(<App />);
+    await uploadFile();
+    await waitFor(() =>
+      expect(screen.getByTestId('weather-timeline').dataset.weatherAvailable).toBe('true')
+    );
+  });
+
+  it('passes weatherAvailable=false to WeatherTimeline when weather fetch returns null', async () => {
+    vi.mocked(fetchWeatherForPoint).mockResolvedValue(null);
+    render(<App />);
+    await uploadFile();
+    await waitFor(() =>
+      expect(screen.getByTestId('weather-timeline').dataset.weatherAvailable).toBe('false')
+    );
   });
 });
