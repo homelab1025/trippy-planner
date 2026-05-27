@@ -51,9 +51,7 @@ describe('WeatherTimeline', () => {
     capturedOnMouseLeave = undefined;
   });
 
-  afterEach(() => {
-    cleanup();
-  });
+  afterEach(() => { cleanup(); });
 
   it('calls onHoverDistance with data point distance on mouse move', () => {
     const onHoverDistance = vi.fn();
