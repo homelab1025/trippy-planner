@@ -128,6 +128,11 @@ const WeatherTimeline: React.FC<WeatherTimelineProps> = ({ route, weatherPoints,
             stroke="#888"
             tickFormatter={(v) => `${Math.round(v)}°C`}
           />
+          <YAxis
+            yAxisId="precip"
+            domain={[0, 100]}
+            hide={true}
+          />
           <Tooltip
             contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}
             labelFormatter={(label, payload) => {
@@ -137,7 +142,12 @@ const WeatherTimeline: React.FC<WeatherTimelineProps> = ({ route, weatherPoints,
                 : formatElapsed(Number(label) - (data[0]?.time ?? Number(label)));
               return `${timeStr} · ${km} km`;
             }}
-            formatter={(value, name) => name === 'Temp' ? [`${Math.round(Number(value))}°C`, name] : [value, name]}
+            formatter={(value, name) => {
+              if (name === 'Temp') return [`${Math.round(Number(value))}°C`, name];
+              if (name === 'Precip Prob') return [`${Math.round(Number(value))}%`, name];
+              if (name === 'Precip') return [`${Number(value).toFixed(1)} mm`, name];
+              return [value, name];
+            }}
           />
           <Area
             yAxisId="elevation"
@@ -161,6 +171,29 @@ const WeatherTimeline: React.FC<WeatherTimelineProps> = ({ route, weatherPoints,
               return <circle key={props.index} cx={props.cx} cy={props.cy} r={4} fill="#ff7300" stroke="white" strokeWidth={1.5} />;
             }}
             name="Temp"
+            isAnimationActive={false}
+          />
+          <Line
+            yAxisId="precip"
+            type="monotone"
+            dataKey="precipProb"
+            stroke="#4A90D9"
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            dot={(props: any) => {
+              if (!props.payload.isSample) return <g key={props.index} />;
+              return <circle key={props.index} cx={props.cx} cy={props.cy} r={4} fill="#4A90D9" stroke="white" strokeWidth={1.5} />;
+            }}
+            name="Precip Prob"
+            isAnimationActive={false}
+          />
+          <Line
+            yAxisId="precip"
+            type="monotone"
+            dataKey="precipitation"
+            stroke="none"
+            dot={false}
+            legendType="none"
+            name="Precip"
             isAnimationActive={false}
           />
         </ComposedChart>
