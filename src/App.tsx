@@ -110,10 +110,14 @@ function App() {
       pointsToQuery.push({ point, arrivalTime });
     }
 
-    const LABELS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const ALPHA = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const getLabel = (i: number) => {
+      const cycle = Math.floor(i / 26);
+      return ALPHA[i % 26] + (cycle > 0 ? String(cycle) : '');
+    };
     const weatherResults = await Promise.all(
       pointsToQuery.map(async ({ point, arrivalTime }, i) => {
-        const label = LABELS[i] ?? String(i + 1);
+        const label = getLabel(i);
         try {
           const weather = await fetchWeatherForPoint(point.lat, point.lng, arrivalTime.getTime() / 1000, undefined, label);
           return { ...weather, point, arrivalTime, label };
