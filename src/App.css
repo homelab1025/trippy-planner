@@ -45,6 +45,38 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+  min-height: 0;
+}
+
+.sidebar-scrollable {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.build-info-panel {
+  flex-shrink: 0;
+  padding: 14px 16px;
+}
+
+.build-info-version {
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-family: var(--font-heading);
+}
+
+.build-info-meta {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.build-info-sha {
+  font-family: monospace;
+  word-break: break-all;
 }
 
 .control-card, .stats-card {
