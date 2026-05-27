@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { MapContainer, TileLayer, Polyline, CircleMarker, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Polyline, CircleMarker, Tooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { RouteData } from '../utils/gpxParser';
@@ -16,9 +16,10 @@ function FitBounds({ route }: { route: RouteData }) {
 interface MapComponentProps {
   route: RouteData;
   hoveredPoint: { lat: number; lng: number } | null;
+  debugPins?: Array<{ lat: number; lng: number; label: string }>;
 }
 
-const MapComponent: React.FC<MapComponentProps> = ({ route, hoveredPoint }) => {
+const MapComponent: React.FC<MapComponentProps> = ({ route, hoveredPoint, debugPins }) => {
   // Stable reference prevents react-leaflet from calling setLatLngs on every hover re-render
   const positions = useMemo(
     () => route.points.map(p => [p.lat, p.lng] as [number, number]),
@@ -51,6 +52,17 @@ const MapComponent: React.FC<MapComponentProps> = ({ route, hoveredPoint }) => {
           pathOptions={{ fillColor: '#FF6B00', fillOpacity: 1, stroke: true, color: 'white', weight: 2.5 }}
         />
       </>)}
+
+      {debugPins?.map(pin => (
+        <CircleMarker
+          key={pin.label}
+          center={[pin.lat, pin.lng]}
+          radius={10}
+          pathOptions={{ fillColor: '#e53e3e', fillOpacity: 1, stroke: true, color: 'white', weight: 2 }}
+        >
+          <Tooltip permanent direction="top">{pin.label}</Tooltip>
+        </CircleMarker>
+      ))}
     </MapContainer>
   );
 };

@@ -22,7 +22,8 @@ export const fetchWeatherForPoint = async (
   lat: number,
   lon: number,
   timestamp: number,
-  http: HttpClient = axios as HttpClient
+  http: HttpClient = axios as HttpClient,
+  label = '',
 ): Promise<WeatherData> => {
   const date = new Date(timestamp * 1000);
   const hourIso = date.toISOString().slice(0, 14) + '00'; // Round to the hour
@@ -49,6 +50,7 @@ export const fetchWeatherForPoint = async (
 
     if (_debug) {
       console.log('[weather]', {
+        label,
         lat, lon,
         date: dateStr,
         hour: hourIso.slice(0, 16),
