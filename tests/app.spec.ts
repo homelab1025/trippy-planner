@@ -134,6 +134,17 @@ test('version panel remains visible after GPX upload', async ({ page }) => {
   await expect(page.locator('.build-info-panel')).toBeVisible()
 })
 
+test('uploading a route-only GPX shows a route-specific error message', async ({ page }) => {
+  await page.goto('/');
+  const dialogPromise = page.waitForEvent('dialog');
+  await page.setInputFiles('input[type="file"]', 'samples/fells_loop.gpx');
+  const dialog = await dialogPromise;
+  expect(dialog.message()).toContain('This GPX file contains a route, not a recorded track.');
+  await dialog.dismiss();
+  // App stays in empty state
+  await expect(page.getByText('Upload a GPX file to see your route')).toBeVisible();
+});
+
 test('changing speed rerenders timeline without crash', async ({ page }) => {
   await page.goto('/');
   await page.setInputFiles('input[type="file"]', 'public/sample-route.gpx');

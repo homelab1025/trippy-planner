@@ -35,6 +35,14 @@ export const parseGPX = (xmlText: string, epsilon: number, maxGapMeters: number)
   const tracks = gpx?.['trk'] as unknown[] | undefined;
 
   if (!tracks || tracks.length === 0) {
+    if (gpx?.['rte']) {
+      throw new Error(
+        'This GPX file contains a route, not a recorded track. ' +
+        'Routes only store waypoints — the actual path geometry between them is absent, ' +
+        'so distance, elevation, and weather calculations would be wrong. ' +
+        'Please re-export as a track from your GPS device or app.'
+      );
+    }
     throw new Error('No tracks found in GPX file');
   }
 

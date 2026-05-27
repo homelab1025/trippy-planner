@@ -83,7 +83,8 @@ function App() {
       await updateWeather(parsedRoute, avgSpeed, startTime);
     } catch (error) {
       console.error('Failed to parse GPX:', error);
-      alert('Failed to parse GPX file. Please ensure it is a valid track.');
+      const message = error instanceof Error ? error.message : 'Failed to parse GPX file. Please ensure it is a valid track.';
+      alert(message);
     } finally {
       setLoading(false);
     }

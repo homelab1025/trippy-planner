@@ -72,6 +72,18 @@ describe('parseGPX', () => {
       .toThrow('No tracks found in GPX file');
   });
 
+  it('throws a route-specific error explaining why route-only GPX files are unsupported', () => {
+    const routeOnly = `<?xml version="1.0"?>
+<gpx version="1.1">
+  <rte>
+    <rtept lat="48.8566" lon="2.3522"><ele>35</ele></rtept>
+    <rtept lat="48.8600" lon="2.3600"><ele>40</ele></rtept>
+  </rte>
+</gpx>`;
+    expect(() => parseGPX(routeOnly, DP_EPSILON_METERS, Infinity))
+      .toThrow('This GPX file contains a route, not a recorded track.');
+  });
+
   it('computes haversine distance to within 1 m for a two-point route', () => {
     const twoPoint = gpx('D', [pt(1, 1), pt(2, 2)].join('\n'));
     expect(parseGPX(twoPoint, DP_EPSILON_METERS, Infinity).totalDistance).toBeCloseTo(157_225.43, 0);

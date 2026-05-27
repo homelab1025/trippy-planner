@@ -180,9 +180,7 @@ describe('App', () => {
     render(<App />);
     await uploadFile();
 
-    await waitFor(() => expect(window.alert).toHaveBeenCalledWith(
-      'Failed to parse GPX file. Please ensure it is a valid track.'
-    ));
+    await waitFor(() => expect(window.alert).toHaveBeenCalledWith('No tracks found'));
     expect(fetchWeatherForPoint).not.toHaveBeenCalled();
     expect(screen.queryByText('Test Route')).not.toBeInTheDocument();
     expect(screen.queryByTestId('weather-timeline')).not.toBeInTheDocument();
