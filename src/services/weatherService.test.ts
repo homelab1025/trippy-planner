@@ -46,23 +46,24 @@ const throwingStub: HttpClient = {
 describe('fetchWeatherForPoint', () => {
   it('maps a valid API response to all WeatherData fields', async () => {
     const result = await fetchWeatherForPoint(48.8, 2.3, TS, makeStub(0));
-    expect(result.temp).toBe(22);
-    expect(result.feelsLike).toBe(20);
-    expect(result.precipProb).toBe(15);
-    expect(result.precipitation).toBe(2.5);
-    expect(result.windSpeed).toBe(12);
-    expect(result.windDeg).toBe(270);
-    expect(result.condition).toBe('Clear');
+    expect(result).not.toBeNull();
+    expect(result!.temp).toBe(22);
+    expect(result!.feelsLike).toBe(20);
+    expect(result!.precipProb).toBe(15);
+    expect(result!.precipitation).toBe(2.5);
+    expect(result!.windSpeed).toBe(12);
+    expect(result!.windDeg).toBe(270);
+    expect(result!.condition).toBe('Clear');
   });
 
-  it('returns fallback when the target hour is absent from the response', async () => {
+  it('returns null when the target hour is absent from the response', async () => {
     const result = await fetchWeatherForPoint(48.8, 2.3, TS, missingHourStub);
-    expect(result.condition).toContain('Fallback');
+    expect(result).toBeNull();
   });
 
-  it('returns fallback when the HTTP call throws', async () => {
+  it('returns null when the HTTP call throws', async () => {
     const result = await fetchWeatherForPoint(48.8, 2.3, TS, throwingStub);
-    expect(result.condition).toContain('Fallback');
+    expect(result).toBeNull();
   });
 
   it.each([
@@ -73,6 +74,6 @@ describe('fetchWeatherForPoint', () => {
     [95, 'Storm'],
   ])('weather code %i → condition "%s"', async (code, expected) => {
     const result = await fetchWeatherForPoint(48.8, 2.3, TS, makeStub(code));
-    expect(result.condition).toBe(expected);
+    expect(result!.condition).toBe(expected);
   });
 });
