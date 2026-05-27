@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Upload, Map as MapIcon, CloudRain } from 'lucide-react';
+import { Upload, Map as MapIcon, CloudRain, ChevronDown, ChevronRight } from 'lucide-react';
 import logo from './assets/logo.png';
 import { parseGPXAsync } from './workers/gpxWorkerClient';
 import type { RouteData, RoutePoint } from './utils/gpxParser';
@@ -37,6 +37,7 @@ function App() {
   const [dpMaxGap, setDpMaxGap] = useState(DP_MAX_GAP_METERS);
   const [parseMetrics, setParseMetrics] = useState<{ totalMs: number; fileSizeKb: number } | null>(null);
   const [weatherDebug, setWeatherDebugState] = useState(false);
+  const [techDetailsOpen, setTechDetailsOpen] = useState(false);
 
   const todayStr = getLocalDateString(new Date());
   const maxDate = new Date();
@@ -294,7 +295,14 @@ function App() {
 
         <div className="sidebar-bottom">
           <div className="glass-panel stats-card tech-details-card">
-            <h3>Tech Details</h3>
+            <h3
+              onClick={() => setTechDetailsOpen(o => !o)}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', marginBottom: techDetailsOpen ? '20px' : 0 }}
+            >
+              Tech Details
+              {techDetailsOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+            </h3>
+            {techDetailsOpen && (<>
             <div className="input-group">
               <label htmlFor="dp-epsilon">DP Epsilon (m)</label>
               <input
@@ -352,6 +360,7 @@ function App() {
               />
               <label htmlFor="weather-debug" style={{ marginBottom: 0, cursor: 'pointer' }}>Weather debug</label>
             </div>
+            </>)}
           </div>
           <BuildInfoPanel />
         </div>
