@@ -23,8 +23,7 @@ export const fetchWeatherForPoint = async (
 ): Promise<WeatherData> => {
   const date = new Date(timestamp * 1000);
   const hourIso = date.toISOString().slice(0, 14) + '00'; // Round to the hour
-
-  const forecastDays = Math.max(2, Math.ceil((timestamp - Date.now() / 1000) / 86400) + 1);
+  const dateStr = date.toISOString().slice(0, 10); // YYYY-MM-DD (UTC, consistent with hourIso)
 
   try {
     const response = await http.get(`https://api.open-meteo.com/v1/forecast`, {
@@ -32,7 +31,8 @@ export const fetchWeatherForPoint = async (
         latitude: lat,
         longitude: lon,
         hourly: 'temperature_2m,apparent_temperature,precipitation_probability,precipitation,wind_speed_10m,wind_direction_10m,weather_code',
-        forecast_days: forecastDays,
+        start_date: dateStr,
+        end_date: dateStr,
       }
     });
 
