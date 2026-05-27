@@ -93,4 +93,30 @@ describe('WeatherTimeline', () => {
       )
     ).not.toThrow();
   });
+
+  it('shows unavailability message when weatherAvailable is false', () => {
+    const { getByText } = render(
+      <WeatherTimeline
+        route={mockRoute}
+        weatherPoints={[]}
+        onHoverDistance={vi.fn()}
+        xAxisMode="clock"
+        weatherAvailable={false}
+      />
+    );
+    expect(getByText('Weather data unavailable for the selected date')).toBeInTheDocument();
+  });
+
+  it('does not show unavailability message when weatherAvailable is true', () => {
+    const { queryByText } = render(
+      <WeatherTimeline
+        route={mockRoute}
+        weatherPoints={[mockWeatherPoint]}
+        onHoverDistance={vi.fn()}
+        xAxisMode="clock"
+        weatherAvailable={true}
+      />
+    );
+    expect(queryByText('Weather data unavailable for the selected date')).not.toBeInTheDocument();
+  });
 });
