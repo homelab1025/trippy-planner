@@ -9,6 +9,7 @@ interface WeatherTimelineProps {
   weatherPoints: any[];
   onHoverDistance: (distanceKm: number | null) => void;
   xAxisMode: 'clock' | 'elapsed';
+  weatherAvailable?: boolean | null;
 }
 
 function formatElapsed(ms: number): string {
