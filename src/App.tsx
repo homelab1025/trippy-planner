@@ -291,6 +291,8 @@ function App() {
                 onHoverDistance={onHoverDistance}
                 xAxisMode={xAxisMode}
                 weatherAvailable={weatherAvailable}
+                avgSpeed={avgSpeed}
+                startTime={startTime}
               />
             )}
           </div>

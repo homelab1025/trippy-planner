@@ -10,6 +10,8 @@ interface WeatherTimelineProps {
   onHoverDistance: (distanceKm: number | null) => void;
   xAxisMode: 'clock' | 'elapsed';
   weatherAvailable?: boolean | null;
+  avgSpeed: number;
+  startTime: Date;
 }
 
 function formatElapsed(ms: number): string {
@@ -19,7 +21,7 @@ function formatElapsed(ms: number): string {
   return h > 0 ? `${h}h ${String(m).padStart(2, '0')}m` : `${m}m`;
 }
 
-const WeatherTimeline: React.FC<WeatherTimelineProps> = ({ route, weatherPoints, onHoverDistance, xAxisMode, weatherAvailable }) => {
+const WeatherTimeline: React.FC<WeatherTimelineProps> = ({ route, weatherPoints, onHoverDistance, xAxisMode, weatherAvailable, avgSpeed, startTime }) => {
   const [chartWidth, setChartWidth] = useState(800);
 
   const data = useMemo(() => {
@@ -29,7 +31,7 @@ const WeatherTimeline: React.FC<WeatherTimelineProps> = ({ route, weatherPoints,
       temp: undefined as number | undefined,
       precipProb: undefined as number | undefined,
       precipitation: undefined as number | undefined,
-      time: undefined as number | undefined,
+      time: startTime.getTime() + (pt.distance / (avgSpeed * 1000)) * 3_600_000,
       isSample: false,
       weatherIdx: undefined as number | undefined,
     }));
@@ -77,7 +79,7 @@ const WeatherTimeline: React.FC<WeatherTimelineProps> = ({ route, weatherPoints,
     }
 
     return downsampled;
-  }, [route, weatherPoints, chartWidth]);
+  }, [route, weatherPoints, chartWidth, avgSpeed, startTime]);
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
