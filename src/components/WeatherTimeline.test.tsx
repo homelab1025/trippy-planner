@@ -39,6 +39,7 @@ const mockRoute = {
 
 const mockWeatherPoint = {
   temp: 20, feelsLike: 18, precipProb: 10,
+  precipitation: 2.5,
   windSpeed: 12, windDeg: 270, condition: 'Clear',
   point: mockRoute.points[0],
   arrivalTime: new Date('2026-05-24T08:00:00'),
