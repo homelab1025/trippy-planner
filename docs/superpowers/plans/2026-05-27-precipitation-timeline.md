@@ -352,7 +352,15 @@ Open `http://localhost:5173`, upload a GPX file, and confirm:
 - The blue line has dots only at the 11 sample points.
 - Elevation and temperature lines are unaffected.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 7: Run Playwright E2E tests**
+
+```bash
+npx playwright test
+```
+
+Expected: all E2E tests PASS. The existing tests cover GPX upload and map rendering — confirm no regressions.
+
+- [ ] **Step 8: Commit**
 
 ```bash
 git add src/components/WeatherTimeline.tsx src/components/WeatherTimeline.test.tsx
