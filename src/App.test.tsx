@@ -20,7 +20,7 @@ const mockRoute = {
 };
 
 const mockWeather = {
-  temp: 20, feelsLike: 18, precipProb: 10, precipitation: 0,
+  temp: 20, feelsLike: 18, precipProb: 10, precipitation: 1.5,
   windSpeed: 12, windDeg: 270, condition: 'Clear',
 };
 
@@ -153,7 +153,7 @@ describe('App', () => {
     render(<App />);
     await uploadFile();
     await waitFor(() =>
-      expect(screen.getByTestId('weather-timeline').dataset.firstPrecipitation).toBe('0')
+      expect(screen.getByTestId('weather-timeline').dataset.firstPrecipitation).toBe('1.5')
     );
 
     vi.mocked(fetchWeatherForPoint).mockResolvedValue({ ...mockWeather, precipitation: 3.5 });
