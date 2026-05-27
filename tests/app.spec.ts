@@ -120,6 +120,20 @@ test('clock/elapsed toggle changes button active state', async ({ page }) => {
   await expect(clockBtn).toHaveClass(/btn-primary/);
 });
 
+test('version panel is always visible on page load', async ({ page }) => {
+  await page.goto('/')
+  const panel = page.locator('.build-info-panel')
+  await expect(panel).toBeVisible()
+  await expect(panel).toContainText(/v\d+\.\d+\.\d+/)
+})
+
+test('version panel remains visible after GPX upload', async ({ page }) => {
+  await page.goto('/')
+  await page.setInputFiles('input[type="file"]', 'public/sample-route.gpx')
+  await expect(page.getByText('Sample Ride')).toBeVisible()
+  await expect(page.locator('.build-info-panel')).toBeVisible()
+})
+
 test('changing speed rerenders timeline without crash', async ({ page }) => {
   await page.goto('/');
   await page.setInputFiles('input[type="file"]', 'public/sample-route.gpx');

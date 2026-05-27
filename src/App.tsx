@@ -8,6 +8,7 @@ import { fetchWeatherForPoint } from './services/weatherService';
 import type { WeatherData } from './services/weatherService';
 import MapComponent from './components/MapComponent';
 import WeatherTimeline from './components/WeatherTimeline';
+import BuildInfoPanel from './components/BuildInfoPanel';
 import './App.css';
 
 // We'll create separate components for Map and Timeline later
@@ -171,6 +172,7 @@ function App() {
 
       <main className="main-content">
         <aside className="sidebar">
+          <div className="sidebar-scrollable">
           <div className="glass-panel control-card">
             <h3>Ride Details</h3>
             <div className="input-group">
@@ -246,7 +248,7 @@ function App() {
             </div>
           )}
 
-          <div className="glass-panel stats-card">
+          <div className="glass-panel stats-card tech-details-card">
             <h3>Tech Details</h3>
             <div className="input-group">
               <label htmlFor="dp-epsilon">DP Epsilon (m)</label>
@@ -297,6 +299,8 @@ function App() {
               </div>
             </div>
           </div>
+          </div>
+          <BuildInfoPanel />
         </aside>
 
         <section className="display-area">
