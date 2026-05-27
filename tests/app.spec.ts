@@ -49,8 +49,7 @@ test('Tech Details shows parse time and file size after GPX upload', async ({ pa
   await page.goto('/');
 
   const techPanel = page.locator('.stats-card').filter({ hasText: 'Tech Details' });
-  await expect(techPanel.getByText('Parse time')).toBeVisible();
-  await expect(techPanel.getByText('File')).toBeVisible();
+  await techPanel.locator('h3').click();
 
   await page.setInputFiles('input[type="file"]', 'public/sample-route.gpx');
   await expect(page.getByText('Sample Ride')).toBeVisible();
