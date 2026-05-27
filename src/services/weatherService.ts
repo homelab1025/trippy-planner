@@ -4,6 +4,7 @@ export interface WeatherData {
   temp: number;
   feelsLike: number;
   precipProb: number;
+  precipitation: number;
   windSpeed: number;
   windDeg: number;
   condition: string;
@@ -28,7 +29,7 @@ export const fetchWeatherForPoint = async (
       params: {
         latitude: lat,
         longitude: lon,
-        hourly: 'temperature_2m,apparent_temperature,precipitation_probability,wind_speed_10m,wind_direction_10m,weather_code',
+        hourly: 'temperature_2m,apparent_temperature,precipitation_probability,precipitation,wind_speed_10m,wind_direction_10m,weather_code',
         forecast_days: 2,
       }
     });
@@ -46,6 +47,7 @@ export const fetchWeatherForPoint = async (
       temp: hourly.temperature_2m[timeIndex],
       feelsLike: hourly.apparent_temperature[timeIndex],
       precipProb: hourly.precipitation_probability[timeIndex],
+      precipitation: hourly.precipitation[timeIndex],
       windSpeed: hourly.wind_speed_10m[timeIndex],
       windDeg: hourly.wind_direction_10m[timeIndex],
       condition: getWeatherCondition(hourly.weather_code[timeIndex]),
@@ -70,6 +72,7 @@ const mockFallback = (timestamp: number): WeatherData => {
     temp: 20 + Math.sin((hour - 6) * Math.PI / 12) * 5,
     feelsLike: 18,
     precipProb: 10,
+    precipitation: 0,
     windSpeed: 12,
     windDeg: 270,
     condition: 'Sunny (Fallback)',

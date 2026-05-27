@@ -13,6 +13,7 @@ const makeStub = (weatherCode: number): HttpClient => ({
         temperature_2m: [22],
         apparent_temperature: [20],
         precipitation_probability: [15],
+        precipitation: [2.5],
         wind_speed_10m: [12],
         wind_direction_10m: [270],
         weather_code: [weatherCode],
@@ -29,6 +30,7 @@ const missingHourStub: HttpClient = {
         temperature_2m: [20],
         apparent_temperature: [18],
         precipitation_probability: [0],
+        precipitation: [0],
         wind_speed_10m: [5],
         wind_direction_10m: [180],
         weather_code: [0],
@@ -47,6 +49,7 @@ describe('fetchWeatherForPoint', () => {
     expect(result.temp).toBe(22);
     expect(result.feelsLike).toBe(20);
     expect(result.precipProb).toBe(15);
+    expect(result.precipitation).toBe(2.5);
     expect(result.windSpeed).toBe(12);
     expect(result.windDeg).toBe(270);
     expect(result.condition).toBe('Clear');
