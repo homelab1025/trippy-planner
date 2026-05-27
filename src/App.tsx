@@ -249,6 +249,39 @@ function App() {
             </div>
           )}
 
+          </div>
+        </aside>
+
+        <section className="display-area">
+          <div className="glass-panel map-container">
+            {!route ? (
+              <div className="empty-state">
+                <MapIcon size={48} />
+                <p>Upload a GPX file to see your route</p>
+              </div>
+            ) : (
+              <MapComponent route={route} hoveredPoint={hoveredPoint} />
+            )}
+          </div>
+
+          <div className="glass-panel timeline-container">
+            {!route ? (
+              <div className="empty-state">
+                <CloudRain size={32} />
+                <p>Weather timeline will appear here</p>
+              </div>
+            ) : (
+              <WeatherTimeline
+                route={route}
+                weatherPoints={weatherPoints}
+                onHoverDistance={onHoverDistance}
+                xAxisMode={xAxisMode}
+              />
+            )}
+          </div>
+        </section>
+
+        <div className="sidebar-bottom">
           <div className="glass-panel stats-card tech-details-card">
             <h3>Tech Details</h3>
             <div className="input-group">
@@ -300,38 +333,8 @@ function App() {
               </div>
             </div>
           </div>
-          </div>
           <BuildInfoPanel />
-        </aside>
-
-        <section className="display-area">
-          <div className="glass-panel map-container">
-            {!route ? (
-              <div className="empty-state">
-                <MapIcon size={48} />
-                <p>Upload a GPX file to see your route</p>
-              </div>
-            ) : (
-              <MapComponent route={route} hoveredPoint={hoveredPoint} />
-            )}
-          </div>
-
-          <div className="glass-panel timeline-container">
-            {!route ? (
-              <div className="empty-state">
-                <CloudRain size={32} />
-                <p>Weather timeline will appear here</p>
-              </div>
-            ) : (
-              <WeatherTimeline
-                route={route}
-                weatherPoints={weatherPoints}
-                onHoverDistance={onHoverDistance}
-                xAxisMode={xAxisMode}
-              />
-            )}
-          </div>
-        </section>
+        </div>
       </main>
     </div>
   );

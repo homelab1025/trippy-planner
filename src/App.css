@@ -36,6 +36,7 @@
 .main-content {
   display: grid;
   grid-template-columns: 320px 1fr;
+  grid-template-rows: 1fr auto;
   gap: 24px;
   flex: 1;
   min-height: 0;
@@ -46,6 +47,8 @@
   flex-direction: column;
   gap: 20px;
   min-height: 0;
+  grid-column: 1;
+  grid-row: 1;
 }
 
 .sidebar-scrollable {
@@ -119,11 +122,21 @@
   font-family: var(--font-heading);
 }
 
+.sidebar-bottom {
+  grid-column: 1;
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
 .display-area {
   display: flex;
   flex-direction: column;
   gap: 24px;
   min-height: 0;
+  grid-column: 2;
+  grid-row: 1 / 3;
 }
 
 .map-container {
@@ -188,13 +201,21 @@
 @media (max-width: 1024px) {
   .main-content {
     grid-template-columns: 1fr;
+    grid-template-rows: auto;
   }
-  
+
+  .sidebar,
+  .display-area,
+  .sidebar-bottom {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
   .app-container {
     height: auto;
     overflow: auto;
   }
-  
+
   .map-container {
     height: 400px;
   }
