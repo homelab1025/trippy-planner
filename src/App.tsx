@@ -29,7 +29,7 @@ function App() {
   const [route, setRoute] = useState<RouteData | null>(null);
   const [avgSpeed, setAvgSpeed] = useState(25); // km/h
   const [startTime, setStartTime] = useState<Date>(new Date());
-  const [weatherPoints, setWeatherPoints] = useState<(WeatherData & { point: RoutePoint; arrivalTime: Date })[]>([]);
+  const [weatherPoints, setWeatherPoints] = useState<(WeatherData & { point: RoutePoint; arrivalTime: Date; label: string })[]>([]);
   const [loading, setLoading] = useState(false);
   const [hoveredPoint, setHoveredPoint] = useState<{ lat: number; lng: number } | null>(null);
   const [xAxisMode, setXAxisMode] = useState<'clock' | 'elapsed'>('clock');
@@ -109,11 +109,13 @@ function App() {
       pointsToQuery.push({ point, arrivalTime });
     }
 
+    const LABELS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     const weatherResults = await Promise.all(
-      pointsToQuery.map(async ({ point, arrivalTime }) => {
+      pointsToQuery.map(async ({ point, arrivalTime }, i) => {
+        const label = LABELS[i] ?? String(i + 1);
         try {
-          const weather = await fetchWeatherForPoint(point.lat, point.lng, arrivalTime.getTime() / 1000);
-          return { ...weather, point, arrivalTime };
+          const weather = await fetchWeatherForPoint(point.lat, point.lng, arrivalTime.getTime() / 1000, undefined, label);
+          return { ...weather, point, arrivalTime, label };
         } catch (error) {
           console.error('Failed to fetch weather for point:', error);
           return null;
@@ -265,7 +267,11 @@ function App() {
                 <p>Upload a GPX file to see your route</p>
               </div>
             ) : (
-              <MapComponent route={route} hoveredPoint={hoveredPoint} />
+              <MapComponent
+                route={route}
+                hoveredPoint={hoveredPoint}
+                debugPins={weatherDebug ? weatherPoints.map(wp => ({ lat: wp.point.lat, lng: wp.point.lng, label: wp.label })) : undefined}
+              />
             )}
           </div>
 
