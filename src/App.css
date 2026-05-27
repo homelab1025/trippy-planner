@@ -74,10 +74,6 @@
   margin-top: 4px;
 }
 
-.build-info-sha {
-  font-family: monospace;
-  word-break: break-all;
-}
 
 .control-card, .stats-card {
   padding: 24px;

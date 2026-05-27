@@ -7,7 +7,6 @@ export default function BuildInfoPanel() {
     <div className="glass-panel build-info-panel">
       <div className="build-info-version">v{__APP_VERSION__}</div>
       <div className="build-info-meta">{buildDate}</div>
-      <div className="build-info-meta build-info-sha">{__GIT_SHA__}</div>
     </div>
   )
 }
