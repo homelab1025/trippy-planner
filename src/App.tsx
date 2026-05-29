@@ -4,8 +4,8 @@ import logo from './assets/logo.png';
 import { parseGPXAsync } from './workers/gpxWorkerClient';
 import type { RouteData, RoutePoint } from './utils/gpxParser';
 import { DP_EPSILON_METERS, DP_MAX_GAP_METERS } from './utils/douglasPeucker';
-import { fetchWeatherForPoint, setWeatherDebug } from './services/weatherService';
-import type { WeatherData } from './services/weatherService';
+import { PROVIDERS, DEFAULT_PROVIDER, setWeatherDebug } from './services/weatherProviders';
+import type { WeatherProvider, WeatherData, WeatherRequest } from './services/weatherProviders';
 import MapComponent from './components/MapComponent';
 import WeatherTimeline from './components/WeatherTimeline';
 import BuildInfoPanel from './components/BuildInfoPanel';
@@ -39,6 +39,7 @@ function App() {
   const [weatherDebug, setWeatherDebugState] = useState(false);
   const [techDetailsOpen, setTechDetailsOpen] = useState(false);
   const [weatherAvailable, setWeatherAvailable] = useState<boolean | null>(null);
+  const [selectedProvider, setSelectedProvider] = useState<WeatherProvider>(DEFAULT_PROVIDER);
 
   const todayStr = getLocalDateString(new Date());
   const maxDate = new Date();
@@ -90,50 +91,56 @@ function App() {
     }
   };
 
-  const updateWeather = useCallback(async (currentRoute: RouteData, speed: number, start: Date) => {
+  const updateWeather = useCallback(async (currentRoute: RouteData, speed: number, start: Date, provider: WeatherProvider) => {
     if (!currentRoute) return;
 
     setWeatherAvailable(null);
 
-    const pointsToQuery = [];
     const interval = currentRoute.totalDistance / 10;
-    const seen = new Set();
+    const requestMap = new Map<number, WeatherRequest>();
+    const metaMap = new Map<number, { point: RoutePoint; arrivalTime: Date; label: string }>();
+    const seenIndices = new Set<number>();
+    let labelCounter = 1;
 
     for (let i = 0; i <= 10; i++) {
       const distance = i * interval;
-      const point = currentRoute.points.find(p => p.distance >= distance) || currentRoute.points[currentRoute.points.length - 1];
-      if (seen.has(point)) continue;
-      seen.add(point);
+      const idx = currentRoute.points.findIndex(p => p.distance >= distance);
+      const pointIdx = idx === -1 ? currentRoute.points.length - 1 : idx;
+      if (seenIndices.has(pointIdx)) continue;
+      seenIndices.add(pointIdx);
 
+      const point = currentRoute.points[pointIdx];
       const travelTimeHours = distance / (speed * 1000);
       const arrivalTime = new Date(start.getTime() + travelTimeHours * 3600 * 1000);
-      pointsToQuery.push({ point, arrivalTime });
+      const label = String(labelCounter++);
+
+      requestMap.set(pointIdx, { lat: point.lat, lon: point.lng, timestamp: arrivalTime.getTime() / 1000 });
+      metaMap.set(pointIdx, { point, arrivalTime, label });
     }
 
-    const weatherResults = await Promise.all(
-      pointsToQuery.map(async ({ point, arrivalTime }, i) => {
-        const label = String(i + 1);
-        try {
-          const weather = await fetchWeatherForPoint(point.lat, point.lng, arrivalTime.getTime() / 1000, undefined, label);
-          if (weather === null) return null;
-          return { ...weather, point, arrivalTime, label };
-        } catch (error) {
-          console.error('Failed to fetch weather for point:', error);
-          return null;
-        }
-      })
-    );
+    try {
+      const weatherResult = await provider.fetchWeather(requestMap);
 
-    const filtered = weatherResults.filter((result): result is NonNullable<typeof result> => result !== null);
-    setWeatherPoints(filtered);
-    setWeatherAvailable(filtered.length > 0);
+      const filtered: (WeatherData & { point: RoutePoint; arrivalTime: Date; label: string })[] = [];
+      for (const [key, weather] of weatherResult) {
+        if (weather === null) continue;
+        const meta = metaMap.get(key)!;
+        filtered.push({ ...weather, ...meta });
+      }
+
+      setWeatherPoints(filtered);
+      setWeatherAvailable(filtered.length > 0);
+    } catch {
+      setWeatherPoints([]);
+      setWeatherAvailable(false);
+    }
   }, []);
 
   React.useEffect(() => {
     if (route) {
-      updateWeather(route, avgSpeed, startTime);
+      updateWeather(route, avgSpeed, startTime, selectedProvider);
     }
-  }, [route, avgSpeed, startTime, updateWeather]);
+  }, [route, avgSpeed, startTime, selectedProvider, updateWeather]);
 
   React.useEffect(() => {
     setWeatherDebug(weatherDebug);
@@ -355,6 +362,20 @@ function App() {
                 <span className="stat-label">File</span>
                 <span className="stat-value">{parseMetrics ? `${parseMetrics.fileSizeKb.toFixed(1)} KB` : '—'}</span>
               </div>
+            </div>
+            <div className="input-group" style={{ marginTop: '16px' }}>
+              <label htmlFor="weather-provider">Weather Provider</label>
+              <select
+                id="weather-provider"
+                value={selectedProvider.id}
+                onChange={(e) =>
+                  setSelectedProvider(PROVIDERS.find(p => p.id === e.target.value) ?? DEFAULT_PROVIDER)
+                }
+              >
+                {PROVIDERS.map(p => (
+                  <option key={p.id} value={p.id}>{p.label}</option>
+                ))}
+              </select>
             </div>
             <div className="input-group" style={{ marginTop: '16px', flexDirection: 'row', alignItems: 'center', gap: '8px' }}>
               <input
