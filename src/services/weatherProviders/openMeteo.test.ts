@@ -77,7 +77,22 @@ describe('openMeteoProvider.fetchWeather', () => {
   });
 
   it('preserves arbitrary input keys in the output map', async () => {
-    const provider = createOpenMeteoProvider(makeStub(0));
+    const hourly = {
+      time: ['2025-06-15T14:00'],
+      temperature_2m: [22],
+      apparent_temperature: [20],
+      precipitation_probability: [15],
+      precipitation: [2.5],
+      wind_speed_10m: [12],
+      wind_direction_10m: [270],
+      weather_code: [0],
+    };
+    const batchStub: HttpClient = {
+      get: vi.fn().mockResolvedValue({
+        data: [{ hourly }, { hourly }],
+      }),
+    };
+    const provider = createOpenMeteoProvider(batchStub);
     const input = new Map([
       [5,  { lat: 48.8, lon: 2.3, timestamp: TS }],
       [11, { lat: 49.0, lon: 2.5, timestamp: TS }],
@@ -85,6 +100,18 @@ describe('openMeteoProvider.fetchWeather', () => {
     const result = await provider.fetchWeather(input);
     expect(result.has(5)).toBe(true);
     expect(result.has(11)).toBe(true);
+  });
+
+  it('makes a single HTTP request regardless of how many points are in the input', async () => {
+    const stub = makeStub(0);
+    const provider = createOpenMeteoProvider(stub);
+    await provider.fetchWeather(
+      new Map([
+        [0, { lat: 48.0, lon: 2.0, timestamp: TS }],
+        [5, { lat: 48.5, lon: 2.5, timestamp: TS }],
+      ])
+    );
+    expect(vi.mocked(stub.get)).toHaveBeenCalledTimes(1);
   });
 
   it.each([

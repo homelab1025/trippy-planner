@@ -96,11 +96,11 @@ function App() {
 
     setWeatherAvailable(null);
 
+    // TODO: make sample count dynamic based on route length (currently fixed at 10 intervals)
     const interval = currentRoute.totalDistance / 10;
     const requestMap = new Map<number, WeatherRequest>();
     const metaMap = new Map<number, { point: RoutePoint; arrivalTime: Date; label: string }>();
     const seenIndices = new Set<number>();
-    let labelCounter = 1;
 
     for (let i = 0; i <= 10; i++) {
       const distance = i * interval;
@@ -112,10 +112,9 @@ function App() {
       const point = currentRoute.points[pointIdx];
       const travelTimeHours = distance / (speed * 1000);
       const arrivalTime = new Date(start.getTime() + travelTimeHours * 3600 * 1000);
-      const label = String(labelCounter++);
 
       requestMap.set(pointIdx, { lat: point.lat, lon: point.lng, timestamp: arrivalTime.getTime() / 1000 });
-      metaMap.set(pointIdx, { point, arrivalTime, label });
+      metaMap.set(pointIdx, { point, arrivalTime, label: String(pointIdx) });
     }
 
     try {
