@@ -50,8 +50,14 @@ vi.mock('./services/weatherProviders', () => {
     available: true,
     fetchWeather: vi.fn(),
   };
+  const unavailableProvider = {
+    id: 'unavailable-provider',
+    label: 'Unavailable',
+    available: false,
+    fetchWeather: vi.fn(),
+  };
   return {
-    PROVIDERS: [mockProvider, secondProvider],
+    PROVIDERS: [mockProvider, secondProvider, unavailableProvider],
     DEFAULT_PROVIDER: mockProvider,
     setWeatherDebug: vi.fn(),
   };
@@ -290,5 +296,22 @@ describe('App', () => {
     await waitFor(() =>
       expect(screen.getByTestId('weather-timeline').dataset.firstTemp).toBe('99')
     );
+  });
+
+  it('selecting an unavailable provider does not change selectedProvider', async () => {
+    render(<App />);
+    await uploadFile();
+    await waitFor(() => screen.getByTestId('weather-timeline'));
+
+    fireEvent.click(screen.getByText('Tech Details'));
+
+    fireEvent.change(screen.getByLabelText('Weather Provider'), {
+      target: { value: 'unavailable-provider' },
+    });
+
+    expect(
+      (screen.getByLabelText('Weather Provider') as HTMLSelectElement).value
+    ).toBe('mock-provider');
+    expect(PROVIDERS[2].fetchWeather).not.toHaveBeenCalled();
   });
 });

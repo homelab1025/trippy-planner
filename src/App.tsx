@@ -369,12 +369,15 @@ function App() {
               <select
                 id="weather-provider"
                 value={selectedProvider.id}
-                onChange={(e) =>
-                  setSelectedProvider(PROVIDERS.find(p => p.id === e.target.value) ?? DEFAULT_PROVIDER)
-                }
+                onChange={(e) => {
+                  const next = PROVIDERS.find(p => p.id === e.target.value && p.available);
+                  if (next) setSelectedProvider(next);
+                }}
               >
                 {PROVIDERS.map(p => (
-                  <option key={p.id} value={p.id}>{p.label}</option>
+                  <option key={p.id} value={p.id} disabled={!p.available}>
+                    {p.label}
+                  </option>
                 ))}
               </select>
             </div>
