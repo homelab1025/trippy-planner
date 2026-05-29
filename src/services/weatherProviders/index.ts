@@ -1,11 +1,10 @@
 import { createOpenMeteoProvider } from './openMeteo';
-import { createOpenWeatherMapProvider } from './openWeatherMap';
+import { selfHostedProvider } from './selfHosted';
 
 export { setWeatherDebug } from './openMeteo';
 export type { WeatherProvider, WeatherData, WeatherRequest } from './types';
 
 export const openMeteoProvider = createOpenMeteoProvider();
-export const openWeatherMapProvider = createOpenWeatherMapProvider();
 
-export const PROVIDERS = [openMeteoProvider, openWeatherMapProvider];
+export const PROVIDERS = [openMeteoProvider, selfHostedProvider];
 export const DEFAULT_PROVIDER = openMeteoProvider;
