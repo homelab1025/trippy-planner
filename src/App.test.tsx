@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act, cleanup } from '@testing-library/react';
 import App from './App';
-import { fetchWeatherForPoint } from './services/weatherService';
+import { DEFAULT_PROVIDER } from './services/weatherProviders';
 import { parseGPXAsync } from './workers/gpxWorkerClient';
 
 // ── Fixtures ────────────────────────────────────────────────────────────────
@@ -37,10 +37,18 @@ vi.mock('./workers/gpxWorkerClient', () => ({
   parseGPXAsync: vi.fn(),
 }));
 
-vi.mock('./services/weatherService', () => ({
-  fetchWeatherForPoint: vi.fn(),
-  setWeatherDebug: vi.fn(),
-}));
+vi.mock('./services/weatherProviders', () => {
+  const mockProvider = {
+    id: 'mock-provider',
+    label: 'Mock',
+    fetchWeather: vi.fn(),
+  };
+  return {
+    PROVIDERS: [mockProvider],
+    DEFAULT_PROVIDER: mockProvider,
+    setWeatherDebug: vi.fn(),
+  };
+});
 
 vi.mock('./components/MapComponent', () => ({
   default: ({ hoveredPoint }: { hoveredPoint: { lat: number; lng: number } | null }) => (
@@ -89,7 +97,9 @@ describe('App', () => {
   beforeEach(() => {
     vi.clearAllMocks(); // reset call counts
     vi.mocked(parseGPXAsync).mockResolvedValue(mockRoute);
-    vi.mocked(fetchWeatherForPoint).mockResolvedValue(mockWeather);
+    vi.mocked(DEFAULT_PROVIDER.fetchWeather).mockResolvedValue(
+      new Map([[0, mockWeather]])
+    );
     capturedHoverCb = null;
     capturedXAxisMode = null;
     vi.spyOn(window, 'alert').mockImplementation(() => {});
@@ -128,7 +138,7 @@ describe('App', () => {
       expect(screen.getByTestId('weather-timeline').dataset.firstTemp).toBe('20')
     );
 
-    vi.mocked(fetchWeatherForPoint).mockResolvedValue({ ...mockWeather, temp: 30 });
+    vi.mocked(DEFAULT_PROVIDER.fetchWeather).mockResolvedValue(new Map([[0, { ...mockWeather, temp: 30 }]]));
     fireEvent.change(screen.getByLabelText('Average Speed (km/h)'), { target: { value: '10' } });
 
     await waitFor(() =>
@@ -143,7 +153,7 @@ describe('App', () => {
       expect(screen.getByTestId('weather-timeline').dataset.firstPrecipProb).toBe('10')
     );
 
-    vi.mocked(fetchWeatherForPoint).mockResolvedValue({ ...mockWeather, precipProb: 75 });
+    vi.mocked(DEFAULT_PROVIDER.fetchWeather).mockResolvedValue(new Map([[0, { ...mockWeather, precipProb: 75 }]]));
     fireEvent.change(screen.getByLabelText('Average Speed (km/h)'), { target: { value: '10' } });
 
     await waitFor(() =>
@@ -158,7 +168,7 @@ describe('App', () => {
       expect(screen.getByTestId('weather-timeline').dataset.firstPrecipitation).toBe('1.5')
     );
 
-    vi.mocked(fetchWeatherForPoint).mockResolvedValue({ ...mockWeather, precipitation: 3.5 });
+    vi.mocked(DEFAULT_PROVIDER.fetchWeather).mockResolvedValue(new Map([[0, { ...mockWeather, precipitation: 3.5 }]]));
     fireEvent.change(screen.getByLabelText('Average Speed (km/h)'), { target: { value: '10' } });
 
     await waitFor(() =>
@@ -178,7 +188,7 @@ describe('App', () => {
     d.setDate(d.getDate() + 2);
     const twoDaysAhead = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-    vi.mocked(fetchWeatherForPoint).mockResolvedValue({ ...mockWeather, temp: 35 });
+    vi.mocked(DEFAULT_PROVIDER.fetchWeather).mockResolvedValue(new Map([[0, { ...mockWeather, temp: 35 }]]));
     fireEvent.change(screen.getByLabelText('Start Date'), { target: { value: twoDaysAhead } });
 
     await waitFor(() =>
@@ -216,19 +226,19 @@ describe('App', () => {
     await uploadFile();
 
     await waitFor(() => expect(window.alert).toHaveBeenCalledWith('No tracks found'));
-    expect(fetchWeatherForPoint).not.toHaveBeenCalled();
+    expect(DEFAULT_PROVIDER.fetchWeather).not.toHaveBeenCalled();
     expect(screen.queryByText('Test Route')).not.toBeInTheDocument();
     expect(screen.queryByTestId('weather-timeline')).not.toBeInTheDocument();
   });
 
   it('weather fetch error does not crash — weatherPoints stays empty', async () => {
-    vi.mocked(fetchWeatherForPoint).mockRejectedValue(new Error('Network error'));
+    vi.mocked(DEFAULT_PROVIDER.fetchWeather).mockRejectedValue(new Error('Network error'));
     render(<App />);
     await uploadFile();
 
     await waitFor(() => expect(screen.getByText('Test Route')).toBeInTheDocument());
     // Fetches were attempted (not silently skipped)
-    expect(fetchWeatherForPoint).toHaveBeenCalled();
+    expect(DEFAULT_PROVIDER.fetchWeather).toHaveBeenCalled();
     // No wrong alert about GPX parsing failure
     expect(window.alert).not.toHaveBeenCalled();
     // WeatherTimeline renders (route was set despite weather failure)
@@ -244,7 +254,7 @@ describe('App', () => {
   });
 
   it('passes weatherAvailable=false to WeatherTimeline when weather fetch returns null', async () => {
-    vi.mocked(fetchWeatherForPoint).mockResolvedValue(null);
+    vi.mocked(DEFAULT_PROVIDER.fetchWeather).mockResolvedValue(new Map());
     render(<App />);
     await uploadFile();
     await waitFor(() =>
