@@ -41,11 +41,13 @@ vi.mock('./services/weatherProviders', () => {
   const mockProvider = {
     id: 'mock-provider',
     label: 'Mock',
+    available: true,
     fetchWeather: vi.fn(),
   };
   const secondProvider = {
     id: 'second-provider',
     label: 'Second',
+    available: true,
     fetchWeather: vi.fn(),
   };
   return {

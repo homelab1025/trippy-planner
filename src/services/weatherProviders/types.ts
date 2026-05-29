@@ -24,5 +24,6 @@ export interface WeatherRequest {
 export interface WeatherProvider {
   id: string;
   label: string;
+  available: boolean;
   fetchWeather: (points: Map<number, WeatherRequest>) => Promise<Map<number, WeatherData | null>>;
 }
