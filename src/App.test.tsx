@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act, cleanup } from '@testing-library/react';
 import App from './App';
-import { DEFAULT_PROVIDER } from './services/weatherProviders';
+import { DEFAULT_PROVIDER, PROVIDERS } from './services/weatherProviders';
 import { parseGPXAsync } from './workers/gpxWorkerClient';
 
 // ── Fixtures ────────────────────────────────────────────────────────────────
@@ -43,8 +43,13 @@ vi.mock('./services/weatherProviders', () => {
     label: 'Mock',
     fetchWeather: vi.fn(),
   };
+  const secondProvider = {
+    id: 'second-provider',
+    label: 'Second',
+    fetchWeather: vi.fn(),
+  };
   return {
-    PROVIDERS: [mockProvider],
+    PROVIDERS: [mockProvider, secondProvider],
     DEFAULT_PROVIDER: mockProvider,
     setWeatherDebug: vi.fn(),
   };
@@ -99,6 +104,9 @@ describe('App', () => {
     vi.mocked(parseGPXAsync).mockResolvedValue(mockRoute);
     vi.mocked(DEFAULT_PROVIDER.fetchWeather).mockResolvedValue(
       new Map([[0, mockWeather]])
+    );
+    vi.mocked(PROVIDERS[1].fetchWeather).mockResolvedValue(
+      new Map([[0, { ...mockWeather, temp: 99 }]])
     );
     capturedHoverCb = null;
     capturedXAxisMode = null;
@@ -259,6 +267,26 @@ describe('App', () => {
     await uploadFile();
     await waitFor(() =>
       expect(screen.getByTestId('weather-timeline').dataset.weatherAvailable).toBe('false')
+    );
+  });
+
+  it('switching provider re-fetches weather using the new provider', async () => {
+    render(<App />);
+    await uploadFile();
+    await waitFor(() =>
+      expect(screen.getByTestId('weather-timeline').dataset.firstTemp).toBe('20')
+    );
+
+    // Open Tech Details to reveal the provider selector
+    fireEvent.click(screen.getByText('Tech Details'));
+
+    // Switch to the second provider
+    fireEvent.change(screen.getByLabelText('Weather Provider'), {
+      target: { value: 'second-provider' },
+    });
+
+    await waitFor(() =>
+      expect(screen.getByTestId('weather-timeline').dataset.firstTemp).toBe('99')
     );
   });
 });
