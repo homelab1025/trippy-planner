@@ -108,7 +108,7 @@ describe('openMeteoProvider.fetchWeather', () => {
     await provider.fetchWeather(
       new Map([
         [0, { lat: 48.0, lon: 2.0, timestamp: TS }],
-        [5, { lat: 48.5, lon: 2.5, timestamp: TS }],
+        [5, { lat: 48.5, lon: 2.5, timestamp: TS + 3 * 3600 }], // 3 hours later
       ])
     );
     expect(vi.mocked(stub.get)).toHaveBeenCalledTimes(1);
