@@ -65,6 +65,7 @@ const fetchOne = async (
 export const createOpenMeteoProvider = (http: HttpClient = axios as HttpClient): WeatherProvider => ({
   id: 'open-meteo',
   label: 'Open-Meteo',
+  available: true,
   fetchWeather: async (points) => {
     const entries = await Promise.all(
       Array.from(points.entries()).map(([key, req]) => fetchOne(key, req, http))
