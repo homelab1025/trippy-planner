@@ -1,7 +1,7 @@
 {
   "name": "trippy-planner",
   "private": true,
-  "version": "1.9.0",
+  "version": "1.10.0-SNAPSHOT",
   "type": "module",
   "scripts": {
     "dev": "vite",
