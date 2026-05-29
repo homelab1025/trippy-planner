@@ -130,7 +130,8 @@ function App() {
 
       setWeatherPoints(filtered);
       setWeatherAvailable(filtered.length > 0);
-    } catch {
+    } catch (error) {
+      console.error('Weather fetch failed:', error);
       setWeatherPoints([]);
       setWeatherAvailable(false);
     }
