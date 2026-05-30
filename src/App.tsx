@@ -1,9 +1,10 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { Upload, Map as MapIcon, CloudRain, ChevronDown, ChevronRight } from 'lucide-react';
 import logo from './assets/logo.png';
 import { parseGPXAsync } from './workers/gpxWorkerClient';
 import type { RouteData, RoutePoint } from './utils/gpxParser';
 import { DP_EPSILON_METERS, DP_MAX_GAP_METERS } from './utils/douglasPeucker';
+import { detectClimbs } from './utils/climbDetector';
 import { PROVIDERS, DEFAULT_PROVIDER, setWeatherDebug } from './services/weatherProviders';
 import type { WeatherProvider, WeatherData, WeatherRequest } from './services/weatherProviders';
 import MapComponent from './components/MapComponent';
@@ -40,6 +41,11 @@ function App() {
   const [techDetailsOpen, setTechDetailsOpen] = useState(false);
   const [weatherAvailable, setWeatherAvailable] = useState<boolean | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<WeatherProvider>(DEFAULT_PROVIDER);
+
+  const climbs = useMemo(
+    () => (route ? detectClimbs(route.points) : []),
+    [route]
+  );
 
   const todayStr = getLocalDateString(new Date());
   const maxDate = new Date();
@@ -300,6 +306,7 @@ function App() {
                 weatherAvailable={weatherAvailable}
                 avgSpeed={avgSpeed}
                 startTime={startTime}
+                climbs={climbs}
               />
             )}
           </div>
