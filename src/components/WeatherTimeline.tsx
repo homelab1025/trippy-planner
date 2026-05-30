@@ -116,6 +116,7 @@ const WeatherTimeline: React.FC<WeatherTimelineProps> = ({ route, weatherPoints,
           />
           <YAxis
             yAxisId="elevation"
+            domain={[(dataMin: number) => dataMin - 10, 'auto']}
             axisLine={false}
             tickLine={false}
             fontSize={10}
