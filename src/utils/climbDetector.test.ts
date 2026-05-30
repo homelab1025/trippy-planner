@@ -43,15 +43,47 @@ describe('detectClimbs', () => {
     expect(climbs[0].category).toBe('Cat2');
   });
 
-  it('does not merge runs separated by a descent exceeding MAX_GAP_DESCENT_M (30m)', () => {
-    // run1: 3000m +200m (score=20000 Cat3), gap: 500m -50m (50 > 30), run2: 3000m +250m (score=25000 Cat3)
+  it('does not merge runs when descent exceeds MAX_GAP_DESCENT_M (30m)', () => {
+    // gap: 100m distance (well under 500m), but 50m descent (> 30m) — descent alone blocks merge
+    // run1: 3000m +200m (score=20000 Cat3), run2: 3000m +250m (score=25000 Cat3)
     const points = makePoints([
       { distanceDelta: 3000, eleDelta: 200 },
-      { distanceDelta: 500, eleDelta: -50 },
+      { distanceDelta: 100, eleDelta: -50 },
       { distanceDelta: 3000, eleDelta: 250 },
     ]);
-    const climbs = detectClimbs(points);
-    expect(climbs).toHaveLength(2);
+    expect(detectClimbs(points)).toHaveLength(2);
+  });
+
+  it('does not merge runs when gap distance exceeds MAX_GAP_DISTANCE_M (500m)', () => {
+    // gap: 600m distance (> 500m), only 5m descent (well under 30m) — distance alone blocks merge
+    // run1: 3000m +200m (score=20000 Cat3), run2: 3000m +250m (score=25000 Cat3)
+    const points = makePoints([
+      { distanceDelta: 3000, eleDelta: 200 },
+      { distanceDelta: 600, eleDelta: -5 },
+      { distanceDelta: 3000, eleDelta: 250 },
+    ]);
+    expect(detectClimbs(points)).toHaveLength(2);
+  });
+
+  it('does not merge runs separated by a sub-threshold ascending gap', () => {
+    // gap is uphill (0.75% grade, below 1% threshold) — should not merge since it's not a descent
+    // run1: 3000m +200m (score=20000 Cat3), gap: 400m +3m (0.75%), run2: 3000m +250m (score=25000 Cat3)
+    const points = makePoints([
+      { distanceDelta: 3000, eleDelta: 200 },
+      { distanceDelta: 400, eleDelta: 3 },
+      { distanceDelta: 3000, eleDelta: 250 },
+    ]);
+    expect(detectClimbs(points)).toHaveLength(2);
+  });
+
+  it('does not merge runs when descent is exactly MAX_GAP_DESCENT_M (30m, strict boundary)', () => {
+    // 30m descent is not < 30 — should not merge
+    const points = makePoints([
+      { distanceDelta: 3000, eleDelta: 200 },
+      { distanceDelta: 100, eleDelta: -30 },
+      { distanceDelta: 3000, eleDelta: 250 },
+    ]);
+    expect(detectClimbs(points)).toHaveLength(2);
   });
 
   it('does not detect a climb when score equals MIN_SCORE (8000)', () => {
@@ -118,7 +150,7 @@ describe('detectClimbs', () => {
   });
 
   it('returns empty array for a short hill below score threshold', () => {
-    // grade=2% (> MIN_GRADE_PCT) but score=1000*2=1000 ≤ 8000
+    // grade=2% (> MIN_GRADE_PCT) but score=500*2=1000 ≤ 8000
     const points = makePoints([{ distanceDelta: 500, eleDelta: 10 }]);
     expect(detectClimbs(points)).toHaveLength(0);
   });
