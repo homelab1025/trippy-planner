@@ -21,6 +21,7 @@ vi.mock('recharts', () => ({
   Line: () => null,
   CartesianGrid: () => null,
   Tooltip: () => null,
+  Customized: () => null,
 }));
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
