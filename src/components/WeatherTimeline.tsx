@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { ComposedChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Line, ReferenceArea, ReferenceLine } from 'recharts';
+import { ComposedChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Line, Customized } from 'recharts';
 import type { RouteData } from '../utils/gpxParser';
 import { lttbWithPinnedPoints } from '../utils/lttb';
 import type { Climb } from '../utils/climbDetector';
+import ClimbOverlay from './ClimbOverlay';
 
 interface WeatherTimelineProps {
   route: RouteData;
@@ -16,6 +17,11 @@ interface WeatherTimelineProps {
   climbs?: Climb[];
 }
 
+export interface ClimbTimeRange extends Climb {
+  x1: number;
+  x2: number;
+}
+
 function formatElapsed(ms: number): string {
   const totalMinutes = Math.round(ms / 60000);
   const h = Math.floor(totalMinutes / 60);
@@ -23,57 +29,11 @@ function formatElapsed(ms: number): string {
   return h > 0 ? `${h}h ${String(m).padStart(2, '0')}m` : `${m}m`;
 }
 
-const CATEGORY_COLORS: Record<Climb['category'], string> = {
-  Cat4: '#F5C518',
-  Cat3: '#F5A623',
-  Cat2: '#E8601C',
-  Cat1: '#D0021B',
-  HC:   '#7B0099',
-};
-
-const CATEGORY_LABELS: Record<Climb['category'], string> = {
-  Cat4: 'Cat 4',
-  Cat3: 'Cat 3',
-  Cat2: 'Cat 2',
-  Cat1: 'Cat 1',
-  HC:   'HC',
-};
-
-interface LabelViewBox { x: number; y: number; width: number; height: number; }
-
-function ClimbPeakLabel({ viewBox, climb, color, maxX }: {
-  viewBox?: LabelViewBox;
-  climb: Climb;
-  color: string;
-  maxX: number;
-}) {
-  if (!viewBox) return null;
-  const { x, y } = viewBox;
-  const text = `${CATEGORY_LABELS[climb.category]}  ↑${Math.round(climb.elevationGain)}m  ${climb.avgGrade.toFixed(1)}%  ${(climb.lengthM / 1000).toFixed(1)}km`;
-  const badgeWidth = Math.max(90, text.length * 6);
-  const badgeHeight = 18;
-  const bx = Math.min(Math.max(x, badgeWidth / 2 + 2), maxX - badgeWidth / 2 - 2);
-  return (
-    <g>
-      <rect x={bx - badgeWidth / 2} y={y + 4} width={badgeWidth} height={badgeHeight} rx={3} fill={color} opacity={0.9} />
-      <text
-        x={bx}
-        y={y + 4 + badgeHeight - 5}
-        textAnchor="middle"
-        fill="white"
-        fontSize={10}
-        fontWeight="bold"
-      >
-        {text}
-      </text>
-    </g>
-  );
-}
-
 const WeatherTimeline: React.FC<WeatherTimelineProps> = ({ route, weatherPoints, onHoverDistance, xAxisMode, weatherAvailable, avgSpeed, startTime, climbs }) => {
   const [chartWidth, setChartWidth] = useState(800);
+  const [hoveredClimbIdx, setHoveredClimbIdx] = useState<number | null>(null);
 
-  const climbTimeRanges = useMemo(() => {
+  const climbTimeRanges = useMemo((): ClimbTimeRange[] => {
     if (!climbs || climbs.length === 0 || avgSpeed <= 0) return [];
     const startMs = startTime.getTime();
     const speedFactor = avgSpeed * 1000;
@@ -263,30 +223,12 @@ const WeatherTimeline: React.FC<WeatherTimelineProps> = ({ route, weatherPoints,
             name="Precip"
             isAnimationActive={false}
           />
-          {climbTimeRanges.map(cr => (
-            <ReferenceArea
-              key={`climb-area-${cr.startDistance}`}
-              yAxisId="elevation"
-              x1={cr.x1}
-              x2={cr.x2}
-              fill={CATEGORY_COLORS[cr.category]}
-              fillOpacity={0.25}
-            />
-          ))}
-          {climbTimeRanges.map(cr => (
-            <ReferenceLine
-              key={`climb-peak-${cr.startDistance}`}
-              yAxisId="elevation"
-              x={cr.x2}
-              stroke={CATEGORY_COLORS[cr.category]}
-              strokeWidth={1}
-              strokeDasharray="4 3"
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              label={(props: any) => (
-                <ClimbPeakLabel viewBox={props.viewBox} climb={cr} color={CATEGORY_COLORS[cr.category]} maxX={chartWidth} />
-              )}
-            />
-          ))}
+          <Customized
+            component={ClimbOverlay}
+            climbTimeRanges={climbTimeRanges}
+            hoveredClimbIdx={hoveredClimbIdx}
+            onHoverClimb={setHoveredClimbIdx}
+          />
         </ComposedChart>
       </ResponsiveContainer>
       {weatherAvailable === false && (
