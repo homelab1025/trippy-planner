@@ -21,9 +21,9 @@ vi.mock('recharts', () => ({
   Line: () => null,
   CartesianGrid: () => null,
   Tooltip: () => null,
-  useXAxisScale: () => ({ map: () => undefined }),
-  useYAxisScale: () => ({ map: () => undefined }),
-  usePlotArea: () => undefined,
+  useXAxisScale: () => () => undefined,
+  useYAxisScale: () => () => undefined,
+  usePlotArea: () => ({ x: 10, y: 10, width: 800, height: 300 }),
 }));
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
