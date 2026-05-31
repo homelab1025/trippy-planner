@@ -86,6 +86,29 @@ describe('detectClimbs', () => {
     expect(detectClimbs(points)).toHaveLength(2);
   });
 
+  it('does not merge runs when gap distance is exactly MAX_GAP_DISTANCE_M (500m, strict boundary)', () => {
+    // 500m gap distance is not < 500 — should not merge (even with small 5m descent)
+    const points = makePoints([
+      { distanceDelta: 3000, eleDelta: 200 },
+      { distanceDelta: 500, eleDelta: -5 },
+      { distanceDelta: 3000, eleDelta: 250 },
+    ]);
+    expect(detectClimbs(points)).toHaveLength(2);
+  });
+
+  it('merges two ascending runs separated by a short flat plateau (0m descent, < 500m)', () => {
+    // plateau: 300m at 0% grade — ends run 1, gap descent = 0m < 30m, distance 300m < 500m → merges
+    // merged: lengthM=6300, elevationGain=340, score=34000 → Cat2
+    const points = makePoints([
+      { distanceDelta: 3000, eleDelta: 200 },
+      { distanceDelta: 300, eleDelta: 0 },
+      { distanceDelta: 3000, eleDelta: 140 },
+    ]);
+    const climbs = detectClimbs(points);
+    expect(climbs).toHaveLength(1);
+    expect(climbs[0].elevationGain).toBeCloseTo(340);
+  });
+
   it('does not detect a climb when score equals MIN_SCORE (8000)', () => {
     // lengthM=1000, elevationGain=80, grade=8%, score=8000 — not > 8000
     const points = makePoints([{ distanceDelta: 1000, eleDelta: 80 }]);
