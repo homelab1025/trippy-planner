@@ -41,17 +41,18 @@ const CATEGORY_LABELS: Record<Climb['category'], string> = {
 
 interface LabelViewBox { x: number; y: number; width: number; height: number; }
 
-function ClimbPeakLabel({ viewBox, climb, color }: {
+function ClimbPeakLabel({ viewBox, climb, color, maxX }: {
   viewBox?: LabelViewBox;
   climb: Climb;
   color: string;
+  maxX: number;
 }) {
   if (!viewBox) return null;
   const { x, y } = viewBox;
   const text = `${CATEGORY_LABELS[climb.category]}  ↑${Math.round(climb.elevationGain)}m  ${climb.avgGrade.toFixed(1)}%  ${(climb.lengthM / 1000).toFixed(1)}km`;
   const badgeWidth = Math.max(90, text.length * 6);
   const badgeHeight = 18;
-  const bx = Math.max(x, badgeWidth / 2 + 2);
+  const bx = Math.min(Math.max(x, badgeWidth / 2 + 2), maxX - badgeWidth / 2 - 2);
   return (
     <g>
       <rect x={bx - badgeWidth / 2} y={y + 4} width={badgeWidth} height={badgeHeight} rx={3} fill={color} opacity={0.9} />
@@ -76,12 +77,13 @@ const WeatherTimeline: React.FC<WeatherTimelineProps> = ({ route, weatherPoints,
     if (!climbs || climbs.length === 0 || avgSpeed <= 0) return [];
     const startMs = startTime.getTime();
     const speedFactor = avgSpeed * 1000;
+    const domainMax = startMs + (route.totalDistance / speedFactor) * 3_600_000;
     return climbs.map(climb => ({
       ...climb,
-      x1: startMs + (climb.startDistance / speedFactor) * 3_600_000,
-      x2: startMs + (climb.endDistance / speedFactor) * 3_600_000,
+      x1: Math.max(startMs, Math.min(startMs + (climb.startDistance / speedFactor) * 3_600_000, domainMax)),
+      x2: Math.max(startMs, Math.min(startMs + (climb.endDistance / speedFactor) * 3_600_000, domainMax)),
     }));
-  }, [climbs, startTime, avgSpeed]);
+  }, [climbs, startTime, avgSpeed, route.totalDistance]);
 
   const data = useMemo(() => {
     const d = route.points.map(pt => ({
@@ -281,7 +283,7 @@ const WeatherTimeline: React.FC<WeatherTimelineProps> = ({ route, weatherPoints,
               strokeDasharray="4 3"
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               label={(props: any) => (
-                <ClimbPeakLabel viewBox={props.viewBox} climb={cr} color={CATEGORY_COLORS[cr.category]} />
+                <ClimbPeakLabel viewBox={props.viewBox} climb={cr} color={CATEGORY_COLORS[cr.category]} maxX={chartWidth} />
               )}
             />
           ))}
