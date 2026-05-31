@@ -75,7 +75,7 @@ const ClimbOverlay: React.FC<ClimbOverlayProps> = ({ climbTimeRanges, data }) =>
         ))}
       </defs>
 
-      {/* Gradient fills clipped to below the elevation profile */}
+      {/* Gradient fills */}
       {climbTimeRanges.map((cr, i) => {
         const px1 = xScale(cr.x1);
         const px2 = xScale(cr.x2);
@@ -89,6 +89,23 @@ const ClimbOverlay: React.FC<ClimbOverlayProps> = ({ climbTimeRanges, data }) =>
             height={height}
             fill={`url(#climb-grad-${i})`}
             clipPath="url(#climb-elev-clip)"
+          />
+        );
+      })}
+
+      {/* Highlighted strokes over elevation line within climb spans */}
+      {climbTimeRanges.map((cr, i) => {
+        const spanPoints = elevPoints.filter(
+          p => p.time >= cr.x1 && p.time <= cr.x2
+        );
+        if (spanPoints.length < 2) return null;
+        return (
+          <polyline
+            key={`stroke-${i}`}
+            points={spanPoints.map(p => `${p.x},${p.y}`).join(' ')}
+            stroke={CATEGORY_COLORS[cr.category]}
+            strokeWidth={2.5}
+            fill="none"
           />
         );
       })}
