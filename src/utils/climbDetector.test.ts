@@ -65,15 +65,16 @@ describe('detectClimbs', () => {
     expect(detectClimbs(points)).toHaveLength(2);
   });
 
-  it('does not merge runs separated by a sub-threshold ascending gap', () => {
-    // gap is uphill (0.75% grade, below 1% threshold) — should not merge since it's not a descent
-    // run1: 3000m +200m (score=20000 Cat3), gap: 400m +3m (0.75%), run2: 3000m +250m (score=25000 Cat3)
+  it('merges runs separated by a short sub-threshold ascending gap (false flat)', () => {
+    // gap is net uphill (0.75% grade, below 1% threshold) — should merge because it's a false flat
+    // within the climb. Any gap with grade < 1% over < 500m gains at most 5m, so the descent limit
+    // is never at risk. run1: 3000m +200m, gap: 400m +3m, run2: 3000m +250m → merged: 1 climb
     const points = makePoints([
       { distanceDelta: 3000, eleDelta: 200 },
       { distanceDelta: 400, eleDelta: 3 },
       { distanceDelta: 3000, eleDelta: 250 },
     ]);
-    expect(detectClimbs(points)).toHaveLength(2);
+    expect(detectClimbs(points)).toHaveLength(1);
   });
 
   it('does not merge runs when descent is exactly MAX_GAP_DESCENT_M (30m, strict boundary)', () => {
