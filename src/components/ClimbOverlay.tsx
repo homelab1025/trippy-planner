@@ -39,7 +39,6 @@ interface ClimbOverlayProps {
 
 const ClimbOverlay: React.FC<ClimbOverlayProps> = ({ climbTimeRanges, data }) => {
   const [hoveredClimbIdx, setHoveredClimbIdx] = useState<number | null>(null);
-  void hoveredClimbIdx; void setHoveredClimbIdx;
 
   const xScale = useXAxisScale();
   const yScale = useYAxisScale('elevation');
@@ -136,8 +135,23 @@ const ClimbOverlay: React.FC<ClimbOverlayProps> = ({ climbTimeRanges, data }) =>
           right - badgeWidth / 2 - 2
         );
         const badgeTop = peakPy - poleHeight - badgeHeight;
+
+        const popupWidth = 96;
+        const popupHeight = 28;
+        const popupX = peakPx + 4 + popupWidth > right - 4
+          ? peakPx - 4 - popupWidth
+          : peakPx + 4;
+        const popupY = badgeTop - popupHeight - 2;
+        const lengthKm = (cr.lengthM / 1000).toFixed(1);
+        const grade = cr.avgGrade.toFixed(1);
+
         return (
-          <g key={`flag-${i}`} style={{ cursor: 'default' }}>
+          <g
+            key={`flag-${i}`}
+            onMouseEnter={() => setHoveredClimbIdx(i)}
+            onMouseLeave={() => setHoveredClimbIdx(null)}
+            style={{ cursor: 'default' }}
+          >
             <line
               x1={peakPx} y1={peakPy}
               x2={peakPx} y2={peakPy - poleHeight}
@@ -163,6 +177,22 @@ const ClimbOverlay: React.FC<ClimbOverlayProps> = ({ climbTimeRanges, data }) =>
             >
               {label}
             </text>
+            {hoveredClimbIdx === i && (
+              <g>
+                <rect
+                  x={popupX}
+                  y={popupY}
+                  width={popupWidth}
+                  height={popupHeight}
+                  rx={5}
+                  fill="white"
+                  style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.18))' }}
+                />
+                <text x={popupX + 8} y={popupY + 18} fontSize={11} fill="#444">
+                  {lengthKm} km · {grade}%
+                </text>
+              </g>
+            )}
           </g>
         );
       })}
