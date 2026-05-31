@@ -19,6 +19,14 @@ const CATEGORY_FILL_OPACITY: Record<Climb['category'], number> = {
   HC:   0.70,
 };
 
+const CATEGORY_LABELS: Record<Climb['category'], string> = {
+  Cat4: 'Cat 4',
+  Cat3: 'Cat 3',
+  Cat2: 'Cat 2',
+  Cat1: 'Cat 1',
+  HC:   'HC',
+};
+
 interface ElevDataPoint {
   time: number;
   elevation: number;
@@ -108,6 +116,54 @@ const ClimbOverlay: React.FC<ClimbOverlayProps> = ({ climbTimeRanges, data }) =>
             fill="none"
             clipPath="url(#climb-elev-clip)"
           />
+        );
+      })}
+
+      {/* Pill flags at climb peak */}
+      {climbTimeRanges.map((cr, i) => {
+        const peakPt = elevPoints.reduce((best, p) =>
+          Math.abs(p.time - cr.x2) < Math.abs(best.time - cr.x2) ? p : best
+        , elevPoints[0]);
+        const peakPx = peakPt.x;
+        const peakPy = peakPt.y;
+        const color = CATEGORY_COLORS[cr.category];
+        const label = CATEGORY_LABELS[cr.category];
+        const badgeWidth = label.length <= 2 ? 28 : 42;
+        const badgeHeight = 16;
+        const poleHeight = 28;
+        const bx = Math.min(
+          Math.max(peakPx, left + badgeWidth / 2 + 2),
+          right - badgeWidth / 2 - 2
+        );
+        const badgeTop = peakPy - poleHeight - badgeHeight;
+        return (
+          <g key={`flag-${i}`} style={{ cursor: 'default' }}>
+            <line
+              x1={peakPx} y1={peakPy}
+              x2={peakPx} y2={peakPy - poleHeight}
+              stroke={color}
+              strokeWidth={1.5}
+              strokeDasharray="3 2"
+            />
+            <rect
+              x={bx - badgeWidth / 2}
+              y={badgeTop}
+              width={badgeWidth}
+              height={badgeHeight}
+              rx={8}
+              fill={color}
+            />
+            <text
+              x={bx}
+              y={badgeTop + badgeHeight - 4}
+              textAnchor="middle"
+              fill="white"
+              fontSize={10}
+              fontWeight="bold"
+            >
+              {label}
+            </text>
+          </g>
         );
       })}
     </g>
