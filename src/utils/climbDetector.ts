@@ -60,7 +60,7 @@ export function detectClimbs(points: RoutePoint[]): Climb[] {
     const gapEnd = points[run.startIdx];
     const gapDescent = gapStart.ele - gapEnd.ele;
     const gapDistance = gapEnd.distance - gapStart.distance;
-    if (gapDescent >= 0 && gapDescent < MAX_GAP_DESCENT_M && gapDistance < MAX_GAP_DISTANCE_M) {
+    if (gapDescent < MAX_GAP_DESCENT_M && gapDistance < MAX_GAP_DISTANCE_M) {
       last.endIdx = run.endIdx;
     } else {
       merged.push({ ...run });
