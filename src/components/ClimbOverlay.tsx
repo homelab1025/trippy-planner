@@ -113,7 +113,6 @@ const ClimbOverlay: React.FC<ClimbOverlayProps> = ({ climbTimeRanges, data }) =>
             stroke={CATEGORY_COLORS[cr.category]}
             strokeWidth={2.5}
             fill="none"
-            clipPath="url(#climb-elev-clip)"
           />
         );
       })}
