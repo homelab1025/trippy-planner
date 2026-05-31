@@ -51,11 +51,12 @@ function ClimbPeakLabel({ viewBox, climb, color }: {
   const text = `${CATEGORY_LABELS[climb.category]}  ↑${Math.round(climb.elevationGain)}m  ${climb.avgGrade.toFixed(1)}%  ${(climb.lengthM / 1000).toFixed(1)}km`;
   const badgeWidth = Math.max(90, text.length * 6);
   const badgeHeight = 18;
+  const bx = Math.max(x, badgeWidth / 2 + 2);
   return (
     <g>
-      <rect x={x - badgeWidth / 2} y={y + 4} width={badgeWidth} height={badgeHeight} rx={3} fill={color} opacity={0.9} />
+      <rect x={bx - badgeWidth / 2} y={y + 4} width={badgeWidth} height={badgeHeight} rx={3} fill={color} opacity={0.9} />
       <text
-        x={x}
+        x={bx}
         y={y + 4 + badgeHeight - 5}
         textAnchor="middle"
         fill="white"
@@ -72,7 +73,7 @@ const WeatherTimeline: React.FC<WeatherTimelineProps> = ({ route, weatherPoints,
   const [chartWidth, setChartWidth] = useState(800);
 
   const climbTimeRanges = useMemo(() => {
-    if (!climbs || climbs.length === 0) return [];
+    if (!climbs || climbs.length === 0 || avgSpeed <= 0) return [];
     const startMs = startTime.getTime();
     const speedFactor = avgSpeed * 1000;
     return climbs.map(climb => ({
@@ -268,7 +269,6 @@ const WeatherTimeline: React.FC<WeatherTimelineProps> = ({ route, weatherPoints,
               x2={cr.x2}
               fill={CATEGORY_COLORS[cr.category]}
               fillOpacity={0.25}
-              strokeOpacity={0}
             />
           ))}
           {climbTimeRanges.map(cr => (
