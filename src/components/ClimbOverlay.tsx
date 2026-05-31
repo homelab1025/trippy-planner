@@ -1,15 +1,27 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useXAxisScale, useYAxisScale, usePlotArea } from 'recharts';
 import type { ClimbTimeRange } from './WeatherTimeline';
+
+interface ElevDataPoint {
+  time: number;
+  elevation: number;
+}
 
 interface ClimbOverlayProps {
   climbTimeRanges: ClimbTimeRange[];
-  hoveredClimbIdx: number | null;
-  onHoverClimb: (idx: number | null) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  formattedGraphicalItems?: any[];
-  offset?: { top: number; left: number; width: number; height: number };
+  data: ElevDataPoint[];
 }
 
-const ClimbOverlay: React.FC<ClimbOverlayProps> = () => null;
+const ClimbOverlay: React.FC<ClimbOverlayProps> = ({ climbTimeRanges, data }) => {
+  const [hoveredClimbIdx, setHoveredClimbIdx] = useState<number | null>(null);
+  const xScale = useXAxisScale();
+  const yScale = useYAxisScale('elevation');
+  const plotArea = usePlotArea();
+
+  // hooks and state used in Tasks 2–5
+  void hoveredClimbIdx; void setHoveredClimbIdx; void xScale; void yScale; void plotArea; void climbTimeRanges; void data;
+
+  return null;
+};
 
 export default ClimbOverlay;

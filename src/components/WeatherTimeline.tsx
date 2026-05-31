@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ComposedChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Line, Customized } from 'recharts';
+import { ComposedChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Line } from 'recharts';
 import type { RouteData } from '../utils/gpxParser';
 import { lttbWithPinnedPoints } from '../utils/lttb';
 import type { Climb } from '../utils/climbDetector';
@@ -31,7 +31,6 @@ function formatElapsed(ms: number): string {
 
 const WeatherTimeline: React.FC<WeatherTimelineProps> = ({ route, weatherPoints, onHoverDistance, xAxisMode, weatherAvailable, avgSpeed, startTime, climbs }) => {
   const [chartWidth, setChartWidth] = useState(800);
-  const [hoveredClimbIdx, setHoveredClimbIdx] = useState<number | null>(null);
 
   const climbTimeRanges = useMemo((): ClimbTimeRange[] => {
     if (!climbs || climbs.length === 0 || avgSpeed <= 0) return [];
@@ -223,12 +222,7 @@ const WeatherTimeline: React.FC<WeatherTimelineProps> = ({ route, weatherPoints,
             name="Precip"
             isAnimationActive={false}
           />
-          <Customized
-            component={ClimbOverlay}
-            climbTimeRanges={climbTimeRanges}
-            hoveredClimbIdx={hoveredClimbIdx}
-            onHoverClimb={setHoveredClimbIdx}
-          />
+          <ClimbOverlay climbTimeRanges={climbTimeRanges} data={data} />
         </ComposedChart>
       </ResponsiveContainer>
       {weatherAvailable === false && (
