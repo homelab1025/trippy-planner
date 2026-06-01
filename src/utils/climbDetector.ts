@@ -10,6 +10,7 @@ export interface Climb {
   category: 'Cat4' | 'Cat3' | 'Cat2' | 'Cat1' | 'HC';
 }
 
+// Tuning parameters — see docs/climb-detection-parameters.html for a visual explanation.
 const MIN_GRADE_PCT = 1;
 const MAX_GAP_DESCENT_M = 30;
 const MAX_GAP_DISTANCE_M = 500;

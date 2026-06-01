@@ -32,6 +32,8 @@ function formatElapsed(ms: number): string {
 const WeatherTimeline: React.FC<WeatherTimelineProps> = ({ route, weatherPoints, onHoverDistance, xAxisMode, weatherAvailable, avgSpeed, startTime, climbs }) => {
   const [chartWidth, setChartWidth] = useState(800);
 
+  // TODO: when X-axis distance mode is added, compute x1/x2 as km values
+  // (climb.startDistance / 1000, climb.endDistance / 1000) instead of timestamps.
   const climbTimeRanges = useMemo((): ClimbTimeRange[] => {
     if (!climbs || climbs.length === 0 || avgSpeed <= 0) return [];
     const startMs = startTime.getTime();
