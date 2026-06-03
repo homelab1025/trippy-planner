@@ -14,7 +14,7 @@ export interface ChartDataPoint {
   isSample: boolean;
 }
 
-type WeatherSample = WeatherData & { point: RoutePoint; arrivalTime: Date; label: string };
+export type WeatherSample = WeatherData & { point: RoutePoint; arrivalTime: Date; label: string };
 
 export function formatElapsed(ms: number): string {
   const totalMinutes = Math.round(ms / 60000);
@@ -82,7 +82,8 @@ export function buildChartData({
     const timeLo = downsampled[lo].time, timeHi = downsampled[hi].time;
     if (
       tLo == null || tHi == null || ppLo == null || ppHi == null ||
-      pLo == null || pHi == null || wsLo == null || wsHi == null
+      pLo == null || pHi == null || wsLo == null || wsHi == null ||
+      timeLo == null || timeHi == null
     ) continue;
     for (let j = lo + 1; j < hi; j++) {
       const t = (j - lo) / (hi - lo);
