@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { Upload, Map as MapIcon, CloudRain, ChevronDown, ChevronRight } from 'lucide-react';
+import { Upload, Map as MapIcon, CloudRain, ChevronDown, ChevronRight, TrendingUp, Wind } from 'lucide-react';
 import logo from './assets/logo.png';
 import { parseGPXAsync } from './workers/gpxWorkerClient';
 import type { RouteData, RoutePoint } from './utils/gpxParser';
@@ -8,11 +8,13 @@ import { detectClimbs } from './utils/climbDetector';
 import { PROVIDERS, DEFAULT_PROVIDER, setWeatherDebug } from './services/weatherProviders';
 import type { WeatherProvider, WeatherData, WeatherRequest } from './services/weatherProviders';
 import MapComponent from './components/MapComponent';
-import WeatherTimeline from './components/WeatherTimeline';
+import ElevationChart from './components/ElevationChart';
+import PrecipChart from './components/PrecipChart';
+import TempWindChart from './components/TempWindChart';
 import BuildInfoPanel from './components/BuildInfoPanel';
+import { useWeatherChartData } from './hooks/useWeatherChartData';
 import './App.css';
 
-// We'll create separate components for Map and Timeline later
 const getLocalDateString = (date: Date): string => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -28,7 +30,7 @@ const getLocalTimeString = (date: Date): string => {
 
 function App() {
   const [route, setRoute] = useState<RouteData | null>(null);
-  const [avgSpeed, setAvgSpeed] = useState(25); // km/h
+  const [avgSpeed, setAvgSpeed] = useState(25);
   const [startTime, setStartTime] = useState<Date>(new Date());
   const [weatherPoints, setWeatherPoints] = useState<(WeatherData & { point: RoutePoint; arrivalTime: Date; label: string })[]>([]);
   const [loading, setLoading] = useState(false);
@@ -41,11 +43,14 @@ function App() {
   const [techDetailsOpen, setTechDetailsOpen] = useState(false);
   const [weatherAvailable, setWeatherAvailable] = useState<boolean | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<WeatherProvider>(DEFAULT_PROVIDER);
+  const [chartWidth, setChartWidth] = useState(800);
 
   const climbs = useMemo(
     () => (route ? detectClimbs(route.points) : []),
     [route]
   );
+
+  const chartData = useWeatherChartData({ route, weatherPoints, chartWidth, avgSpeed, startTime });
 
   const todayStr = getLocalDateString(new Date());
   const maxDate = new Date();
@@ -102,7 +107,6 @@ function App() {
 
     setWeatherAvailable(null);
 
-    // TODO: make sample count dynamic based on route length (currently fixed at 10 intervals)
     const interval = currentRoute.totalDistance / 10;
     const requestMap = new Map<number, WeatherRequest>();
     const metaMap = new Map<number, { point: RoutePoint; arrivalTime: Date; label: string }>();
@@ -152,7 +156,6 @@ function App() {
     setWeatherDebug(weatherDebug);
   }, [weatherDebug]);
 
-  // Stable reference prevents WeatherTimeline (React.memo'd) from re-rendering on every hover
   const onHoverDistance = useCallback((distanceKm: number | null) => {
     if (distanceKm === null || !route) { setHoveredPoint(null); return; }
     const targetM = distanceKm * 1000;
@@ -173,7 +176,7 @@ function App() {
           <img src={logo} alt="Trippy Planner" className="logo-icon" />
           <h1>Trippy Planner</h1>
         </div>
-        
+
         <div className="upload-section">
           <label htmlFor="gpx-upload" className={`btn-primary ${loading ? 'disabled' : ''}`} style={{ pointerEvents: loading ? 'none' : 'auto' }}>
             {loading ? 'Processing...' : (
@@ -183,11 +186,11 @@ function App() {
               </>
             )}
           </label>
-          <input 
-            id="gpx-upload" 
-            type="file" 
-            accept=".gpx" 
-            onChange={handleFileUpload} 
+          <input
+            id="gpx-upload"
+            type="file"
+            accept=".gpx"
+            onChange={handleFileUpload}
             disabled={loading}
             style={{ display: 'none' }}
           />
@@ -197,118 +200,153 @@ function App() {
       <main className="main-content">
         <aside className="sidebar">
           <div className="sidebar-scrollable">
-          <div className="glass-panel control-card">
-            <h3>Ride Details</h3>
-            <div className="input-group">
-              <label htmlFor="avg-speed">Average Speed (km/h)</label>
-              <input 
-                id="avg-speed"
-                type="number" 
-                value={avgSpeed} 
-                onChange={(e) => setAvgSpeed(Number(e.target.value))}
-                min="5"
-                max="60"
-              />
-            </div>
-            <div className="datetime-row">
+            <div className="glass-panel control-card">
+              <h3>Ride Details</h3>
               <div className="input-group">
-                <label htmlFor="start-date">Start Date</label>
+                <label htmlFor="avg-speed">Average Speed (km/h)</label>
                 <input
-                  id="start-date"
-                  type="date"
-                  value={getLocalDateString(startTime)}
-                  onChange={(e) => handleDateChange(e.target.value)}
-                  min={todayStr}
-                  max={maxDateStr}
+                  id="avg-speed"
+                  type="number"
+                  value={avgSpeed}
+                  onChange={(e) => setAvgSpeed(Number(e.target.value))}
+                  min="5"
+                  max="60"
                 />
               </div>
-              <div className="input-group">
-                <label htmlFor="start-time">Start Time</label>
-                <input
-                  id="start-time"
-                  type="time"
-                  value={getLocalTimeString(startTime)}
-                  onChange={(e) => handleTimeChange(e.target.value)}
-                />
-              </div>
-            </div>
-            <div style={{ marginTop: '16px', display: 'flex', gap: '8px' }}>
-              <button
-                className={xAxisMode === 'clock' ? 'btn-primary' : ''}
-                style={xAxisMode === 'clock'
-                  ? { padding: '6px 16px', fontSize: '0.875rem' }
-                  : { padding: '6px 16px', fontSize: '0.875rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontWeight: '600' }
-                }
-                onClick={() => setXAxisMode('clock')}
-              >
-                Clock
-              </button>
-              <button
-                className={xAxisMode === 'elapsed' ? 'btn-primary' : ''}
-                style={xAxisMode === 'elapsed'
-                  ? { padding: '6px 16px', fontSize: '0.875rem' }
-                  : { padding: '6px 16px', fontSize: '0.875rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontWeight: '600' }
-                }
-                onClick={() => setXAxisMode('elapsed')}
-              >
-                Elapsed
-              </button>
-            </div>
-          </div>
-
-          {route && (
-            <div className="glass-panel stats-card">
-              <h3>{route.name}</h3>
-              <div className="stats-grid">
-                <div className="stat-item">
-                  <span className="stat-label">Distance</span>
-                  <span className="stat-value">{(route.totalDistance / 1000).toFixed(1)} km</span>
+              <div className="datetime-row">
+                <div className="input-group">
+                  <label htmlFor="start-date">Start Date</label>
+                  <input
+                    id="start-date"
+                    type="date"
+                    value={getLocalDateString(startTime)}
+                    onChange={(e) => handleDateChange(e.target.value)}
+                    min={todayStr}
+                    max={maxDateStr}
+                  />
                 </div>
-                <div className="stat-item">
-                  <span className="stat-label">Elevation Gain</span>
-                  <span className="stat-value">{Math.round(route.totalElevationGain)} m</span>
+                <div className="input-group">
+                  <label htmlFor="start-time">Start Time</label>
+                  <input
+                    id="start-time"
+                    type="time"
+                    value={getLocalTimeString(startTime)}
+                    onChange={(e) => handleTimeChange(e.target.value)}
+                  />
                 </div>
               </div>
+              <div style={{ marginTop: '16px', display: 'flex', gap: '8px' }}>
+                <button
+                  className={xAxisMode === 'clock' ? 'btn-primary' : ''}
+                  style={xAxisMode === 'clock'
+                    ? { padding: '6px 16px', fontSize: '0.875rem' }
+                    : { padding: '6px 16px', fontSize: '0.875rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontWeight: '600' }
+                  }
+                  onClick={() => setXAxisMode('clock')}
+                >
+                  Clock
+                </button>
+                <button
+                  className={xAxisMode === 'elapsed' ? 'btn-primary' : ''}
+                  style={xAxisMode === 'elapsed'
+                    ? { padding: '6px 16px', fontSize: '0.875rem' }
+                    : { padding: '6px 16px', fontSize: '0.875rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontWeight: '600' }
+                  }
+                  onClick={() => setXAxisMode('elapsed')}
+                >
+                  Elapsed
+                </button>
+              </div>
             </div>
-          )}
 
+            {route && (
+              <div className="glass-panel stats-card">
+                <h3>{route.name}</h3>
+                <div className="stats-grid">
+                  <div className="stat-item">
+                    <span className="stat-label">Distance</span>
+                    <span className="stat-value">{(route.totalDistance / 1000).toFixed(1)} km</span>
+                  </div>
+                  <div className="stat-item">
+                    <span className="stat-label">Elevation Gain</span>
+                    <span className="stat-value">{Math.round(route.totalElevationGain)} m</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </aside>
 
         <section className="display-area">
-          <div className="glass-panel map-container">
-            {!route ? (
-              <div className="empty-state">
-                <MapIcon size={48} />
-                <p>Upload a GPX file to see your route</p>
-              </div>
-            ) : (
-              <MapComponent
-                route={route}
-                hoveredPoint={hoveredPoint}
-                debugPins={weatherDebug ? weatherPoints.map(wp => ({ lat: wp.point.lat, lng: wp.point.lng, label: wp.label })) : undefined}
-              />
-            )}
+          <div className="display-left">
+            <div className="glass-panel map-container">
+              {!route ? (
+                <div className="empty-state">
+                  <MapIcon size={48} />
+                  <p>Upload a GPX file to see your route</p>
+                </div>
+              ) : (
+                <MapComponent
+                  route={route}
+                  hoveredPoint={hoveredPoint}
+                  debugPins={weatherDebug ? weatherPoints.map(wp => ({ lat: wp.point.lat, lng: wp.point.lng, label: wp.label })) : undefined}
+                />
+              )}
+            </div>
+
+            <div className="glass-panel elevation-container">
+              {!route ? (
+                <div className="empty-state">
+                  <TrendingUp size={32} />
+                  <p>Elevation profile will appear here</p>
+                </div>
+              ) : (
+                <ElevationChart
+                  route={route}
+                  climbs={climbs}
+                  avgSpeed={avgSpeed}
+                  startTime={startTime}
+                  xAxisMode={xAxisMode}
+                  data={chartData}
+                  onHoverDistance={onHoverDistance}
+                  onResize={setChartWidth}
+                />
+              )}
+            </div>
           </div>
 
-          <div className="glass-panel timeline-container">
-            {!route ? (
-              <div className="empty-state">
-                <CloudRain size={32} />
-                <p>Weather timeline will appear here</p>
-              </div>
-            ) : (
-              <WeatherTimeline
-                route={route}
-                weatherPoints={weatherPoints}
-                onHoverDistance={onHoverDistance}
-                xAxisMode={xAxisMode}
-                weatherAvailable={weatherAvailable}
-                avgSpeed={avgSpeed}
-                startTime={startTime}
-                climbs={climbs}
-              />
-            )}
+          <div className="display-right">
+            <div className="glass-panel precip-container">
+              {!route ? (
+                <div className="empty-state">
+                  <CloudRain size={32} />
+                  <p>Precipitation will appear here</p>
+                </div>
+              ) : (
+                <PrecipChart
+                  data={chartData}
+                  xAxisMode={xAxisMode}
+                  onHoverDistance={onHoverDistance}
+                  weatherAvailable={weatherAvailable}
+                />
+              )}
+            </div>
+
+            <div className="glass-panel tempwind-container">
+              {!route ? (
+                <div className="empty-state">
+                  <Wind size={32} />
+                  <p>Temperature &amp; wind will appear here</p>
+                </div>
+              ) : (
+                <TempWindChart
+                  data={chartData}
+                  xAxisMode={xAxisMode}
+                  onHoverDistance={onHoverDistance}
+                  weatherAvailable={weatherAvailable}
+                />
+              )}
+            </div>
           </div>
         </section>
 
@@ -322,80 +360,80 @@ function App() {
               {techDetailsOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
             </h3>
             {techDetailsOpen && (<>
-            <div className="input-group">
-              <label htmlFor="dp-epsilon">DP Epsilon (m)</label>
-              <input
-                id="dp-epsilon"
-                type="number"
-                min="1"
-                step="1"
-                value={dpEpsilon}
-                disabled={route !== null}
-                onChange={(e) => {
-                  const n = Number(e.target.value);
-                  if (Number.isFinite(n)) setDpEpsilon(Math.max(1, n));
-                }}
-              />
-            </div>
-            <div className="input-group" style={{ marginTop: '16px' }}>
-              <label htmlFor="dp-max-gap">Max Gap (m)</label>
-              <input
-                id="dp-max-gap"
-                type="number"
-                min="1"
-                step="10"
-                value={dpMaxGap}
-                disabled={route !== null}
-                onChange={(e) => {
-                  const n = Number(e.target.value);
-                  if (Number.isFinite(n)) setDpMaxGap(Math.max(1, n));
-                }}
-              />
-            </div>
-            <div className="stats-grid" style={{ marginTop: '20px' }}>
-              <div className="stat-item">
-                <span className="stat-label">Original Points</span>
-                <span className="stat-value">{route ? route.originalPointCount.toLocaleString() : '—'}</span>
+              <div className="input-group">
+                <label htmlFor="dp-epsilon">DP Epsilon (m)</label>
+                <input
+                  id="dp-epsilon"
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={dpEpsilon}
+                  disabled={route !== null}
+                  onChange={(e) => {
+                    const n = Number(e.target.value);
+                    if (Number.isFinite(n)) setDpEpsilon(Math.max(1, n));
+                  }}
+                />
               </div>
-              <div className="stat-item">
-                <span className="stat-label">Map Points</span>
-                <span className="stat-value">{route ? route.points.length.toLocaleString() : '—'}</span>
+              <div className="input-group" style={{ marginTop: '16px' }}>
+                <label htmlFor="dp-max-gap">Max Gap (m)</label>
+                <input
+                  id="dp-max-gap"
+                  type="number"
+                  min="1"
+                  step="10"
+                  value={dpMaxGap}
+                  disabled={route !== null}
+                  onChange={(e) => {
+                    const n = Number(e.target.value);
+                    if (Number.isFinite(n)) setDpMaxGap(Math.max(1, n));
+                  }}
+                />
               </div>
-              <div className="stat-item">
-                <span className="stat-label">Parse time</span>
-                <span className="stat-value">{parseMetrics ? `${parseMetrics.totalMs.toFixed(0)} ms` : '—'}</span>
+              <div className="stats-grid" style={{ marginTop: '20px' }}>
+                <div className="stat-item">
+                  <span className="stat-label">Original Points</span>
+                  <span className="stat-value">{route ? route.originalPointCount.toLocaleString() : '—'}</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-label">Map Points</span>
+                  <span className="stat-value">{route ? route.points.length.toLocaleString() : '—'}</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-label">Parse time</span>
+                  <span className="stat-value">{parseMetrics ? `${parseMetrics.totalMs.toFixed(0)} ms` : '—'}</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-label">File</span>
+                  <span className="stat-value">{parseMetrics ? `${parseMetrics.fileSizeKb.toFixed(1)} KB` : '—'}</span>
+                </div>
               </div>
-              <div className="stat-item">
-                <span className="stat-label">File</span>
-                <span className="stat-value">{parseMetrics ? `${parseMetrics.fileSizeKb.toFixed(1)} KB` : '—'}</span>
+              <div className="input-group" style={{ marginTop: '16px' }}>
+                <label htmlFor="weather-provider">Weather Provider</label>
+                <select
+                  id="weather-provider"
+                  value={selectedProvider.id}
+                  onChange={(e) => {
+                    const next = PROVIDERS.find(p => p.id === e.target.value && p.available);
+                    if (next) setSelectedProvider(next);
+                  }}
+                >
+                  {PROVIDERS.map(p => (
+                    <option key={p.id} value={p.id} disabled={!p.available}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
               </div>
-            </div>
-            <div className="input-group" style={{ marginTop: '16px' }}>
-              <label htmlFor="weather-provider">Weather Provider</label>
-              <select
-                id="weather-provider"
-                value={selectedProvider.id}
-                onChange={(e) => {
-                  const next = PROVIDERS.find(p => p.id === e.target.value && p.available);
-                  if (next) setSelectedProvider(next);
-                }}
-              >
-                {PROVIDERS.map(p => (
-                  <option key={p.id} value={p.id} disabled={!p.available}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="input-group" style={{ marginTop: '16px', flexDirection: 'row', alignItems: 'center', gap: '8px' }}>
-              <input
-                id="weather-debug"
-                type="checkbox"
-                checked={weatherDebug}
-                onChange={(e) => setWeatherDebugState(e.target.checked)}
-              />
-              <label htmlFor="weather-debug" style={{ marginBottom: 0, cursor: 'pointer' }}>Weather debug</label>
-            </div>
+              <div className="input-group" style={{ marginTop: '16px', flexDirection: 'row', alignItems: 'center', gap: '8px' }}>
+                <input
+                  id="weather-debug"
+                  type="checkbox"
+                  checked={weatherDebug}
+                  onChange={(e) => setWeatherDebugState(e.target.checked)}
+                />
+                <label htmlFor="weather-debug" style={{ marginBottom: 0, cursor: 'pointer' }}>Weather debug</label>
+              </div>
             </>)}
           </div>
           <BuildInfoPanel />
