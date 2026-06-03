@@ -1,4 +1,3 @@
-// src/components/ElevationChart.tsx
 import React, { useMemo } from 'react';
 import {
   ComposedChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -42,7 +41,7 @@ const ElevationChart: React.FC<ElevationChartProps> = ({
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-      <ResponsiveContainer width="100%" height="100%" onResize={(w) => onResize(w)}>
+      <ResponsiveContainer width="100%" height="100%" onResize={onResize}>
         <ComposedChart
           data={data}
           margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
