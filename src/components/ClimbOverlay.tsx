@@ -40,8 +40,6 @@ interface ClimbOverlayProps {
 const ClimbOverlay: React.FC<ClimbOverlayProps> = ({ climbTimeRanges, data }) => {
   const [hoveredClimbIdx, setHoveredClimbIdx] = useState<number | null>(null);
 
-  // TODO: in distance mode xScale maps km values; climbTimeRanges.x1/x2 must carry km
-  // (climb.startDistance/1000, climb.endDistance/1000) for this to work unchanged.
   const xScale = useXAxisScale();
   const yScale = useYAxisScale('elevation');
   const plotArea = usePlotArea();

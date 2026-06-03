@@ -70,7 +70,7 @@ export function buildChartData({
 
   const downsampled = lttbWithPinnedPoints(
     d,
-    Math.max(chartWidth, weatherPoints.length),
+    Math.max(chartWidth || 800, weatherPoints.length),
     p => p.isSample,
     p => p.distance,
     p => p.elevation,
@@ -104,8 +104,7 @@ export function buildChartData({
 export function useWeatherChartData(args: BuildChartDataArgs): ChartDataPoint[] {
   const { route, weatherPoints, chartWidth, avgSpeed, startTime } = args;
   return useMemo(
-    () => buildChartData(args),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    () => buildChartData({ route, weatherPoints, chartWidth, avgSpeed, startTime }),
     [route, weatherPoints, chartWidth, avgSpeed, startTime],
   );
 }
