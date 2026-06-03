@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import { useXAxisScale, useYAxisScale, usePlotArea } from 'recharts';
-import type { ClimbTimeRange } from './WeatherTimeline';
 import type { Climb } from '../utils/climbDetector';
+
+export interface ClimbTimeRange extends Climb {
+  x1: number;
+  x2: number;
+}
 
 const CATEGORY_COLORS: Record<Climb['category'], string> = {
   Cat4: '#F5C518',

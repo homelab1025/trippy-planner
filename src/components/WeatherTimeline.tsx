@@ -2,8 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { ComposedChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Line } from 'recharts';
 import type { RouteData } from '../utils/gpxParser';
 import { lttbWithPinnedPoints } from '../utils/lttb';
-import type { Climb } from '../utils/climbDetector';
-import ClimbOverlay from './ClimbOverlay';
+import ClimbOverlay, { type ClimbTimeRange } from './ClimbOverlay';
 
 interface WeatherTimelineProps {
   route: RouteData;
@@ -14,12 +13,7 @@ interface WeatherTimelineProps {
   weatherAvailable?: boolean | null;
   avgSpeed: number;
   startTime: Date;
-  climbs?: Climb[];
-}
-
-export interface ClimbTimeRange extends Climb {
-  x1: number;
-  x2: number;
+  climbs?: any;
 }
 
 function formatElapsed(ms: number): string {
