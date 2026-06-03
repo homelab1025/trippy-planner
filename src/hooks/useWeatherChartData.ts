@@ -88,15 +88,13 @@ export function buildChartData({
     const pLo = downsampled[lo].precipitation, pHi = downsampled[hi].precipitation;
     const wLo = downsampled[lo].windSpeed,     wHi = downsampled[hi].windSpeed;
     const timeLo = downsampled[lo].time,       timeHi = downsampled[hi].time;
-    if (tLo == null || tHi == null || ppLo == null || ppHi == null ||
-        pLo == null || pHi == null || wLo == null || wHi == null) continue;
     for (let j = lo + 1; j < hi; j++) {
       const t = (j - lo) / (hi - lo);
-      downsampled[j].temp          = tLo  + (tHi  - tLo)  * t;
-      downsampled[j].precipProb    = ppLo + (ppHi - ppLo) * t;
-      downsampled[j].precipitation = pLo  + (pHi  - pLo)  * t;
-      downsampled[j].windSpeed     = wLo  + (wHi  - wLo)  * t;
-      downsampled[j].time          = timeLo + (timeHi - timeLo) * t;
+      if (tLo != null && tHi != null)    downsampled[j].temp          = tLo  + (tHi  - tLo)  * t;
+      if (ppLo != null && ppHi != null)  downsampled[j].precipProb    = ppLo + (ppHi - ppLo) * t;
+      if (pLo != null && pHi != null)    downsampled[j].precipitation = pLo  + (pHi  - pLo)  * t;
+      if (wLo != null && wHi != null)    downsampled[j].windSpeed     = wLo  + (wHi  - wLo)  * t;
+      downsampled[j].time = timeLo + (timeHi - timeLo) * t;
     }
   }
 

@@ -1,6 +1,6 @@
 // src/hooks/useWeatherChartData.test.ts
 import { describe, it, expect } from 'vitest';
-import { buildChartData } from './useWeatherChartData';
+import { buildChartData, formatElapsed } from './useWeatherChartData';
 
 const mockRoute = {
   name: 'Test',
@@ -71,5 +71,20 @@ describe('buildChartData', () => {
       points: [{ lat: 48.0, lng: 2.0, ele: 100, distance: 0 }],
     };
     expect(buildChartData({ ...base, route: single })).toHaveLength(1);
+  });
+});
+
+describe('formatElapsed', () => {
+  it('formats zero as "0m"', () => {
+    expect(formatElapsed(0)).toBe('0m');
+  });
+  it('formats sub-hour durations as "Xm"', () => {
+    expect(formatElapsed(30 * 60_000)).toBe('30m');
+  });
+  it('formats hour+ durations as "Xh YYm"', () => {
+    expect(formatElapsed(90 * 60_000)).toBe('1h 30m');
+  });
+  it('pads minutes with leading zero for "Xh 0Ym" style', () => {
+    expect(formatElapsed(61 * 60_000)).toBe('1h 01m');
   });
 });
