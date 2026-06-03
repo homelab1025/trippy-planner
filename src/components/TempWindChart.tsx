@@ -17,6 +17,7 @@ const TempWindChart: React.FC<TempWindChartProps> = ({ data, xAxisMode, onHoverD
     <ResponsiveContainer width="100%" height="100%">
       <ComposedChart
         data={data}
+        syncId="route-charts"
         margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
         onMouseMove={(state) => {
           const rIdx = state.activeTooltipIndex != null ? Number(state.activeTooltipIndex) : NaN;
