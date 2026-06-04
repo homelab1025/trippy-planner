@@ -11,7 +11,7 @@ export default defineConfig({
     __BUILD_DATE__: JSON.stringify(new Date().toISOString()),
   },
   test: {
-    environment: 'jsdom',
+    environment: 'node',
     exclude: ['node_modules', 'dist', 'tests'],
     setupFiles: ['./src/vitest.setup.ts'],
   },
