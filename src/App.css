@@ -1,3 +1,10 @@
+/* -- Layout tuning knobs (only place to change proportions) -- */
+:root {
+  --sidebar-width:        320px;
+  --chart-sidebar-height: 180px;
+  --hover-pane-width:     110px;
+}
+
 .app-container {
   display: flex;
   flex-direction: column;
@@ -33,9 +40,18 @@
   object-fit: cover;
 }
 
+.header-stats {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  flex: 1;
+  text-align: center;
+  padding: 0 16px;
+}
+
 .main-content {
   display: grid;
-  grid-template-columns: 320px 1fr;
+  grid-template-columns: var(--sidebar-width) 1fr;
   grid-template-rows: 1fr auto;
   gap: 24px;
   flex: 1;
@@ -59,24 +75,6 @@
   flex-direction: column;
   gap: 20px;
 }
-
-.build-info-panel {
-  flex-shrink: 0;
-  padding: 14px 16px;
-}
-
-.build-info-version {
-  font-size: 0.95rem;
-  font-weight: 700;
-  font-family: var(--font-heading);
-}
-
-.build-info-meta {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  margin-top: 4px;
-}
-
 
 .control-card, .stats-card {
   padding: 24px;
@@ -122,6 +120,26 @@
   font-family: var(--font-heading);
 }
 
+.tempwind-container,
+.precip-container {
+  height: var(--chart-sidebar-height);
+  flex-shrink: 0;
+  padding: 12px;
+  overflow: hidden;
+}
+
+.build-info-version {
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-family: var(--font-heading);
+}
+
+.build-info-meta {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
 .sidebar-bottom {
   grid-column: 1;
   grid-row: 2;
@@ -140,15 +158,66 @@
 }
 
 .map-container {
-  flex: 1;
+  flex: 2;
   overflow: hidden;
   position: relative;
 }
 
-.timeline-container {
-  height: 234px;
+.elevation-row {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
   padding: 20px;
-  overflow-x: auto;
+}
+
+.hover-pane {
+  width: var(--hover-pane-width);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0 8px;
+  font-size: 0.75rem;
+  border-left: 1px solid var(--border-color);
+  margin-left: 8px;
+}
+
+.hover-pane--empty {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.hover-pane-header {
+  font-weight: 600;
+  margin-bottom: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hover-pane-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin-bottom: 8px;
+}
+
+.hover-row {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: 4px;
+  margin-bottom: 4px;
+  align-items: center;
+}
+
+.hover-row-icon {
+  text-align: center;
+  font-size: 0.8rem;
+}
+
+.hover-row-value {
+  white-space: nowrap;
 }
 
 .empty-state {
@@ -218,5 +287,14 @@
 
   .map-container {
     height: 400px;
+  }
+
+  .tempwind-container,
+  .precip-container {
+    height: var(--chart-sidebar-height);
+  }
+
+  .elevation-row {
+    height: 240px;
   }
 }
