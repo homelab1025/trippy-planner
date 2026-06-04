@@ -230,42 +230,6 @@
   gap: 16px;
 }
 
-.weather-summary-strip {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  height: 100%;
-  align-items: center;
-}
-
-.weather-summary-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  background: var(--accent-soft);
-  padding: 12px;
-  border-radius: var(--radius-md);
-  min-width: 80px;
-}
-
-.time-label {
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: var(--accent-primary);
-}
-
-.temp {
-  font-size: 1.25rem;
-  font-weight: 700;
-}
-
-.wind {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-}
 
 @media (max-width: 1024px) {
   .main-content {

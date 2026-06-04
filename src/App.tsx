@@ -7,14 +7,14 @@ import type { RouteData, RoutePoint } from './utils/gpxParser';
 import { DP_EPSILON_METERS, DP_MAX_GAP_METERS } from './utils/douglasPeucker';
 import { detectClimbs } from './utils/climbDetector';
 import { PROVIDERS, DEFAULT_PROVIDER, setWeatherDebug } from './services/weatherProviders';
-import type { WeatherProvider, WeatherData, WeatherRequest } from './services/weatherProviders';
+import type { WeatherProvider, WeatherRequest } from './services/weatherProviders';
 import MapComponent from './components/MapComponent';
 import ElevationChart from './components/ElevationChart';
 import TempWindChart from './components/TempWindChart';
 import PrecipChart from './components/PrecipChart';
 import HoverPane from './components/HoverPane';
 import { useWeatherChartData } from './hooks/useWeatherChartData';
-import type { ChartDataPoint } from './hooks/useWeatherChartData';
+import type { ChartDataPoint, WeatherSample } from './hooks/useWeatherChartData';
 import './App.css';
 
 const getLocalDateString = (date: Date): string => {
@@ -34,7 +34,7 @@ function App() {
   const [route, setRoute] = useState<RouteData | null>(null);
   const [avgSpeed, setAvgSpeed] = useState(25);
   const [startTime, setStartTime] = useState<Date>(new Date());
-  const [weatherPoints, setWeatherPoints] = useState<(WeatherData & { point: RoutePoint; arrivalTime: Date; label: string })[]>([]);
+  const [weatherPoints, setWeatherPoints] = useState<WeatherSample[]>([]);
   const [loading, setLoading] = useState(false);
   const [hoveredPoint, setHoveredPoint] = useState<{ lat: number; lng: number } | null>(null);
   const [hoveredData, setHoveredData] = useState<ChartDataPoint | null>(null);
@@ -128,7 +128,7 @@ function App() {
     }
     try {
       const weatherResult = await provider.fetchWeather(requestMap);
-      const filtered: (WeatherData & { point: RoutePoint; arrivalTime: Date; label: string })[] = [];
+      const filtered: WeatherSample[] = [];
       for (const [key, weather] of weatherResult) {
         if (weather === null) continue;
         const meta = metaMap.get(key)!;
