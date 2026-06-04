@@ -32,10 +32,8 @@ const HoverPane: React.FC<HoverPaneProps> = React.memo(({ hoveredData, xAxisMode
 
   return (
     <div className="hover-pane">
-      <div className="hover-pane-header">
-        {timeStr} · {hoveredData.distance.toFixed(1)} km
-      </div>
-      <div className="hover-pane-divider" />
+      <HoverRow icon="⏱" value={timeStr} />
+      <HoverRow icon="→" value={`${hoveredData.distance.toFixed(1)} km`} />
       <HoverRow icon="↑" value={`${Math.round(hoveredData.elevation)} m`} />
       <HoverRow icon="🌡" value={hoveredData.temp != null ? `${Math.round(hoveredData.temp)}°C` : '—'} />
       <HoverRow icon="💨" value={hoveredData.windSpeed != null ? `${Math.round(hoveredData.windSpeed)} km/h` : '—'} />

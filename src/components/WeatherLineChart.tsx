@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  ComposedChart, Line, XAxis, YAxis, CartesianGrid, ReferenceLine, ResponsiveContainer,
 } from 'recharts';
 import { formatElapsed } from '../hooks/useWeatherChartData';
 
@@ -24,12 +24,13 @@ interface WeatherLineChartProps {
   line1Config: WeatherLineConfig;
   line2Config: WeatherLineConfig;
   xAxisMode: 'clock' | 'elapsed';
+  hoveredIndex: number | null;
   onHoverIndex: (index: number | null) => void;
   weatherAvailable: boolean | null;
 }
 
 const WeatherLineChart: React.FC<WeatherLineChartProps> = React.memo(({
-  data, line1Config, line2Config, xAxisMode, onHoverIndex, weatherAvailable,
+  data, line1Config, line2Config, xAxisMode, hoveredIndex, onHoverIndex, weatherAvailable,
 }) => (
   <div style={{ width: '100%', height: '100%', position: 'relative' }}>
     <ResponsiveContainer width="100%" height="100%">
@@ -76,14 +77,15 @@ const WeatherLineChart: React.FC<WeatherLineChartProps> = React.memo(({
           stroke="#888"
           tickFormatter={(v) => line2Config.format(v)}
         />
-        <Tooltip
-          contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}
-          formatter={(value, name) => {
-            if (name === line1Config.label) return [line1Config.format(Number(value)), name];
-            if (name === line2Config.label) return [line2Config.format(Number(value)), name];
-            return [value, name];
-          }}
-        />
+        {hoveredIndex !== null && data[hoveredIndex] != null && (
+          <ReferenceLine
+            x={data[hoveredIndex].time}
+            yAxisId={line1Config.yAxisId}
+            stroke="#aaa"
+            strokeWidth={1}
+            strokeDasharray="3 3"
+          />
+        )}
         <Line
           yAxisId={line1Config.yAxisId}
           type="monotone"

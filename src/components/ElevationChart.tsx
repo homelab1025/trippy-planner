@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import {
-  ComposedChart, Area, XAxis, YAxis, CartesianGrid, ResponsiveContainer,
+  ComposedChart, Area, XAxis, YAxis, CartesianGrid, ReferenceLine, ReferenceDot, ResponsiveContainer,
 } from 'recharts';
 import type { Climb } from '../utils/climbDetector';
 import { formatElapsed } from '../hooks/useWeatherChartData';
@@ -21,10 +21,11 @@ interface ElevationChartProps {
   xAxisMode: 'clock' | 'elapsed';
   onHoverIndex: (index: number | null) => void;
   onResize: (width: number) => void;
+  hoveredIndex: number | null;
 }
 
 const ElevationChart: React.FC<ElevationChartProps> = ({
-  data, totalDistance, climbs, avgSpeed, startTime, xAxisMode, onHoverIndex, onResize,
+  data, totalDistance, climbs, avgSpeed, startTime, xAxisMode, onHoverIndex, onResize, hoveredIndex,
 }) => {
   const climbTimeRanges = useMemo((): ClimbTimeRange[] => {
     if (!climbs.length || avgSpeed <= 0) return [];
@@ -89,9 +90,30 @@ const ElevationChart: React.FC<ElevationChartProps> = ({
             fill="url(#colorEle)"
             name="Elevation"
             dot={false}
+            activeDot={false}
             isAnimationActive={false}
           />
           <ClimbOverlay climbTimeRanges={climbTimeRanges} data={data} />
+          {hoveredIndex !== null && data[hoveredIndex] != null && (
+            <>
+              <ReferenceLine
+                x={data[hoveredIndex].time}
+                yAxisId="elevation"
+                stroke="#aaa"
+                strokeWidth={1}
+                strokeDasharray="3 3"
+              />
+              <ReferenceDot
+                x={data[hoveredIndex].time}
+                y={data[hoveredIndex].elevation}
+                yAxisId="elevation"
+                r={4}
+                fill="#2d5a27"
+                stroke="white"
+                strokeWidth={2}
+              />
+            </>
+          )}
         </ComposedChart>
       </ResponsiveContainer>
     </div>

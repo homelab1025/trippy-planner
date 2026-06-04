@@ -189,20 +189,6 @@
   color: var(--text-secondary);
 }
 
-.hover-pane-header {
-  font-weight: 600;
-  margin-bottom: 8px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.hover-pane-divider {
-  height: 1px;
-  background: var(--border-color);
-  margin-bottom: 8px;
-}
-
 .hover-row {
   display: grid;
   grid-template-columns: 20px 1fr;

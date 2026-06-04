@@ -7,10 +7,11 @@ import ElevationChart, { type ElevationPoint } from './ElevationChart';
 vi.mock('recharts', () => ({
   ComposedChart: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   Area: ({ dataKey }: { dataKey: string }) => <div data-testid={`area-${dataKey}`} />,
+  ReferenceLine: ({ x }: { x: number }) => <div data-testid="reference-line" data-x={x} />,
+  ReferenceDot: ({ x, y }: { x: number; y: number }) => <div data-testid="reference-dot" data-x={x} data-y={y} />,
   XAxis: () => null,
   YAxis: () => null,
   CartesianGrid: () => null,
-  Tooltip: () => null,
   ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
@@ -32,6 +33,7 @@ const defaultProps = {
   xAxisMode: 'clock' as const,
   onHoverIndex: vi.fn(),
   onResize: vi.fn(),
+  hoveredIndex: null as number | null,
 };
 
 describe('ElevationChart', () => {
@@ -45,5 +47,22 @@ describe('ElevationChart', () => {
   it('renders ClimbOverlay', () => {
     render(<ElevationChart {...defaultProps} />);
     expect(screen.getByTestId('climb-overlay')).toBeInTheDocument();
+  });
+
+  it('renders reference line and dot at hovered point when hoveredIndex is set', () => {
+    render(<ElevationChart {...defaultProps} hoveredIndex={1} />);
+    const line = screen.getByTestId('reference-line');
+    const dot = screen.getByTestId('reference-dot');
+    expect(line).toBeInTheDocument();
+    expect(line.dataset.x).toBe('2000');
+    expect(dot).toBeInTheDocument();
+    expect(dot.dataset.x).toBe('2000');
+    expect(dot.dataset.y).toBe('200');
+  });
+
+  it('does not render reference line or dot when hoveredIndex is null', () => {
+    render(<ElevationChart {...defaultProps} hoveredIndex={null} />);
+    expect(screen.queryByTestId('reference-line')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('reference-dot')).not.toBeInTheDocument();
   });
 });

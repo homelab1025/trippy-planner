@@ -74,4 +74,9 @@ describe('HoverPane', () => {
     render(<HoverPane hoveredData={fullData} xAxisMode="elapsed" startTime={START} />);
     expect(screen.getByText(/4h 34m/)).toBeInTheDocument();
   });
+
+  it('shows distance as a hover row', () => {
+    render(<HoverPane hoveredData={fullData} xAxisMode="clock" startTime={START} />);
+    expect(screen.getByText('42.1 km')).toBeInTheDocument();
+  });
 });

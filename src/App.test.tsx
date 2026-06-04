@@ -87,6 +87,7 @@ vi.mock('./components/ElevationChart', () => ({
     avgSpeed: number;
     startTime: Date;
     onResize: (w: number) => void;
+    hoveredIndex: number | null;
   }) => {
     capturedHoverCb = onHoverIndex;
     capturedXAxisMode = xAxisMode;
@@ -105,6 +106,7 @@ vi.mock('./components/WeatherLineChart', () => ({
     line1Config: { label: string };
     line2Config: { label: string };
     xAxisMode: 'clock' | 'elapsed';
+    hoveredIndex: number | null;
     onHoverIndex: (index: number | null) => void;
     weatherAvailable: boolean | null;
   }) => {

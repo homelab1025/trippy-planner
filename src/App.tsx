@@ -51,6 +51,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [hoveredPoint, setHoveredPoint] = useState<{ lat: number; lng: number } | null>(null);
   const [hoveredData, setHoveredData] = useState<ChartDataPoint | null>(null);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [xAxisMode, setXAxisMode] = useState<'clock' | 'elapsed'>('clock');
   const [dpEpsilon, setDpEpsilon] = useState(DP_EPSILON_METERS);
   const [dpMaxGap, setDpMaxGap] = useState(DP_MAX_GAP_METERS);
@@ -180,6 +181,7 @@ function App() {
   }, [weatherDebug]);
 
   const onHoverIndex = useCallback((index: number | null) => {
+    setHoveredIndex(index);
     if (index === null || !route) {
       setHoveredPoint(null);
       setHoveredData(null);
@@ -303,6 +305,7 @@ function App() {
                   line1Config={TEMP_LINE}
                   line2Config={WIND_LINE}
                   xAxisMode={xAxisMode}
+                  hoveredIndex={hoveredIndex}
                   onHoverIndex={onHoverIndex}
                   weatherAvailable={weatherAvailable}
                 />
@@ -316,6 +319,7 @@ function App() {
                   line1Config={PROB_LINE}
                   line2Config={AMOUNT_LINE}
                   xAxisMode={xAxisMode}
+                  hoveredIndex={hoveredIndex}
                   onHoverIndex={onHoverIndex}
                   weatherAvailable={weatherAvailable}
                 />
@@ -357,6 +361,7 @@ function App() {
                   xAxisMode={xAxisMode}
                   onHoverIndex={onHoverIndex}
                   onResize={setChartWidth}
+                  hoveredIndex={hoveredIndex}
                 />
                 <HoverPane hoveredData={hoveredData} xAxisMode={xAxisMode} startTime={startTime} />
               </>
