@@ -2,8 +2,7 @@
 import { render, screen, cleanup } from '@testing-library/react';
 import { vi, describe, it, expect, afterEach } from 'vitest';
 import React from 'react';
-import ElevationChart from './ElevationChart';
-import type { ChartDataPoint } from '../hooks/useWeatherChartData';
+import ElevationChart, { type ElevationPoint } from './ElevationChart';
 
 vi.mock('recharts', () => ({
   ComposedChart: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
@@ -19,9 +18,9 @@ vi.mock('./ClimbOverlay', () => ({
   default: () => <div data-testid="climb-overlay" />,
 }));
 
-const sampleData: ChartDataPoint[] = [
-  { distance: 0, elevation: 100, temp: undefined, precipProb: undefined, precipitation: undefined, windSpeed: undefined, time: 1000, isSample: false },
-  { distance: 1, elevation: 200, temp: 18, precipProb: 40, precipitation: 0.2, windSpeed: 15, time: 2000, isSample: true },
+const sampleData: ElevationPoint[] = [
+  { distance: 0, elevation: 100, time: 1000 },
+  { distance: 1, elevation: 200, time: 2000 },
 ];
 
 const defaultProps = {

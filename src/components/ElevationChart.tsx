@@ -3,12 +3,17 @@ import {
   ComposedChart, Area, XAxis, YAxis, CartesianGrid, ResponsiveContainer,
 } from 'recharts';
 import type { Climb } from '../utils/climbDetector';
-import type { ChartDataPoint } from '../hooks/useWeatherChartData';
 import { formatElapsed } from '../hooks/useWeatherChartData';
 import ClimbOverlay, { type ClimbTimeRange } from './ClimbOverlay';
 
+export interface ElevationPoint {
+  distance: number;
+  elevation: number;
+  time: number;
+}
+
 interface ElevationChartProps {
-  data: ChartDataPoint[];
+  data: ElevationPoint[];
   totalDistance: number;
   climbs: Climb[];
   avgSpeed: number;

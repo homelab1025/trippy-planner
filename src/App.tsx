@@ -10,12 +10,25 @@ import { PROVIDERS, DEFAULT_PROVIDER, setWeatherDebug } from './services/weather
 import type { WeatherProvider, WeatherRequest } from './services/weatherProviders';
 import MapComponent from './components/MapComponent';
 import ElevationChart from './components/ElevationChart';
-import TempWindChart from './components/TempWindChart';
-import PrecipChart from './components/PrecipChart';
+import WeatherLineChart from './components/WeatherLineChart';
+import type { WeatherLineConfig } from './components/WeatherLineChart';
 import HoverPane from './components/HoverPane';
 import { useWeatherChartData } from './hooks/useWeatherChartData';
 import type { ChartDataPoint, WeatherSample } from './hooks/useWeatherChartData';
 import './App.css';
+
+const TEMP_LINE: WeatherLineConfig = {
+  label: 'Temp', color: '#ff7300', format: (v) => `${Math.round(v)}°C`, yAxisId: 'left',
+};
+const WIND_LINE: WeatherLineConfig = {
+  label: 'Wind', color: '#4A9FD9', format: (v) => `${Math.round(v)} km/h`, yAxisId: 'right',
+};
+const PROB_LINE: WeatherLineConfig = {
+  label: 'Prob', color: '#4A90D9', format: (v) => `${Math.round(v)}%`, yAxisId: 'left', domain: [0, 100],
+};
+const AMOUNT_LINE: WeatherLineConfig = {
+  label: 'Amount', color: '#A0C8F0', format: (v) => `${v.toFixed(1)} mm`, yAxisId: 'right',
+};
 
 const getLocalDateString = (date: Date): string => {
   const year = date.getFullYear();
@@ -57,6 +70,21 @@ function App() {
   );
 
   const chartData = useWeatherChartData({ route, weatherPoints, chartWidth, avgSpeed, startTime });
+
+  const elevationData = useMemo(
+    () => chartData.map(({ distance, elevation, time }) => ({ distance, elevation, time })),
+    [chartData]
+  );
+
+  const tempWindData = useMemo(
+    () => chartData.map(({ time, distance, temp, windSpeed }) => ({ time, distance, line1: temp, line2: windSpeed })),
+    [chartData]
+  );
+
+  const precipData = useMemo(
+    () => chartData.map(({ time, distance, precipProb, precipitation }) => ({ time, distance, line1: precipProb, line2: precipitation })),
+    [chartData]
+  );
 
   const todayStr = getLocalDateString(new Date());
   const maxDate = new Date();
@@ -270,8 +298,10 @@ function App() {
 
             {route && (
               <div className="glass-panel tempwind-container">
-                <TempWindChart
-                  data={chartData}
+                <WeatherLineChart
+                  data={tempWindData}
+                  line1Config={TEMP_LINE}
+                  line2Config={WIND_LINE}
                   xAxisMode={xAxisMode}
                   onHoverIndex={onHoverIndex}
                   weatherAvailable={weatherAvailable}
@@ -281,8 +311,10 @@ function App() {
 
             {route && (
               <div className="glass-panel precip-container">
-                <PrecipChart
-                  data={chartData}
+                <WeatherLineChart
+                  data={precipData}
+                  line1Config={PROB_LINE}
+                  line2Config={AMOUNT_LINE}
                   xAxisMode={xAxisMode}
                   onHoverIndex={onHoverIndex}
                   weatherAvailable={weatherAvailable}
@@ -317,7 +349,7 @@ function App() {
             ) : (
               <>
                 <ElevationChart
-                  data={chartData}
+                  data={elevationData}
                   totalDistance={route.totalDistance}
                   climbs={climbs}
                   avgSpeed={avgSpeed}

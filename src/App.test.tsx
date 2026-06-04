@@ -31,8 +31,8 @@ let capturedHoverCb: ((index: number | null) => void) | null = null;
 let capturedXAxisMode: 'clock' | 'elapsed' | null = null;
 
 // capturedTempWindData / capturedPrecipData capture last props for weather assertions.
-let capturedTempWindData: Array<{ temp?: number; precipProb?: number; precipitation?: number }> = [];
-let capturedPrecipData: Array<{ temp?: number; precipProb?: number; precipitation?: number }> = [];
+let capturedTempWindData: Array<{ line1?: number; line2?: number }> = [];
+let capturedPrecipData: Array<{ line1?: number; line2?: number }> = [];
 let capturedTempWindWeatherAvailable: boolean | null | undefined = undefined;
 let capturedPrecipWeatherAvailable: boolean | null | undefined = undefined;
 
@@ -99,38 +99,28 @@ vi.mock('./components/ElevationChart', () => ({
   },
 }));
 
-vi.mock('./components/TempWindChart', () => ({
-  default: ({ data, xAxisMode, onHoverIndex, weatherAvailable }: {
-    data: Array<{ temp?: number; precipProb?: number; precipitation?: number }>;
+vi.mock('./components/WeatherLineChart', () => ({
+  default: ({ data, line1Config, weatherAvailable, xAxisMode }: {
+    data: Array<{ line1?: number; line2?: number; time: number; distance: number }>;
+    line1Config: { label: string };
+    line2Config: { label: string };
     xAxisMode: 'clock' | 'elapsed';
     onHoverIndex: (index: number | null) => void;
     weatherAvailable: boolean | null;
   }) => {
-    capturedTempWindData = data;
-    capturedTempWindWeatherAvailable = weatherAvailable;
+    const isTempWind = line1Config.label === 'Temp';
+    if (isTempWind) {
+      capturedTempWindData = data;
+      capturedTempWindWeatherAvailable = weatherAvailable;
+    } else {
+      capturedPrecipData = data;
+      capturedPrecipWeatherAvailable = weatherAvailable;
+    }
     return (
       <div
-        data-testid="tempwind-chart"
+        data-testid={isTempWind ? 'tempwind-chart' : 'precip-chart'}
         data-weather-available={String(weatherAvailable)}
         data-xaxis-mode={xAxisMode}
-      />
-    );
-  },
-}));
-
-vi.mock('./components/PrecipChart', () => ({
-  default: ({ data, xAxisMode, onHoverIndex, weatherAvailable }: {
-    data: Array<{ temp?: number; precipProb?: number; precipitation?: number }>;
-    xAxisMode: 'clock' | 'elapsed';
-    onHoverIndex: (index: number | null) => void;
-    weatherAvailable: boolean | null;
-  }) => {
-    capturedPrecipData = data;
-    capturedPrecipWeatherAvailable = weatherAvailable;
-    return (
-      <div
-        data-testid="precip-chart"
-        data-weather-available={String(weatherAvailable)}
       />
     );
   },
