@@ -57,8 +57,7 @@ function App() {
   const [dpMaxGap, setDpMaxGap] = useState(DP_MAX_GAP_METERS);
   const [parseMetrics, setParseMetrics] = useState<{ totalMs: number; fileSizeKb: number } | null>(null);
   const [weatherDebug, setWeatherDebugState] = useState(false);
-  const [techDetailsOpen, setTechDetailsOpen] = useState(false);
-  const [rideDetailsOpen, setRideDetailsOpen] = useState(true);
+  const [activePanel, setActivePanel] = useState<'ride' | 'weather' | 'tech' | null>('ride');
   const [weatherAvailable, setWeatherAvailable] = useState<boolean | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<WeatherProvider>(DEFAULT_PROVIDER);
   const [chartWidth, setChartWidth] = useState(800);
@@ -127,7 +126,7 @@ function App() {
       const measure = performance.measure('gpx-parse', 'gpx-parse-start', 'gpx-parse-end');
       setParseMetrics({ totalMs: measure.duration, fileSizeKb });
       setRoute(parsedRoute);
-      setRideDetailsOpen(false);
+      setActivePanel(p => p === 'ride' ? 'weather' : p);
     } catch (error) {
       console.error('Failed to parse GPX:', error);
       const message = error instanceof Error ? error.message : 'Failed to parse GPX file. Please ensure it is a valid track.';
@@ -231,13 +230,13 @@ function App() {
           <div className="sidebar-scrollable">
             <div className="glass-panel control-card">
               <h3
-                onClick={() => setRideDetailsOpen(o => !o)}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', marginBottom: rideDetailsOpen ? '20px' : 0 }}
+                onClick={() => setActivePanel(p => p === 'ride' ? null : 'ride')}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', marginBottom: activePanel === 'ride' ? '20px' : 0 }}
               >
                 Ride Details
-                {rideDetailsOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                {activePanel === 'ride' ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
               </h3>
-              {rideDetailsOpen && (
+              {activePanel === 'ride' && (
                 <>
                   <div className="input-group">
                     <label htmlFor="avg-speed">Average Speed (km/h)</label>
@@ -298,33 +297,139 @@ function App() {
               )}
             </div>
 
-            {route && (
-              <div className="glass-panel tempwind-container">
-                <WeatherLineChart
-                  data={tempWindData}
-                  line1Config={TEMP_LINE}
-                  line2Config={WIND_LINE}
-                  xAxisMode={xAxisMode}
-                  hoveredIndex={hoveredIndex}
-                  onHoverIndex={onHoverIndex}
-                  weatherAvailable={weatherAvailable}
-                />
-              </div>
-            )}
+            <div className="glass-panel weather-card">
+              <h3
+                onClick={() => setActivePanel(p => p === 'weather' ? null : 'weather')}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', marginBottom: activePanel === 'weather' ? '12px' : 0 }}
+              >
+                Weather
+                {activePanel === 'weather' ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+              </h3>
+              {activePanel === 'weather' && (
+                route ? (
+                  <>
+                    <div className="tempwind-container">
+                      <WeatherLineChart
+                        data={tempWindData}
+                        line1Config={TEMP_LINE}
+                        line2Config={WIND_LINE}
+                        xAxisMode={xAxisMode}
+                        hoveredIndex={hoveredIndex}
+                        onHoverIndex={onHoverIndex}
+                        weatherAvailable={weatherAvailable}
+                      />
+                    </div>
+                    <div className="precip-container" style={{ marginTop: '12px' }}>
+                      <WeatherLineChart
+                        data={precipData}
+                        line1Config={PROB_LINE}
+                        line2Config={AMOUNT_LINE}
+                        xAxisMode={xAxisMode}
+                        hoveredIndex={hoveredIndex}
+                        onHoverIndex={onHoverIndex}
+                        weatherAvailable={weatherAvailable}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '8px 0' }}>
+                    Load a route to see weather
+                  </p>
+                )
+              )}
+            </div>
 
-            {route && (
-              <div className="glass-panel precip-container">
-                <WeatherLineChart
-                  data={precipData}
-                  line1Config={PROB_LINE}
-                  line2Config={AMOUNT_LINE}
-                  xAxisMode={xAxisMode}
-                  hoveredIndex={hoveredIndex}
-                  onHoverIndex={onHoverIndex}
-                  weatherAvailable={weatherAvailable}
-                />
-              </div>
-            )}
+            <div className="glass-panel stats-card tech-details-card">
+              <h3
+                onClick={() => setActivePanel(p => p === 'tech' ? null : 'tech')}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', marginBottom: activePanel === 'tech' ? '20px' : 0 }}
+              >
+                Tech Details
+                {activePanel === 'tech' ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+              </h3>
+              {activePanel === 'tech' && (
+                <>
+                  <div className="input-group">
+                    <label htmlFor="dp-epsilon">DP Epsilon (m)</label>
+                    <input
+                      id="dp-epsilon"
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={dpEpsilon}
+                      disabled={route !== null}
+                      onChange={(e) => {
+                        const n = Number(e.target.value);
+                        if (Number.isFinite(n)) setDpEpsilon(Math.max(1, n));
+                      }}
+                    />
+                  </div>
+                  <div className="input-group" style={{ marginTop: '16px' }}>
+                    <label htmlFor="dp-max-gap">Max Gap (m)</label>
+                    <input
+                      id="dp-max-gap"
+                      type="number"
+                      min="1"
+                      step="10"
+                      value={dpMaxGap}
+                      disabled={route !== null}
+                      onChange={(e) => {
+                        const n = Number(e.target.value);
+                        if (Number.isFinite(n)) setDpMaxGap(Math.max(1, n));
+                      }}
+                    />
+                  </div>
+                  <div className="stats-grid" style={{ marginTop: '20px' }}>
+                    <div className="stat-item">
+                      <span className="stat-label">Original Points</span>
+                      <span className="stat-value">{route ? route.originalPointCount.toLocaleString() : '—'}</span>
+                    </div>
+                    <div className="stat-item">
+                      <span className="stat-label">Map Points</span>
+                      <span className="stat-value">{route ? route.points.length.toLocaleString() : '—'}</span>
+                    </div>
+                    <div className="stat-item">
+                      <span className="stat-label">Parse time</span>
+                      <span className="stat-value">{parseMetrics ? `${parseMetrics.totalMs.toFixed(0)} ms` : '—'}</span>
+                    </div>
+                    <div className="stat-item">
+                      <span className="stat-label">File</span>
+                      <span className="stat-value">{parseMetrics ? `${parseMetrics.fileSizeKb.toFixed(1)} KB` : '—'}</span>
+                    </div>
+                  </div>
+                  <div className="input-group" style={{ marginTop: '16px' }}>
+                    <label htmlFor="weather-provider">Weather Provider</label>
+                    <select
+                      id="weather-provider"
+                      value={selectedProvider.id}
+                      onChange={(e) => {
+                        const next = PROVIDERS.find(p => p.id === e.target.value && p.available);
+                        if (next) setSelectedProvider(next);
+                      }}
+                    >
+                      {PROVIDERS.map(p => (
+                        <option key={p.id} value={p.id} disabled={!p.available}>
+                          {p.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="input-group" style={{ marginTop: '16px', flexDirection: 'row', alignItems: 'center', gap: '8px' }}>
+                    <input
+                      id="weather-debug"
+                      type="checkbox"
+                      checked={weatherDebug}
+                      onChange={(e) => setWeatherDebugState(e.target.checked)}
+                    />
+                    <label htmlFor="weather-debug" style={{ marginBottom: 0, cursor: 'pointer' }}>Weather debug</label>
+                  </div>
+                  <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
+                    <div className="build-info-version">v{__APP_VERSION__}</div>
+                    <div className="build-info-meta">{buildDate}</div>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </aside>
 
@@ -369,99 +474,6 @@ function App() {
           </div>
         </section>
 
-        <div className="sidebar-bottom">
-          <div className="glass-panel stats-card tech-details-card">
-            <h3
-              onClick={() => setTechDetailsOpen(o => !o)}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', marginBottom: techDetailsOpen ? '20px' : 0 }}
-            >
-              Tech Details
-              {techDetailsOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-            </h3>
-            {techDetailsOpen && (
-              <>
-                <div className="input-group">
-                  <label htmlFor="dp-epsilon">DP Epsilon (m)</label>
-                  <input
-                    id="dp-epsilon"
-                    type="number"
-                    min="1"
-                    step="1"
-                    value={dpEpsilon}
-                    disabled={route !== null}
-                    onChange={(e) => {
-                      const n = Number(e.target.value);
-                      if (Number.isFinite(n)) setDpEpsilon(Math.max(1, n));
-                    }}
-                  />
-                </div>
-                <div className="input-group" style={{ marginTop: '16px' }}>
-                  <label htmlFor="dp-max-gap">Max Gap (m)</label>
-                  <input
-                    id="dp-max-gap"
-                    type="number"
-                    min="1"
-                    step="10"
-                    value={dpMaxGap}
-                    disabled={route !== null}
-                    onChange={(e) => {
-                      const n = Number(e.target.value);
-                      if (Number.isFinite(n)) setDpMaxGap(Math.max(1, n));
-                    }}
-                  />
-                </div>
-                <div className="stats-grid" style={{ marginTop: '20px' }}>
-                  <div className="stat-item">
-                    <span className="stat-label">Original Points</span>
-                    <span className="stat-value">{route ? route.originalPointCount.toLocaleString() : '—'}</span>
-                  </div>
-                  <div className="stat-item">
-                    <span className="stat-label">Map Points</span>
-                    <span className="stat-value">{route ? route.points.length.toLocaleString() : '—'}</span>
-                  </div>
-                  <div className="stat-item">
-                    <span className="stat-label">Parse time</span>
-                    <span className="stat-value">{parseMetrics ? `${parseMetrics.totalMs.toFixed(0)} ms` : '—'}</span>
-                  </div>
-                  <div className="stat-item">
-                    <span className="stat-label">File</span>
-                    <span className="stat-value">{parseMetrics ? `${parseMetrics.fileSizeKb.toFixed(1)} KB` : '—'}</span>
-                  </div>
-                </div>
-                <div className="input-group" style={{ marginTop: '16px' }}>
-                  <label htmlFor="weather-provider">Weather Provider</label>
-                  <select
-                    id="weather-provider"
-                    value={selectedProvider.id}
-                    onChange={(e) => {
-                      const next = PROVIDERS.find(p => p.id === e.target.value && p.available);
-                      if (next) setSelectedProvider(next);
-                    }}
-                  >
-                    {PROVIDERS.map(p => (
-                      <option key={p.id} value={p.id} disabled={!p.available}>
-                        {p.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="input-group" style={{ marginTop: '16px', flexDirection: 'row', alignItems: 'center', gap: '8px' }}>
-                  <input
-                    id="weather-debug"
-                    type="checkbox"
-                    checked={weatherDebug}
-                    onChange={(e) => setWeatherDebugState(e.target.checked)}
-                  />
-                  <label htmlFor="weather-debug" style={{ marginBottom: 0, cursor: 'pointer' }}>Weather debug</label>
-                </div>
-                <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
-                  <div className="build-info-version">v{__APP_VERSION__}</div>
-                  <div className="build-info-meta">{buildDate}</div>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
       </main>
     </div>
   );
