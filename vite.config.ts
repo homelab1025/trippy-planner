@@ -14,5 +14,9 @@ export default defineConfig({
     environment: 'node',
     exclude: ['node_modules', 'dist', 'tests'],
     setupFiles: ['./src/vitest.setup.ts'],
+    coverage: {
+      reporter: ['text', 'html'],
+      outDir: 'coverage',
+    },
   },
 })

@@ -1,0 +1,44 @@
+name: Coverage
+
+on:
+  push:
+    branches: ["master"]
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Generate coverage report
+        run: |
+          docker run --rm \
+            --user $(id -u):$(id -g) \
+            --env HOME=/tmp \
+            -v "${{ github.workspace }}:/app" \
+            -w /app \
+            node:24-alpine \
+            sh -c "npm ci && npx vitest run --coverage --coverage.provider=v8"
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: coverage
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: generate
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
