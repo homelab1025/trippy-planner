@@ -15,7 +15,6 @@ import type { WeatherLineConfig } from './components/WeatherLineChart';
 import HoverPane from './components/HoverPane';
 import { useWeatherChartData } from './hooks/useWeatherChartData';
 import type { ChartDataPoint, WeatherSample } from './hooks/useWeatherChartData';
-import './App.css';
 
 const TEMP_LINE: WeatherLineConfig = {
   label: 'Temp', color: '#ff7300', format: (v) => `${Math.round(v)}°C`, yAxisId: 'left',
@@ -201,31 +200,39 @@ function App() {
   }, [route, chartData]);
 
   return (
-    <div className="app-container">
-      <header className="header">
-        <div className="logo">
-          <img src={logo} alt="Trippy Planner" className="logo-icon" />
-          <h1>Trippy Planner</h1>
+    <div className="flex flex-col h-screen max-w-[1400px] mx-auto p-6 gap-6">
+
+      {/* Navbar */}
+      <div className="navbar bg-primary text-primary-content rounded-box shadow-lg px-4 flex-shrink-0">
+        <div className="flex-none gap-3">
+          <img src={logo} alt="Trippy Planner" className="w-10 h-10 rounded-full object-cover" />
+          <h1 className="text-xl font-bold">Trippy Planner</h1>
         </div>
         {route && (
-          <div className="header-stats">
+          <div className="flex-1 text-center text-sm opacity-90 px-4">
             {route.name}: {(route.totalDistance / 1000).toFixed(1)} km · {Math.round(route.totalElevationGain)} m of character-building
           </div>
         )}
-        <div className="upload-section">
-          <label htmlFor="gpx-upload" className={`btn-primary ${loading ? 'disabled' : ''}`} style={{ pointerEvents: loading ? 'none' : 'auto' }}>
+        <div className="flex-none ml-auto">
+          <label
+            htmlFor="gpx-upload"
+            className={`btn btn-sm btn-outline text-primary-content border-primary-content hover:bg-primary-content hover:text-primary gap-2 ${loading ? 'btn-disabled pointer-events-none' : ''}`}
+          >
             {loading ? 'Processing...' : (
               <>
-                <Upload size={20} />
+                <Upload size={16} />
                 Upload GPX
               </>
             )}
           </label>
-          <input id="gpx-upload" type="file" accept=".gpx" onChange={handleFileUpload} disabled={loading} style={{ display: 'none' }} />
+          <input id="gpx-upload" type="file" accept=".gpx" onChange={handleFileUpload} disabled={loading} className="hidden" />
         </div>
-      </header>
+      </div>
 
-      <main className="main-content">
+      {/* Main grid */}
+      <div className="grid lg:grid-cols-[320px_1fr] grid-cols-1 gap-6 flex-1 min-h-0">
+
+        {/* ── Sidebar goes here (Task 4) ── */}
         <aside className="sidebar">
           <div className="sidebar-scrollable">
             <div className="glass-panel control-card">
@@ -433,10 +440,13 @@ function App() {
           </div>
         </aside>
 
-        <section className="display-area">
-          <div className="glass-panel map-container">
+        {/* Display area */}
+        <div className="flex flex-col gap-6 min-h-0">
+
+          {/* Map card */}
+          <div className="card bg-base-100 shadow flex-[2] min-h-0 overflow-hidden">
             {!route ? (
-              <div className="empty-state">
+              <div className="flex flex-col items-center justify-center h-full text-base-content/40 gap-4">
                 <MapIcon size={48} />
                 <p>Upload a GPX file to see your route</p>
               </div>
@@ -449,9 +459,10 @@ function App() {
             )}
           </div>
 
-          <div className="glass-panel elevation-row">
+          {/* Elevation + hover pane card */}
+          <div className="card bg-base-100 shadow flex-1 min-h-0 overflow-hidden p-5 flex">
             {!route ? (
-              <div className="empty-state" style={{ flex: 1 }}>
+              <div className="flex flex-col items-center justify-center flex-1 text-base-content/40 gap-4">
                 <CloudRain size={32} />
                 <p>Weather timeline will appear here</p>
               </div>
@@ -472,9 +483,9 @@ function App() {
               </>
             )}
           </div>
-        </section>
 
-      </main>
+        </div>
+      </div>
     </div>
   );
 }
