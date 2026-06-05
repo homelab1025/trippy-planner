@@ -1,11 +1,22 @@
 // @vitest-environment jsdom
-import { render, screen, cleanup } from '@testing-library/react';
-import { vi, describe, it, expect, afterEach } from 'vitest';
+import { render, screen, cleanup, act } from '@testing-library/react';
+import { vi, describe, it, expect, afterEach, beforeEach } from 'vitest';
 import React from 'react';
 import ElevationChart, { type ElevationPoint } from './ElevationChart';
 
+let capturedMouseMove: ((state: { activeTooltipIndex?: number | null }) => void) | null = null;
+let capturedMouseLeave: (() => void) | null = null;
+
 vi.mock('recharts', () => ({
-  ComposedChart: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  ComposedChart: ({ children, onMouseMove, onMouseLeave }: {
+    children: React.ReactNode;
+    onMouseMove?: (state: { activeTooltipIndex?: number | null }) => void;
+    onMouseLeave?: () => void;
+  }) => {
+    capturedMouseMove = onMouseMove ?? null;
+    capturedMouseLeave = onMouseLeave ?? null;
+    return <div>{children}</div>;
+  },
   Area: ({ dataKey }: { dataKey: string }) => <div data-testid={`area-${dataKey}`} />,
   ReferenceLine: ({ x }: { x: number }) => <div data-testid="reference-line" data-x={x} />,
   ReferenceDot: ({ x, y }: { x: number; y: number }) => <div data-testid="reference-dot" data-x={x} data-y={y} />,
@@ -37,6 +48,12 @@ const defaultProps = {
 };
 
 describe('ElevationChart', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    capturedMouseMove = null;
+    capturedMouseLeave = null;
+  });
+
   afterEach(() => { cleanup(); });
 
   it('renders elevation area with correct dataKey', () => {
@@ -64,5 +81,35 @@ describe('ElevationChart', () => {
     render(<ElevationChart {...defaultProps} hoveredIndex={null} />);
     expect(screen.queryByTestId('reference-line')).not.toBeInTheDocument();
     expect(screen.queryByTestId('reference-dot')).not.toBeInTheDocument();
+  });
+
+  it('does not render reference line or dot when hoveredIndex is out of range', () => {
+    render(<ElevationChart {...defaultProps} hoveredIndex={99} />);
+    expect(screen.queryByTestId('reference-line')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('reference-dot')).not.toBeInTheDocument();
+  });
+
+  it('calls onHoverIndex with the active index on mouse move', () => {
+    render(<ElevationChart {...defaultProps} />);
+    act(() => { capturedMouseMove?.({ activeTooltipIndex: 1 }); });
+    expect(defaultProps.onHoverIndex).toHaveBeenCalledWith(1);
+  });
+
+  it('calls onHoverIndex(null) when activeTooltipIndex is null on mouse move', () => {
+    render(<ElevationChart {...defaultProps} />);
+    act(() => { capturedMouseMove?.({ activeTooltipIndex: null }); });
+    expect(defaultProps.onHoverIndex).toHaveBeenCalledWith(null);
+  });
+
+  it('calls onHoverIndex(null) when activeTooltipIndex is out of range', () => {
+    render(<ElevationChart {...defaultProps} />);
+    act(() => { capturedMouseMove?.({ activeTooltipIndex: 99 }); });
+    expect(defaultProps.onHoverIndex).toHaveBeenCalledWith(null);
+  });
+
+  it('calls onHoverIndex(null) on mouse leave', () => {
+    render(<ElevationChart {...defaultProps} />);
+    act(() => { capturedMouseLeave?.(); });
+    expect(defaultProps.onHoverIndex).toHaveBeenCalledWith(null);
   });
 });
