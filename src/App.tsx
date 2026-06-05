@@ -126,7 +126,7 @@ function App() {
       const measure = performance.measure('gpx-parse', 'gpx-parse-start', 'gpx-parse-end');
       setParseMetrics({ totalMs: measure.duration, fileSizeKb });
       setRoute(parsedRoute);
-      setActivePanel(p => p === 'ride' ? 'weather' : p);
+      setActivePanel(p => (p === 'ride' || p === null) ? 'weather' : p);
     } catch (error) {
       console.error('Failed to parse GPX:', error);
       const message = error instanceof Error ? error.message : 'Failed to parse GPX file. Please ensure it is a valid track.';

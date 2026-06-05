@@ -28,6 +28,7 @@ A route weather planner for cyclists and hikers. Upload a GPX file, set your sta
 - **Cancel in-flight weather requests when inputs change.** Stale responses can race and overwrite newer results. Pass an `AbortSignal` through `weatherService.ts` and abort the previous batch whenever a new fetch starts.
 - **Show the climbs in the weather timeline**
 - Provide support for multiple weather forecast providers and let the user choose.
+- **Replace hand-rolled UI components with a React component library.** The accordion, buttons, and inputs are currently hand-rolled with custom CSS. Replace with a component library (e.g. [shadcn/ui](https://ui.shadcn.com/) or [Radix UI](https://www.radix-ui.com/)) to gain accessibility, keyboard navigation, and animations for free.
 
 ## Done
 
