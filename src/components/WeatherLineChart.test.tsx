@@ -1,12 +1,23 @@
 // @vitest-environment jsdom
-import { render, screen, cleanup } from '@testing-library/react';
-import { vi, describe, it, expect, afterEach } from 'vitest';
+import { render, screen, cleanup, act } from '@testing-library/react';
+import { vi, describe, it, expect, afterEach, beforeEach } from 'vitest';
 import React from 'react';
 import WeatherLineChart from './WeatherLineChart';
 import type { WeatherLinePoint, WeatherLineConfig } from './WeatherLineChart';
 
+let capturedMouseMove: ((state: { activeTooltipIndex?: number | null }) => void) | null = null;
+let capturedMouseLeave: (() => void) | null = null;
+
 vi.mock('recharts', () => ({
-  ComposedChart: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  ComposedChart: ({ children, onMouseMove, onMouseLeave }: {
+    children: React.ReactNode;
+    onMouseMove?: (state: { activeTooltipIndex?: number | null }) => void;
+    onMouseLeave?: () => void;
+  }) => {
+    capturedMouseMove = onMouseMove ?? null;
+    capturedMouseLeave = onMouseLeave ?? null;
+    return <div>{children}</div>;
+  },
   Line: ({ dataKey }: { dataKey: string }) => <div data-testid={`line-${dataKey}`} />,
   ReferenceLine: ({ x }: { x: number }) => <div data-testid="reference-line" data-x={x} />,
   XAxis: () => null,
@@ -45,6 +56,12 @@ const defaultProps = {
 };
 
 describe('WeatherLineChart', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    capturedMouseMove = null;
+    capturedMouseLeave = null;
+  });
+
   afterEach(() => { cleanup(); });
 
   it('renders line1 and line2', () => {
@@ -63,6 +80,11 @@ describe('WeatherLineChart', () => {
     expect(screen.queryByText('Weather data unavailable for the selected date')).not.toBeInTheDocument();
   });
 
+  it('does not show unavailable overlay when weatherAvailable is null', () => {
+    render(<WeatherLineChart {...defaultProps} weatherAvailable={null} />);
+    expect(screen.queryByText('Weather data unavailable for the selected date')).not.toBeInTheDocument();
+  });
+
   it('renders reference line at hovered point time when hoveredIndex is set', () => {
     render(<WeatherLineChart {...defaultProps} hoveredIndex={1} />);
     const line = screen.getByTestId('reference-line');
@@ -73,5 +95,34 @@ describe('WeatherLineChart', () => {
   it('does not render reference line when hoveredIndex is null', () => {
     render(<WeatherLineChart {...defaultProps} hoveredIndex={null} />);
     expect(screen.queryByTestId('reference-line')).not.toBeInTheDocument();
+  });
+
+  it('does not render reference line when hoveredIndex is out of range', () => {
+    render(<WeatherLineChart {...defaultProps} hoveredIndex={99} />);
+    expect(screen.queryByTestId('reference-line')).not.toBeInTheDocument();
+  });
+
+  it('calls onHoverIndex with the active index on mouse move', () => {
+    render(<WeatherLineChart {...defaultProps} />);
+    act(() => { capturedMouseMove?.({ activeTooltipIndex: 1 }); });
+    expect(defaultProps.onHoverIndex).toHaveBeenCalledWith(1);
+  });
+
+  it('calls onHoverIndex(null) when activeTooltipIndex is null on mouse move', () => {
+    render(<WeatherLineChart {...defaultProps} />);
+    act(() => { capturedMouseMove?.({ activeTooltipIndex: null }); });
+    expect(defaultProps.onHoverIndex).toHaveBeenCalledWith(null);
+  });
+
+  it('calls onHoverIndex(null) when activeTooltipIndex is out of range', () => {
+    render(<WeatherLineChart {...defaultProps} />);
+    act(() => { capturedMouseMove?.({ activeTooltipIndex: 99 }); });
+    expect(defaultProps.onHoverIndex).toHaveBeenCalledWith(null);
+  });
+
+  it('calls onHoverIndex(null) on mouse leave', () => {
+    render(<WeatherLineChart {...defaultProps} />);
+    act(() => { capturedMouseLeave?.(); });
+    expect(defaultProps.onHoverIndex).toHaveBeenCalledWith(null);
   });
 });
