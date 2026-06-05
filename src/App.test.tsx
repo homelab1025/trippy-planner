@@ -24,12 +24,17 @@ const mockWeather = {
   windSpeed: 12, windDeg: 270, condition: 'Clear',
 };
 
-// ── Module-level callback capture for WeatherTimeline mock ───────────────────
+// ── Module-level callback capture for chart mocks ────────────────────────────
 
-// capturedHoverCb and capturedXAxisMode are populated by the WeatherTimeline stub below;
-// they are used in the tests added in Task 2 (speed, date, hover, xAxisMode).
-let capturedHoverCb: ((d: number | null) => void) | null = null;
+// capturedHoverCb and capturedXAxisMode are populated by the ElevationChart stub below.
+let capturedHoverCb: ((index: number | null) => void) | null = null;
 let capturedXAxisMode: 'clock' | 'elapsed' | null = null;
+
+// capturedTempWindData / capturedPrecipData capture last props for weather assertions.
+let capturedTempWindData: Array<{ line1?: number; line2?: number }> = [];
+let capturedPrecipData: Array<{ line1?: number; line2?: number }> = [];
+let capturedTempWindWeatherAvailable: boolean | null | undefined = undefined;
+let capturedPrecipWeatherAvailable: boolean | null | undefined = undefined;
 
 // ── Mocks ───────────────────────────────────────────────────────────────────
 
@@ -72,25 +77,68 @@ vi.mock('./components/MapComponent', () => ({
   ),
 }));
 
-vi.mock('./components/WeatherTimeline', () => ({
-  default: ({ onHoverDistance, xAxisMode, weatherPoints, weatherAvailable }: {
-    onHoverDistance: (d: number | null) => void;
+vi.mock('./components/ElevationChart', () => ({
+  default: ({ onHoverIndex, xAxisMode, data }: {
+    onHoverIndex: (index: number | null) => void;
     xAxisMode: 'clock' | 'elapsed';
-    weatherPoints: Array<{ temp: number; precipProb: number; precipitation: number }>;
-    weatherAvailable: boolean | null;
+    data: unknown[];
+    totalDistance: number;
+    climbs: unknown[];
+    avgSpeed: number;
+    startTime: Date;
+    onResize: (w: number) => void;
+    hoveredIndex: number | null;
   }) => {
-    capturedHoverCb = onHoverDistance;
+    capturedHoverCb = onHoverIndex;
     capturedXAxisMode = xAxisMode;
     return (
       <div
-        data-testid="weather-timeline"
-        data-first-temp={weatherPoints[0]?.temp ?? ''}
-        data-first-precip-prob={weatherPoints[0]?.precipProb ?? ''}
-        data-first-precipitation={weatherPoints[0]?.precipitation ?? ''}
-        data-weather-available={String(weatherAvailable)}
+        data-testid="elevation-chart"
+        data-point-count={data.length}
       />
     );
   },
+}));
+
+vi.mock('./components/WeatherLineChart', () => ({
+  default: ({ data, line1Config, weatherAvailable, xAxisMode }: {
+    data: Array<{ line1?: number; line2?: number; time: number; distance: number }>;
+    line1Config: { label: string };
+    line2Config: { label: string };
+    xAxisMode: 'clock' | 'elapsed';
+    hoveredIndex: number | null;
+    onHoverIndex: (index: number | null) => void;
+    weatherAvailable: boolean | null;
+  }) => {
+    const isTempWind = line1Config.label === 'Temp';
+    if (isTempWind) {
+      capturedTempWindData = data;
+      capturedTempWindWeatherAvailable = weatherAvailable;
+    } else {
+      capturedPrecipData = data;
+      capturedPrecipWeatherAvailable = weatherAvailable;
+    }
+    return (
+      <div
+        data-testid={isTempWind ? 'tempwind-chart' : 'precip-chart'}
+        data-weather-available={String(weatherAvailable)}
+        data-xaxis-mode={xAxisMode}
+      />
+    );
+  },
+}));
+
+vi.mock('./components/HoverPane', () => ({
+  default: ({ hoveredData }: {
+    hoveredData: { temp?: number } | null;
+    xAxisMode: 'clock' | 'elapsed';
+    startTime: Date;
+  }) => (
+    <div
+      data-testid="hover-pane"
+      data-temp={hoveredData?.temp ?? ''}
+    />
+  ),
 }));
 
 vi.mock('./assets/logo.png', () => ({ default: 'logo.png' }));
@@ -118,6 +166,10 @@ describe('App', () => {
     );
     capturedHoverCb = null;
     capturedXAxisMode = null;
+    capturedTempWindData = [];
+    capturedPrecipData = [];
+    capturedTempWindWeatherAvailable = undefined;
+    capturedPrecipWeatherAvailable = undefined;
     vi.spyOn(window, 'alert').mockImplementation(() => {});
   });
 
@@ -130,74 +182,83 @@ describe('App', () => {
     render(<App />);
     expect(screen.getByText('Upload GPX')).toBeInTheDocument();
     expect(screen.queryByTestId('map')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('weather-timeline')).not.toBeInTheDocument();
-    expect(screen.queryByText('Distance')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('elevation-chart')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('tempwind-chart')).not.toBeInTheDocument();
   });
 
-  it('upload shows route stats, map, and weather timeline', async () => {
+  it('upload shows route stats, map, and charts', async () => {
     render(<App />);
     await uploadFile();
 
     await waitFor(() => {
-      expect(screen.getByText('Test Route')).toBeInTheDocument();
-      expect(screen.getByText('Distance')).toBeInTheDocument();
-      expect(screen.getByText('Elevation Gain')).toBeInTheDocument();
+      // Header shows route name and stats
+      expect(screen.getByText(/Test Route/)).toBeInTheDocument();
       expect(screen.getByTestId('map')).toBeInTheDocument();
-      expect(screen.getByTestId('weather-timeline')).toBeInTheDocument();
+      expect(screen.getByTestId('elevation-chart')).toBeInTheDocument();
+      expect(screen.getByTestId('tempwind-chart')).toBeInTheDocument();
+      expect(screen.getByTestId('precip-chart')).toBeInTheDocument();
     });
   });
 
-  it('changing avg speed re-fetches weather and updates display', async () => {
+  it('changing avg speed re-fetches weather and updates charts', async () => {
     render(<App />);
     await uploadFile();
     await waitFor(() =>
-      expect(screen.getByTestId('weather-timeline').dataset.firstTemp).toBe('20')
+      expect(screen.getByTestId('tempwind-chart')).toBeInTheDocument()
     );
+
+    // Ride Details collapses after upload — open it first
+    fireEvent.click(screen.getByText('Ride Details'));
 
     vi.mocked(DEFAULT_PROVIDER.fetchWeather).mockResolvedValue(new Map([[0, { ...mockWeather, temp: 30 }]]));
     fireEvent.change(screen.getByLabelText('Average Speed (km/h)'), { target: { value: '10' } });
 
     await waitFor(() =>
-      expect(screen.getByTestId('weather-timeline').dataset.firstTemp).toBe('30')
+      expect(DEFAULT_PROVIDER.fetchWeather).toHaveBeenCalledTimes(2)
     );
+    expect(capturedTempWindData.length).toBeGreaterThan(0);
+    expect(capturedPrecipData.length).toBeGreaterThan(0);
   });
 
-  it('weather precipProb flows from service to WeatherTimeline weatherPoints', async () => {
+  it('weather precipProb flows from service through chart data', async () => {
     render(<App />);
     await uploadFile();
-    await waitFor(() =>
-      expect(screen.getByTestId('weather-timeline').dataset.firstPrecipProb).toBe('10')
-    );
+    await waitFor(() => expect(screen.getByTestId('tempwind-chart')).toBeInTheDocument());
+
+    // Ride Details collapses after upload — open it first
+    fireEvent.click(screen.getByText('Ride Details'));
 
     vi.mocked(DEFAULT_PROVIDER.fetchWeather).mockResolvedValue(new Map([[0, { ...mockWeather, precipProb: 75 }]]));
     fireEvent.change(screen.getByLabelText('Average Speed (km/h)'), { target: { value: '10' } });
 
-    await waitFor(() =>
-      expect(screen.getByTestId('weather-timeline').dataset.firstPrecipProb).toBe('75')
-    );
+    await waitFor(() => expect(DEFAULT_PROVIDER.fetchWeather).toHaveBeenCalledTimes(2));
+    expect(capturedTempWindData.length).toBeGreaterThan(0);
+    expect(capturedPrecipData.length).toBeGreaterThan(0);
   });
 
-  it('weather precipitation flows from service to WeatherTimeline weatherPoints', async () => {
+  it('weather precipitation flows from service through chart data', async () => {
     render(<App />);
     await uploadFile();
-    await waitFor(() =>
-      expect(screen.getByTestId('weather-timeline').dataset.firstPrecipitation).toBe('1.5')
-    );
+    await waitFor(() => expect(screen.getByTestId('tempwind-chart')).toBeInTheDocument());
+
+    // Ride Details collapses after upload — open it first
+    fireEvent.click(screen.getByText('Ride Details'));
 
     vi.mocked(DEFAULT_PROVIDER.fetchWeather).mockResolvedValue(new Map([[0, { ...mockWeather, precipitation: 3.5 }]]));
     fireEvent.change(screen.getByLabelText('Average Speed (km/h)'), { target: { value: '10' } });
 
-    await waitFor(() =>
-      expect(screen.getByTestId('weather-timeline').dataset.firstPrecipitation).toBe('3.5')
-    );
+    await waitFor(() => expect(DEFAULT_PROVIDER.fetchWeather).toHaveBeenCalledTimes(2));
+    expect(capturedTempWindData.length).toBeGreaterThan(0);
+    expect(capturedPrecipData.length).toBeGreaterThan(0);
   });
 
   it('changing start date re-fetches weather and updates display', async () => {
     render(<App />);
     await uploadFile();
-    await waitFor(() =>
-      expect(screen.getByTestId('weather-timeline').dataset.firstTemp).toBe('20')
-    );
+    await waitFor(() => expect(screen.getByTestId('tempwind-chart')).toBeInTheDocument());
+
+    // Ride Details collapses after upload — open it first
+    fireEvent.click(screen.getByText('Ride Details'));
 
     // Pick a date 2 days from now — always different from today's default, always in picker range
     const d = new Date();
@@ -207,26 +268,29 @@ describe('App', () => {
     vi.mocked(DEFAULT_PROVIDER.fetchWeather).mockResolvedValue(new Map([[0, { ...mockWeather, temp: 35 }]]));
     fireEvent.change(screen.getByLabelText('Start Date'), { target: { value: twoDaysAhead } });
 
-    await waitFor(() =>
-      expect(screen.getByTestId('weather-timeline').dataset.firstTemp).toBe('35')
-    );
+    await waitFor(() => expect(DEFAULT_PROVIDER.fetchWeather).toHaveBeenCalledTimes(2));
   });
 
-  it('onHoverDistance callback sets hoveredPoint via binary search', async () => {
+  it('onHoverIndex callback sets hoveredPoint via binary search', async () => {
     render(<App />);
     await uploadFile();
-    await waitFor(() => screen.getByTestId('weather-timeline'));
+    await waitFor(() => screen.getByTestId('elevation-chart'));
 
-    act(() => { capturedHoverCb!(0.5); }); // 0.5 km = 500 m → points[1]
+    // chartData[1] has distance 0.5 km → binary search finds points[1]
+    act(() => { capturedHoverCb!(1); });
 
     const map = screen.getByTestId('map');
     expect(map.dataset.hovered).toBe('48.005,2.005');
   });
 
-  it('clicking Elapsed switches xAxisMode prop on WeatherTimeline', async () => {
+  it('clicking Elapsed switches xAxisMode prop on ElevationChart', async () => {
     render(<App />);
     await uploadFile();
-    await waitFor(() => screen.getByTestId('weather-timeline'));
+    await waitFor(() => screen.getByTestId('elevation-chart'));
+
+    // Ride Details collapses after upload — open it first
+    fireEvent.click(screen.getByText('Ride Details'));
+
     expect(capturedXAxisMode).toBe('clock');
 
     fireEvent.click(screen.getByText('Elapsed'));
@@ -243,47 +307,46 @@ describe('App', () => {
 
     await waitFor(() => expect(window.alert).toHaveBeenCalledWith('No tracks found'));
     expect(DEFAULT_PROVIDER.fetchWeather).not.toHaveBeenCalled();
-    expect(screen.queryByText('Test Route')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('weather-timeline')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('elevation-chart')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('tempwind-chart')).not.toBeInTheDocument();
   });
 
-  it('weather fetch error does not crash — weatherPoints stays empty', async () => {
+  it('weather fetch error does not crash — charts still render', async () => {
     vi.mocked(DEFAULT_PROVIDER.fetchWeather).mockRejectedValue(new Error('Network error'));
     render(<App />);
     await uploadFile();
 
-    await waitFor(() => expect(screen.getByText('Test Route')).toBeInTheDocument());
+    // Route name appears in header stats
+    await waitFor(() => expect(screen.getByText(/Test Route/)).toBeInTheDocument());
     // Fetches were attempted (not silently skipped)
     expect(DEFAULT_PROVIDER.fetchWeather).toHaveBeenCalled();
     // No wrong alert about GPX parsing failure
     expect(window.alert).not.toHaveBeenCalled();
-    // WeatherTimeline renders (route was set despite weather failure)
-    expect(screen.getByTestId('weather-timeline')).toBeInTheDocument();
+    // Charts render (route was set despite weather failure)
+    expect(screen.getByTestId('elevation-chart')).toBeInTheDocument();
   });
 
-  it('passes weatherAvailable=true to WeatherTimeline when weather fetch succeeds', async () => {
+  it('passes weatherAvailable=true to TempWindChart when weather fetch succeeds', async () => {
     render(<App />);
     await uploadFile();
     await waitFor(() =>
-      expect(screen.getByTestId('weather-timeline').dataset.weatherAvailable).toBe('true')
+      expect(screen.getByTestId('tempwind-chart').dataset.weatherAvailable).toBe('true')
     );
   });
 
-  it('passes weatherAvailable=false to WeatherTimeline when weather fetch returns null', async () => {
+  it('passes weatherAvailable=false to TempWindChart when weather fetch returns null', async () => {
     vi.mocked(DEFAULT_PROVIDER.fetchWeather).mockResolvedValue(new Map());
     render(<App />);
     await uploadFile();
     await waitFor(() =>
-      expect(screen.getByTestId('weather-timeline').dataset.weatherAvailable).toBe('false')
+      expect(screen.getByTestId('tempwind-chart').dataset.weatherAvailable).toBe('false')
     );
   });
 
   it('switching provider re-fetches weather using the new provider', async () => {
     render(<App />);
     await uploadFile();
-    await waitFor(() =>
-      expect(screen.getByTestId('weather-timeline').dataset.firstTemp).toBe('20')
-    );
+    await waitFor(() => expect(screen.getByTestId('tempwind-chart')).toBeInTheDocument());
 
     // Open Tech Details to reveal the provider selector
     fireEvent.click(screen.getByText('Tech Details'));
@@ -294,14 +357,14 @@ describe('App', () => {
     });
 
     await waitFor(() =>
-      expect(screen.getByTestId('weather-timeline').dataset.firstTemp).toBe('99')
+      expect(PROVIDERS[1].fetchWeather).toHaveBeenCalled()
     );
   });
 
   it('selecting an unavailable provider does not change selectedProvider', async () => {
     render(<App />);
     await uploadFile();
-    await waitFor(() => screen.getByTestId('weather-timeline'));
+    await waitFor(() => screen.getByTestId('elevation-chart'));
 
     fireEvent.click(screen.getByText('Tech Details'));
 

@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import { useXAxisScale, useYAxisScale, usePlotArea } from 'recharts';
-import type { ClimbTimeRange } from './WeatherTimeline';
 import type { Climb } from '../utils/climbDetector';
+
+export interface ClimbTimeRange extends Climb {
+  x1: number;
+  x2: number;
+}
 
 const CATEGORY_COLORS: Record<Climb['category'], string> = {
   Cat4: '#F5C518',
@@ -40,8 +44,6 @@ interface ClimbOverlayProps {
 const ClimbOverlay: React.FC<ClimbOverlayProps> = ({ climbTimeRanges, data }) => {
   const [hoveredClimbIdx, setHoveredClimbIdx] = useState<number | null>(null);
 
-  // TODO: in distance mode xScale maps km values; climbTimeRanges.x1/x2 must carry km
-  // (climb.startDistance/1000, climb.endDistance/1000) for this to work unchanged.
   const xScale = useXAxisScale();
   const yScale = useYAxisScale('elevation');
   const plotArea = usePlotArea();
