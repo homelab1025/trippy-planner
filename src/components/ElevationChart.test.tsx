@@ -31,17 +31,13 @@ vi.mock('./ClimbOverlay', () => ({
 }));
 
 const sampleData: ElevationPoint[] = [
-  { distance: 0, elevation: 100, time: 1000 },
-  { distance: 1, elevation: 200, time: 2000 },
+  { distance: 0, elevation: 100 },
+  { distance: 1, elevation: 200 },
 ];
 
 const defaultProps = {
   data: sampleData,
-  totalDistance: 2000,
   climbs: [],
-  avgSpeed: 20,
-  startTime: new Date('2026-06-03T08:00:00Z'),
-  xAxisMode: 'clock' as const,
   onHoverIndex: vi.fn(),
   onResize: vi.fn(),
   hoveredIndex: null as number | null,
@@ -66,14 +62,14 @@ describe('ElevationChart', () => {
     expect(screen.getByTestId('climb-overlay')).toBeInTheDocument();
   });
 
-  it('renders reference line and dot at hovered point when hoveredIndex is set', () => {
+  it('renders reference line and dot at hovered point distance when hoveredIndex is set', () => {
     render(<ElevationChart {...defaultProps} hoveredIndex={1} />);
     const line = screen.getByTestId('reference-line');
     const dot = screen.getByTestId('reference-dot');
     expect(line).toBeInTheDocument();
-    expect(line.dataset.x).toBe('2000');
+    expect(line.dataset.x).toBe('1');
     expect(dot).toBeInTheDocument();
-    expect(dot.dataset.x).toBe('2000');
+    expect(dot.dataset.x).toBe('1');
     expect(dot.dataset.y).toBe('200');
   });
 
