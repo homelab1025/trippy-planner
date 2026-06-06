@@ -209,7 +209,7 @@ function App() {
             <h1 className="text-xl font-bold">Trippy Planner</h1>
           </div>
         {route && (
-          <div className="flex-1 text-center text-sm opacity-90 px-4">
+          <div className="header-stats flex-1 text-center text-sm opacity-90 px-4">
             {route.name}: {(route.totalDistance / 1000).toFixed(1)} km · {Math.round(route.totalElevationGain)} m of character-building
           </div>
         )}
@@ -244,7 +244,7 @@ function App() {
         <div className="flex flex-col overflow-y-auto pt-7">
 
           {/* Ride Details */}
-          <div className={`collapse collapse-arrow bg-base-100 shadow rounded-b-none rounded-t-box border border-base-300 ${activePanel === 'ride' ? 'collapse-open' : ''}`}>
+          <div className={`control-card collapse collapse-arrow bg-base-100 shadow rounded-b-none rounded-t-box border border-base-300 ${activePanel === 'ride' ? 'collapse-open' : ''}`}>
             <div
               className="collapse-title font-medium cursor-pointer"
               onClick={() => setActivePanel(p => p === 'ride' ? null : 'ride')}
@@ -348,7 +348,7 @@ function App() {
           </div>
 
           {/* Tech Details */}
-          <div className={`collapse collapse-arrow bg-base-100 shadow rounded-t-none rounded-b-box border-x border-b border-base-300 ${activePanel === 'tech' ? 'collapse-open' : ''}`}>
+          <div className={`tech-details-card collapse collapse-arrow bg-base-100 shadow rounded-t-none rounded-b-box border-x border-b border-base-300 ${activePanel === 'tech' ? 'collapse-open' : ''}`}>
             <div
               className="collapse-title font-medium cursor-pointer"
               onClick={() => setActivePanel(p => p === 'tech' ? null : 'tech')}
@@ -467,7 +467,7 @@ function App() {
               </div>
             ) : (
               <>
-                <div className="flex flex-col flex-1 min-w-0">
+                <div className="elevation-row flex flex-col flex-1 min-w-0">
                   <div style={{ height: 300 }}>
                     <ElevationChart
                       data={elevationData}

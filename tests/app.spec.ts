@@ -45,7 +45,7 @@ test('no pin markers on map after uploading GPX', async ({ page }) => {
 test('Tech Details shows parse time and file size after GPX upload', async ({ page }) => {
   await page.goto('/');
   const techPanel = page.locator('.tech-details-card');
-  await techPanel.locator('h3').click();
+  await techPanel.locator('.collapse-title').click();
 
   await page.setInputFiles('input[type="file"]', 'public/sample-route.gpx');
   await expect(page.locator('.header-stats')).toContainText('Sample Ride');
@@ -115,14 +115,14 @@ test('clock/elapsed toggle changes button active state', async ({ page }) => {
 test('version is shown inside Tech Details panel', async ({ page }) => {
   await page.goto('/');
   const techPanel = page.locator('.tech-details-card');
-  await techPanel.locator('h3').click();
+  await techPanel.locator('.collapse-title').click();
   await expect(techPanel).toContainText(/v\d+\.\d+\.\d+/);
 })
 
 test('version remains in Tech Details after GPX upload', async ({ page }) => {
   await page.goto('/');
   const techPanel = page.locator('.tech-details-card');
-  await techPanel.locator('h3').click();
+  await techPanel.locator('.collapse-title').click();
   await page.setInputFiles('input[type="file"]', 'public/sample-route.gpx');
   await expect(page.locator('.header-stats')).toContainText('Sample Ride');
   await expect(techPanel).toContainText(/v\d+\.\d+\.\d+/);
@@ -147,7 +147,7 @@ test('changing speed rerenders elevation chart without crash', async ({ page }) 
 
   const speedInput = page.getByLabel('Average Speed (km/h)');
   // Ride Details is collapsed after upload — open it first
-  await page.locator('.control-card h3').click();
+  await page.locator('.control-card .collapse-title').click();
   await speedInput.fill('10');
   await speedInput.dispatchEvent('change');
 
