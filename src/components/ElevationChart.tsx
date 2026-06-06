@@ -3,41 +3,32 @@ import {
   ComposedChart, Area, XAxis, YAxis, CartesianGrid, ReferenceLine, ReferenceDot, ResponsiveContainer,
 } from 'recharts';
 import type { Climb } from '../utils/climbDetector';
-import { formatElapsed } from '../hooks/useWeatherChartData';
-import ClimbOverlay, { type ClimbTimeRange } from './ClimbOverlay';
+import ClimbOverlay, { type ClimbRange } from './ClimbOverlay';
 
 export interface ElevationPoint {
   distance: number;
   elevation: number;
-  time: number;
 }
 
 interface ElevationChartProps {
   data: ElevationPoint[];
-  totalDistance: number;
   climbs: Climb[];
-  avgSpeed: number;
-  startTime: Date;
-  xAxisMode: 'clock' | 'elapsed';
   onHoverIndex: (index: number | null) => void;
   onResize: (width: number) => void;
   hoveredIndex: number | null;
 }
 
 const ElevationChart: React.FC<ElevationChartProps> = ({
-  data, totalDistance, climbs, avgSpeed, startTime, xAxisMode, onHoverIndex, onResize, hoveredIndex,
+  data, climbs, onHoverIndex, onResize, hoveredIndex,
 }) => {
-  const climbTimeRanges = useMemo((): ClimbTimeRange[] => {
-    if (!climbs.length || avgSpeed <= 0) return [];
-    const startMs = startTime.getTime();
-    const speedFactor = avgSpeed * 1000;
-    const domainMax = startMs + (totalDistance / speedFactor) * 3_600_000;
-    return climbs.map(climb => ({
+  const climbRanges = useMemo((): ClimbRange[] =>
+    climbs.map(climb => ({
       ...climb,
-      x1: Math.max(startMs, Math.min(startMs + (climb.startDistance / speedFactor) * 3_600_000, domainMax)),
-      x2: Math.max(startMs, Math.min(startMs + (climb.endDistance / speedFactor) * 3_600_000, domainMax)),
-    }));
-  }, [climbs, startTime, avgSpeed, totalDistance]);
+      x1: climb.startDistance / 1000,
+      x2: climb.endDistance / 1000,
+    })),
+    [climbs]
+  );
 
   return (
     <div style={{ flex: 1, minWidth: 0, height: '100%', position: 'relative' }}>
@@ -60,13 +51,10 @@ const ElevationChart: React.FC<ElevationChartProps> = ({
           </defs>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
           <XAxis
-            dataKey="time"
+            dataKey="distance"
             type="number"
             domain={['dataMin', 'dataMax']}
-            tickFormatter={(v) => xAxisMode === 'clock'
-              ? new Date(v).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-              : formatElapsed(v - (data[0]?.time ?? v))
-            }
+            tickFormatter={(v) => `${Math.round(v)} km`}
             fontSize={11}
             tickLine={false}
             axisLine={false}
@@ -94,18 +82,18 @@ const ElevationChart: React.FC<ElevationChartProps> = ({
             activeDot={false}
             isAnimationActive={false}
           />
-          <ClimbOverlay climbTimeRanges={climbTimeRanges} data={data} />
+          <ClimbOverlay climbRanges={climbRanges} data={data} />
           {hoveredIndex !== null && data[hoveredIndex] != null && (
             <>
               <ReferenceLine
-                x={data[hoveredIndex].time}
+                x={data[hoveredIndex].distance}
                 yAxisId="elevation"
                 stroke="#aaa"
                 strokeWidth={1}
                 strokeDasharray="3 3"
               />
               <ReferenceDot
-                x={data[hoveredIndex].time}
+                x={data[hoveredIndex].distance}
                 y={data[hoveredIndex].elevation}
                 yAxisId="elevation"
                 r={4}

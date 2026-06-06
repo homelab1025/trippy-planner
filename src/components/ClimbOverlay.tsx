@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { useXAxisScale, useYAxisScale, usePlotArea } from 'recharts';
 import type { Climb } from '../utils/climbDetector';
 
-export interface ClimbTimeRange extends Climb {
-  x1: number;
-  x2: number;
+export interface ClimbRange extends Climb {
+  x1: number;  // km
+  x2: number;  // km
 }
 
 const CATEGORY_COLORS: Record<Climb['category'], string> = {
@@ -32,40 +32,38 @@ const CATEGORY_LABELS: Record<Climb['category'], string> = {
 };
 
 interface ElevDataPoint {
-  time: number;
+  distance: number;
   elevation: number;
 }
 
 interface ClimbOverlayProps {
-  climbTimeRanges: ClimbTimeRange[];
+  climbRanges: ClimbRange[];
   data: ElevDataPoint[];
 }
 
-const ClimbOverlay: React.FC<ClimbOverlayProps> = ({ climbTimeRanges, data }) => {
+const ClimbOverlay: React.FC<ClimbOverlayProps> = ({ climbRanges, data }) => {
   const [hoveredClimbIdx, setHoveredClimbIdx] = useState<number | null>(null);
 
   const xScale = useXAxisScale();
   const yScale = useYAxisScale('elevation');
   const plotArea = usePlotArea();
 
-  if (!xScale || !yScale || !plotArea || !data.length || !climbTimeRanges.length) return null;
+  if (!xScale || !yScale || !plotArea || !data.length || !climbRanges.length) return null;
 
   const { x: left, y: top, width, height } = plotArea;
   const bottom = top + height;
   const right = left + width;
 
-  // Build pixel coordinates for each elevation data point
   const elevPoints = data
     .map(p => {
-      const px = xScale(p.time);
+      const px = xScale(p.distance);
       const py = yScale(p.elevation);
-      return px != null && py != null ? { x: px, y: py, time: p.time, elevation: p.elevation } : null;
+      return px != null && py != null ? { x: px, y: py, distance: p.distance, elevation: p.elevation } : null;
     })
-    .filter((p): p is { x: number; y: number; time: number; elevation: number } => p !== null);
+    .filter((p): p is { x: number; y: number; distance: number; elevation: number } => p !== null);
 
   if (elevPoints.length < 2) return null;
 
-  // Clip path traces the elevation profile then drops to the bottom of the plot area
   const clipPoints = [
     ...elevPoints.map(p => `${p.x},${p.y}`),
     `${right},${bottom}`,
@@ -78,7 +76,7 @@ const ClimbOverlay: React.FC<ClimbOverlayProps> = ({ climbTimeRanges, data }) =>
         <clipPath id="climb-elev-clip">
           <polygon points={clipPoints} />
         </clipPath>
-        {climbTimeRanges.map((cr, i) => (
+        {climbRanges.map((cr, i) => (
           <linearGradient key={`grad-${i}`} id={`climb-grad-${i}`} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={CATEGORY_COLORS[cr.category]} stopOpacity={CATEGORY_FILL_OPACITY[cr.category]} />
             <stop offset="100%" stopColor={CATEGORY_COLORS[cr.category]} stopOpacity={0} />
@@ -86,8 +84,7 @@ const ClimbOverlay: React.FC<ClimbOverlayProps> = ({ climbTimeRanges, data }) =>
         ))}
       </defs>
 
-      {/* Gradient fills clipped to below the elevation profile */}
-      {climbTimeRanges.map((cr, i) => {
+      {climbRanges.map((cr, i) => {
         const px1 = xScale(cr.x1);
         const px2 = xScale(cr.x2);
         if (px1 == null || px2 == null) return null;
@@ -104,10 +101,9 @@ const ClimbOverlay: React.FC<ClimbOverlayProps> = ({ climbTimeRanges, data }) =>
         );
       })}
 
-      {/* Highlighted strokes over elevation line within climb spans */}
-      {climbTimeRanges.map((cr, i) => {
+      {climbRanges.map((cr, i) => {
         const spanPoints = elevPoints.filter(
-          p => p.time >= cr.x1 && p.time <= cr.x2
+          p => p.distance >= cr.x1 && p.distance <= cr.x2
         );
         if (spanPoints.length < 2) return null;
         return (
@@ -121,10 +117,9 @@ const ClimbOverlay: React.FC<ClimbOverlayProps> = ({ climbTimeRanges, data }) =>
         );
       })}
 
-      {/* Pill flags at climb peak */}
-      {climbTimeRanges.map((cr, i) => {
+      {climbRanges.map((cr, i) => {
         const peakPt = elevPoints.reduce((best, p) =>
-          Math.abs(p.time - cr.x2) < Math.abs(best.time - cr.x2) ? p : best
+          Math.abs(p.distance - cr.x2) < Math.abs(best.distance - cr.x2) ? p : best
         , elevPoints[0]);
         const peakPx = peakPt.x;
         const peakPy = peakPt.y;
