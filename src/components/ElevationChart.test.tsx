@@ -18,6 +18,7 @@ vi.mock('recharts', () => ({
     return <div>{children}</div>;
   },
   Area: ({ dataKey }: { dataKey: string }) => <div data-testid={`area-${dataKey}`} />,
+  Line: ({ dataKey }: { dataKey: string }) => <div data-testid={`line-${dataKey}`} />,
   ReferenceLine: ({ x }: { x: number }) => <div data-testid="reference-line" data-x={x} />,
   ReferenceDot: ({ x, y }: { x: number; y: number }) => <div data-testid="reference-dot" data-x={x} data-y={y} />,
   XAxis: () => null,
@@ -107,5 +108,19 @@ describe('ElevationChart', () => {
     render(<ElevationChart {...defaultProps} />);
     act(() => { capturedMouseLeave?.(); });
     expect(defaultProps.onHoverIndex).toHaveBeenCalledWith(null);
+  });
+
+  it('does not render temp line when no data points have temp', () => {
+    render(<ElevationChart {...defaultProps} />);
+    expect(screen.queryByTestId('line-temp')).not.toBeInTheDocument();
+  });
+
+  it('renders temp line when at least one data point has a temp value', () => {
+    const dataWithTemp = [
+      { distance: 0, elevation: 100, temp: 18 },
+      { distance: 1, elevation: 200, temp: 20 },
+    ];
+    render(<ElevationChart {...defaultProps} data={dataWithTemp} />);
+    expect(screen.getByTestId('line-temp')).toBeInTheDocument();
   });
 });
