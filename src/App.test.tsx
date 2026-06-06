@@ -26,9 +26,8 @@ const mockWeather = {
 
 // ── Module-level callback capture for chart mocks ────────────────────────────
 
-// capturedHoverCb and capturedXAxisMode are populated by the ElevationChart stub below.
+// capturedHoverCb is populated by the ElevationChart stub below.
 let capturedHoverCb: ((index: number | null) => void) | null = null;
-let capturedXAxisMode: 'clock' | 'elapsed' | null = null;
 
 // capturedTempWindData / capturedPrecipData capture last props for weather assertions.
 let capturedTempWindData: Array<{ line1?: number; line2?: number }> = [];
@@ -78,19 +77,14 @@ vi.mock('./components/MapComponent', () => ({
 }));
 
 vi.mock('./components/ElevationChart', () => ({
-  default: ({ onHoverIndex, xAxisMode, data }: {
+  default: ({ onHoverIndex, data }: {
     onHoverIndex: (index: number | null) => void;
-    xAxisMode: 'clock' | 'elapsed';
     data: unknown[];
-    totalDistance: number;
     climbs: unknown[];
-    avgSpeed: number;
-    startTime: Date;
     onResize: (w: number) => void;
     hoveredIndex: number | null;
   }) => {
     capturedHoverCb = onHoverIndex;
-    capturedXAxisMode = xAxisMode;
     return (
       <div
         data-testid="elevation-chart"
@@ -101,11 +95,10 @@ vi.mock('./components/ElevationChart', () => ({
 }));
 
 vi.mock('./components/WeatherLineChart', () => ({
-  default: ({ data, line1Config, weatherAvailable, xAxisMode }: {
+  default: ({ data, line1Config, weatherAvailable }: {
     data: Array<{ line1?: number; line2?: number; time: number; distance: number }>;
     line1Config: { label: string };
     line2Config: { label: string };
-    xAxisMode: 'clock' | 'elapsed';
     hoveredIndex: number | null;
     onHoverIndex: (index: number | null) => void;
     weatherAvailable: boolean | null;
@@ -122,7 +115,6 @@ vi.mock('./components/WeatherLineChart', () => ({
       <div
         data-testid={isTempWind ? 'tempwind-chart' : 'precip-chart'}
         data-weather-available={String(weatherAvailable)}
-        data-xaxis-mode={xAxisMode}
       />
     );
   },
@@ -165,7 +157,6 @@ describe('App', () => {
       new Map([[0, { ...mockWeather, temp: 99 }]])
     );
     capturedHoverCb = null;
-    capturedXAxisMode = null;
     capturedTempWindData = [];
     capturedPrecipData = [];
     capturedTempWindWeatherAvailable = undefined;
@@ -283,7 +274,7 @@ describe('App', () => {
     expect(map.dataset.hovered).toBe('48.005,2.005');
   });
 
-  it('clicking Elapsed switches xAxisMode prop on ElevationChart', async () => {
+  it('Time Display toggle buttons are present and clickable', async () => {
     render(<App />);
     await uploadFile();
     await waitFor(() => screen.getByTestId('elevation-chart'));
@@ -291,13 +282,13 @@ describe('App', () => {
     // Ride Details collapses after upload — open it first
     fireEvent.click(screen.getByText('Ride Details'));
 
-    expect(capturedXAxisMode).toBe('clock');
+    expect(screen.getByText('Time Display')).toBeInTheDocument();
+    expect(screen.getByText('Clock')).toBeInTheDocument();
+    expect(screen.getByText('Elapsed')).toBeInTheDocument();
 
+    // Clicking the buttons should not throw
     fireEvent.click(screen.getByText('Elapsed'));
-    expect(capturedXAxisMode).toBe('elapsed');
-
     fireEvent.click(screen.getByText('Clock'));
-    expect(capturedXAxisMode).toBe('clock');
   });
 
   it('parse error shows alert, does not set route, does not fetch weather', async () => {
