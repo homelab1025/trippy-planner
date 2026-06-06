@@ -27,16 +27,17 @@ interface WeatherLineChartProps {
   hoveredIndex: number | null;
   onHoverIndex: (index: number | null) => void;
   weatherAvailable: boolean | null;
+  hideAxes?: boolean;
 }
 
 const WeatherLineChart: React.FC<WeatherLineChartProps> = React.memo(({
-  data, line1Config, line2Config, xAxisMode, hoveredIndex, onHoverIndex, weatherAvailable,
+  data, line1Config, line2Config, xAxisMode, hoveredIndex, onHoverIndex, weatherAvailable, hideAxes = false,
 }) => (
   <div style={{ width: '100%', height: '100%', position: 'relative' }}>
     <ResponsiveContainer width="100%" height="100%">
       <ComposedChart
         data={data}
-        margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
+        margin={hideAxes ? { top: 4, right: 10, left: 10, bottom: 0 } : { top: 10, right: 10, left: 10, bottom: 0 }}
         onMouseMove={(state) => {
           const idx = state.activeTooltipIndex != null ? Number(state.activeTooltipIndex) : NaN;
           if (isNaN(idx) || !data[idx]) { onHoverIndex(null); return; }
@@ -44,23 +45,26 @@ const WeatherLineChart: React.FC<WeatherLineChartProps> = React.memo(({
         }}
         onMouseLeave={() => onHoverIndex(null)}
       >
-        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
-        <XAxis
-          dataKey="time"
-          type="number"
-          domain={['dataMin', 'dataMax']}
-          tickFormatter={(v) => xAxisMode === 'clock'
-            ? new Date(v).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            : formatElapsed(v - (data[0]?.time ?? v))
-          }
-          fontSize={11}
-          tickLine={false}
-          axisLine={false}
-          stroke="#888"
-        />
+        {!hideAxes && <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />}
+        {!hideAxes && (
+          <XAxis
+            dataKey="time"
+            type="number"
+            domain={['dataMin', 'dataMax']}
+            tickFormatter={(v) => xAxisMode === 'clock'
+              ? new Date(v).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+              : formatElapsed(v - (data[0]?.time ?? v))
+            }
+            fontSize={11}
+            tickLine={false}
+            axisLine={false}
+            stroke="#888"
+          />
+        )}
         <YAxis
           yAxisId={line1Config.yAxisId}
           domain={line1Config.domain}
+          hide={hideAxes}
           axisLine={false}
           tickLine={false}
           fontSize={10}
@@ -71,6 +75,7 @@ const WeatherLineChart: React.FC<WeatherLineChartProps> = React.memo(({
           yAxisId={line2Config.yAxisId}
           orientation="right"
           domain={line2Config.domain}
+          hide={hideAxes}
           axisLine={false}
           tickLine={false}
           fontSize={10}
