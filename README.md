@@ -19,21 +19,20 @@ A route weather planner for cyclists and hikers. Upload a GPX file, set your sta
 
 ## TODO
 
-- **Show precipitation on map marker popups.** `precipProb` is already fetched from Open-Meteo and stored in `WeatherData`, but the popup in `MapComponent.tsx` only renders temp, condition, and wind speed. Add precipitation probability to the popup.
-
 - **Deduplicate Open-Meteo requests for nearby points.** Each weather sample point fires a separate API call. Open-Meteo returns the full hourly forecast for a location, so two sample points that are geographically close could share the same response. Implement a cache keyed on a rounded lat/lng grid (e.g. 0.1° resolution) and reuse the cached response instead of making a duplicate request.
 
 - **Debounce weather refetch on input changes.** Changing `avgSpeed` or `startTime` immediately triggers 11 parallel API calls per keystroke. Add a ~500ms debounce to the `useEffect` in `App.tsx`.
 
-- **Cancel in-flight weather requests when inputs change.** Stale responses can race and overwrite newer results. Pass an `AbortSignal` through `weatherService.ts` and abort the previous batch whenever a new fetch starts.
-- **Show the climbs in the weather timeline**
-- Provide support for multiple weather forecast providers and let the user choose.
-- **Replace hand-rolled UI components with a React component library.** The accordion, buttons, and inputs are currently hand-rolled with custom CSS. Replace with a component library (e.g. [shadcn/ui](https://ui.shadcn.com/) or [Radix UI](https://www.radix-ui.com/)) to gain accessibility, keyboard navigation, and animations for free.
+- **Cancel in-flight weather requests when inputs change.** Stale responses can race and overwrite newer results. Pass an `AbortSignal` through 
+ `weatherService.ts` and abort the previous batch whenever a new fetch starts.
+
 
 ## Done
 
+- Provide support for multiple weather forecast providers and let the user choose.
+- **Replace hand-rolled UI components with a React component library.** The accordion, buttons, and inputs are currently hand-rolled with custom CSS. Replace with a component library (e.g. [shadcn/ui](https://ui.shadcn.com/) or [Radix UI](https://www.radix-ui.com/)) to gain accessibility, keyboard navigation, and animations for free.
+- **Show the climbs in the weather timeline**
+- **Show precipitation on map marker popups.** `precipProb` is already fetched from Open-Meteo and stored in `WeatherData`, but the popup in `MapComponent.tsx` only renders temp, condition, and wind speed. Add precipitation probability to the popup.
 - **Decimate the map polyline with Douglas-Peucker.** Douglas-Peucker at 5 m epsilon runs at parse time (inside the web worker). The decimated set is used for the map polyline, weather sampling, and LTTB chart input. Original point count is stored separately and displayed in the new Tech Details sidebar panel.
-
 - **Move GPX parsing to a Web Worker.** `parseGPX` runs synchronously on the main thread — large GPX files (50k+ points, common on long rides) freeze the UI during upload. Post the raw XML string to a worker and return `RouteData` to the main thread.
-
 - **Downsample elevation chart points.** LTTB (Largest Triangle Three Buckets) downsampling applied to chart data; target point count scales with the rendered chart width (1 point per CSS pixel) so rendering is efficient at any screen size. Weather sample points are always preserved through downsampling.
