@@ -2,7 +2,6 @@ import React from 'react';
 import {
   ComposedChart, Line, XAxis, YAxis, CartesianGrid, ReferenceLine, ResponsiveContainer,
 } from 'recharts';
-import { formatElapsed } from '../hooks/useWeatherChartData';
 
 export interface WeatherLinePoint {
   time: number;
@@ -24,7 +23,6 @@ interface WeatherLineChartProps {
   data: WeatherLinePoint[];
   line1Config: WeatherLineConfig;
   line2Config: WeatherLineConfig;
-  xAxisMode: 'clock' | 'elapsed';
   hoveredIndex: number | null;
   onHoverIndex: (index: number | null) => void;
   weatherAvailable: boolean | null;
@@ -32,7 +30,7 @@ interface WeatherLineChartProps {
 }
 
 const WeatherLineChart: React.FC<WeatherLineChartProps> = React.memo(({
-  data, line1Config, line2Config, xAxisMode, hoveredIndex, onHoverIndex, weatherAvailable, hideAxes = false,
+  data, line1Config, line2Config, hoveredIndex, onHoverIndex, weatherAvailable, hideAxes = false,
 }) => (
   <div style={{ width: '100%', height: '100%', position: 'relative' }}>
     <ResponsiveContainer width="100%" height="100%">
@@ -48,15 +46,12 @@ const WeatherLineChart: React.FC<WeatherLineChartProps> = React.memo(({
       >
         {!hideAxes && <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />}
         <XAxis
-          dataKey="time"
+          dataKey="distance"
           type="number"
           domain={['dataMin', 'dataMax']}
           height={hideAxes ? 0 : undefined}
           tick={hideAxes ? false : undefined}
-          tickFormatter={(v) => xAxisMode === 'clock'
-            ? new Date(v).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            : formatElapsed(v - (data[0]?.time ?? v))
-          }
+          tickFormatter={(v) => `${Math.round(v)} km`}
           fontSize={11}
           tickLine={false}
           axisLine={false}
@@ -87,7 +82,7 @@ const WeatherLineChart: React.FC<WeatherLineChartProps> = React.memo(({
         />
         {hoveredIndex !== null && data[hoveredIndex] != null && (
           <ReferenceLine
-            x={data[hoveredIndex].time}
+            x={data[hoveredIndex].distance}
             yAxisId={line1Config.yAxisId}
             stroke="#aaa"
             strokeWidth={1}
