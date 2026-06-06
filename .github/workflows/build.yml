@@ -3,6 +3,7 @@ name: Build
 on:
   push:
     branches: ["master"]
+  pull_request:
 
 env:
   REGISTRY: ghcr.io
@@ -46,6 +47,7 @@ jobs:
   build:
     runs-on: self-hosted
     needs: [unit-test, e2e-test]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     permissions:
       contents: read
       packages: write
