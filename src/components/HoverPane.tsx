@@ -2,6 +2,8 @@ import React from 'react';
 import type { ChartDataPoint } from '../hooks/useWeatherChartData';
 import { formatElapsed } from '../hooks/useWeatherChartData';
 
+const PANE_WIDTH_PX = 110;
+
 interface HoverPaneProps {
   hoveredData: ChartDataPoint | null;
   xAxisMode: 'clock' | 'elapsed';
@@ -20,7 +22,7 @@ function HoverRow({ icon, value }: { icon: string; value: string }) {
 const HoverPane: React.FC<HoverPaneProps> = React.memo(({ hoveredData, xAxisMode, startTime }) => {
   if (!hoveredData) {
     return (
-      <div className="w-[110px] flex-shrink-0 flex flex-col pl-2 text-xs border-l border-base-300 ml-2 items-center justify-center text-center text-base-content/40">
+      <div style={{ width: PANE_WIDTH_PX }} className="flex-shrink-0 flex flex-col pl-2 text-xs border-l border-base-300 ml-2 items-center justify-center text-center text-base-content/40">
         <p>Hover over charts to see values here</p>
       </div>
     );
@@ -31,7 +33,7 @@ const HoverPane: React.FC<HoverPaneProps> = React.memo(({ hoveredData, xAxisMode
     : formatElapsed(hoveredData.time - startTime.getTime());
 
   return (
-    <div className="w-[110px] flex-shrink-0 flex flex-col pl-2 text-xs border-l border-base-300 ml-2">
+    <div style={{ width: PANE_WIDTH_PX }} className="flex-shrink-0 flex flex-col pl-2 text-xs border-l border-base-300 ml-2">
       <HoverRow icon="⏱" value={timeStr} />
       <HoverRow icon="→" value={`${hoveredData.distance.toFixed(1)} km`} />
       <HoverRow icon="↑" value={`${Math.round(hoveredData.elevation)} m`} />
