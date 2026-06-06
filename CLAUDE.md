@@ -45,3 +45,23 @@ Single-page React app. All application state lives in `App.tsx` — no global st
 ### Playwright
 
 - whenever taking screenshots, they will be placed in playwright-screenshots/, not anywhere else.
+
+## Pull Requests
+
+After creating a PR for a feature, check whether a corresponding spec file exists in `docs/superpowers/specs/` (naming pattern: `YYYY-MM-DD-<feature-slug>-design.md`). If one matches, mark it as viewed on the PR using the GitHub GraphQL API:
+
+```bash
+# Step 1 — get the PR's GraphQL node ID
+PR_ID=$(gh pr view <number> --json id -q .id)
+
+# Step 2 — mark the spec file as viewed
+gh api graphql -f query="
+  mutation {
+    markFileAsViewed(input: {pullRequestId: \"$PR_ID\", path: \"docs/superpowers/specs/<spec-file>.md\"}) {
+      pullRequest { number }
+    }
+  }
+"
+```
+
+This marks the file as viewed for the authenticated `gh` user (the PR author). No action needed if no matching spec exists.
