@@ -7,7 +7,7 @@ export interface WeatherLinePoint {
   time: number;
   distance: number;
   line1: number | undefined;
-  line2: number | undefined;
+  line2?: number | undefined;
 }
 
 export interface WeatherLineConfig {
@@ -22,7 +22,7 @@ export interface WeatherLineConfig {
 interface WeatherLineChartProps {
   data: WeatherLinePoint[];
   line1Config: WeatherLineConfig;
-  line2Config: WeatherLineConfig;
+  line2Config?: WeatherLineConfig;
   hoveredIndex: number | null;
   onHoverIndex: (index: number | null) => void;
   weatherAvailable: boolean | null;
@@ -68,6 +68,20 @@ const WeatherLineChart: React.FC<WeatherLineChartProps> = React.memo(({
           stroke="#888"
           tickFormatter={(v) => line1Config.format(v)}
         />
+        {line2Config && (
+          <YAxis
+            yAxisId={line2Config.yAxisId}
+            orientation="right"
+            width={hideAxes ? 0 : undefined}
+            domain={line2Config.domain}
+            tick={hideAxes ? false : undefined}
+            axisLine={false}
+            tickLine={false}
+            fontSize={10}
+            stroke="#888"
+            tickFormatter={(v) => line2Config.format(v)}
+          />
+        )}
         {hoveredIndex !== null && data[hoveredIndex] != null && (
           <ReferenceLine
             x={data[hoveredIndex].distance}
@@ -86,15 +100,17 @@ const WeatherLineChart: React.FC<WeatherLineChartProps> = React.memo(({
           name={line1Config.label}
           isAnimationActive={false}
         />
-        <Line
-          yAxisId={line2Config.yAxisId}
-          type="monotone"
-          dataKey="line2"
-          stroke={line2Config.color}
-          dot={false}
-          name={line2Config.label}
-          isAnimationActive={false}
-        />
+        {line2Config && (
+          <Line
+            yAxisId={line2Config.yAxisId}
+            type="monotone"
+            dataKey="line2"
+            stroke={line2Config.color}
+            dot={false}
+            name={line2Config.label}
+            isAnimationActive={false}
+          />
+        )}
       </ComposedChart>
     </ResponsiveContainer>
     {weatherAvailable === false && (

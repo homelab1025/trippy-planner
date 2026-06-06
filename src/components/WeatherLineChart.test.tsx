@@ -124,4 +124,11 @@ describe('WeatherLineChart', () => {
     act(() => { capturedMouseLeave?.(); });
     expect(defaultProps.onHoverIndex).toHaveBeenCalledWith(null);
   });
+
+  it('renders only line1 when line2Config is absent', () => {
+    const { line2Config: _omit, ...propsWithoutLine2 } = defaultProps;
+    render(<WeatherLineChart {...propsWithoutLine2} />);
+    expect(screen.getByTestId('line-line1')).toBeInTheDocument();
+    expect(screen.queryByTestId('line-line2')).not.toBeInTheDocument();
+  });
 });
