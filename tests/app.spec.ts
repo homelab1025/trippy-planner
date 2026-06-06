@@ -146,13 +146,6 @@ test('changing speed rerenders elevation chart without crash', async ({ page }) 
   await expect(page.locator('.elevation-row')).toBeVisible();
 
   const speedInput = page.getByLabel('Average Speed (km/h)');
-  // Ride Details may need to be explicitly opened on some renders
-  const rideDetailsTitle = page.locator('.control-card .collapse-title');
-  const speedInputParent = speedInput.locator('xpath=ancestor::div[@class="collapse-content flex flex-col gap-3"]');
-  // Only click to open if not visible
-  if (!(await speedInputParent.isVisible())) {
-    await rideDetailsTitle.click();
-  }
   await speedInput.fill('10');
   await speedInput.dispatchEvent('change');
 
