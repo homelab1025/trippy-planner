@@ -56,7 +56,7 @@ function App() {
   const [dpMaxGap, setDpMaxGap] = useState(DP_MAX_GAP_METERS);
   const [parseMetrics, setParseMetrics] = useState<{ totalMs: number; fileSizeKb: number } | null>(null);
   const [weatherDebug, setWeatherDebugState] = useState(false);
-  const [activePanel, setActivePanel] = useState<'ride' | 'weather' | 'tech' | null>('ride');
+  const [activePanel, setActivePanel] = useState<'ride' | 'tech' | null>('ride');
   const [weatherAvailable, setWeatherAvailable] = useState<boolean | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<WeatherProvider>(DEFAULT_PROVIDER);
   const [chartWidth, setChartWidth] = useState(800);
@@ -125,7 +125,6 @@ function App() {
       const measure = performance.measure('gpx-parse', 'gpx-parse-start', 'gpx-parse-end');
       setParseMetrics({ totalMs: measure.duration, fileSizeKb });
       setRoute(parsedRoute);
-      setActivePanel(p => (p === 'ride' || p === null) ? 'weather' : p);
     } catch (error) {
       console.error('Failed to parse GPX:', error);
       const message = error instanceof Error ? error.message : 'Failed to parse GPX file. Please ensure it is a valid track.';
@@ -171,7 +170,12 @@ function App() {
   }, []);
 
   React.useEffect(() => {
-    if (route) updateWeather(route, avgSpeed, startTime, selectedProvider);
+    const fetchWeather = async () => {
+      if (route) {
+        await updateWeather(route, avgSpeed, startTime, selectedProvider);
+      }
+    };
+    fetchWeather();
   }, [route, avgSpeed, startTime, selectedProvider, updateWeather]);
 
   React.useEffect(() => {
@@ -318,34 +322,6 @@ function App() {
             </div>
           </div>
 
-          {/* Weather */}
-          <div className={`collapse collapse-arrow bg-base-100 shadow rounded-none border-x border-b border-base-300 ${activePanel === 'weather' ? 'collapse-open' : ''}`}>
-            <div
-              className="collapse-title font-medium cursor-pointer"
-              onClick={() => setActivePanel(p => p === 'weather' ? null : 'weather')}
-            >
-              Weather
-            </div>
-            <div className="collapse-content">
-              {route ? (
-                <div className="h-[180px] flex-shrink-0 overflow-hidden">
-                  <WeatherLineChart
-                    data={tempWindData}
-                    line1Config={TEMP_LINE}
-                    line2Config={WIND_LINE}
-                    hoveredIndex={hoveredIndex}
-                    onHoverIndex={onHoverIndex}
-                    weatherAvailable={weatherAvailable}
-                  />
-                </div>
-              ) : (
-                <p className="text-base-content/50 text-sm text-center py-2">
-                  Load a route to see weather
-                </p>
-              )}
-            </div>
-          </div>
-
           {/* Tech Details */}
           <div className={`tech-details-card collapse collapse-arrow bg-base-100 shadow rounded-t-none rounded-b-box border-x border-b border-base-300 ${activePanel === 'tech' ? 'collapse-open' : ''}`}>
             <div
@@ -474,6 +450,17 @@ function App() {
                       onHoverIndex={onHoverIndex}
                       onResize={setChartWidth}
                       hoveredIndex={hoveredIndex}
+                    />
+                  </div>
+                  <div className="border-t border-base-200" style={{ height: 80 }}>
+                    <WeatherLineChart
+                      data={tempWindData}
+                      line1Config={TEMP_LINE}
+                      line2Config={WIND_LINE}
+                      hoveredIndex={hoveredIndex}
+                      onHoverIndex={onHoverIndex}
+                      weatherAvailable={weatherAvailable}
+                      hideAxes
                     />
                   </div>
                   <div className="border-t border-base-200" style={{ height: 80 }}>
