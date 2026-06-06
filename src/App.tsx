@@ -463,24 +463,8 @@ function App() {
         {/* Display area */}
         <div className="flex flex-col gap-6 min-h-0">
 
-          {/* Map card */}
-          <div className="card bg-base-100 shadow flex-[2] min-h-0 overflow-hidden">
-            {!route ? (
-              <div className="flex flex-col items-center justify-center h-full text-base-content/40 gap-4">
-                <MapIcon size={48} />
-                <p>Upload a GPX file to see your route</p>
-              </div>
-            ) : (
-              <MapComponent
-                route={route}
-                hoveredPoint={hoveredPoint}
-                debugPins={weatherDebug ? weatherPoints.map(wp => ({ lat: wp.point.lat, lng: wp.point.lng, label: wp.label })) : undefined}
-              />
-            )}
-          </div>
-
           {/* Elevation + hover pane card */}
-          <div className="card bg-base-100 shadow flex-1 min-h-0 overflow-hidden p-5 flex flex-row">
+          <div className="card bg-base-100 shadow h-[350px] flex-shrink-0 overflow-hidden p-5 flex flex-row">
             {!route ? (
               <div className="flex flex-col items-center justify-center flex-1 text-base-content/40 gap-4">
                 <CloudRain size={32} />
@@ -501,6 +485,22 @@ function App() {
                 />
                 <HoverPane hoveredData={hoveredData} xAxisMode={xAxisMode} startTime={startTime} />
               </>
+            )}
+          </div>
+
+          {/* Map card */}
+          <div className="card bg-base-100 shadow flex-1 min-h-0 overflow-hidden">
+            {!route ? (
+              <div className="flex flex-col items-center justify-center h-full text-base-content/40 gap-4">
+                <MapIcon size={48} />
+                <p>Upload a GPX file to see your route</p>
+              </div>
+            ) : (
+              <MapComponent
+                route={route}
+                hoveredPoint={hoveredPoint}
+                debugPins={weatherDebug ? weatherPoints.map(wp => ({ lat: wp.point.lat, lng: wp.point.lng, label: wp.label })) : undefined}
+              />
             )}
           </div>
 
