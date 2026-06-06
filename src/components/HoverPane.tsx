@@ -10,9 +10,9 @@ interface HoverPaneProps {
 
 function HoverRow({ icon, value }: { icon: string; value: string }) {
   return (
-    <div className="hover-row">
-      <span className="hover-row-icon">{icon}</span>
-      <span className="hover-row-value">{value}</span>
+    <div className="grid grid-cols-[20px_1fr] gap-1 mb-1 items-center">
+      <span className="text-center text-[0.8rem]">{icon}</span>
+      <span className="whitespace-nowrap">{value}</span>
     </div>
   );
 }
@@ -20,7 +20,7 @@ function HoverRow({ icon, value }: { icon: string; value: string }) {
 const HoverPane: React.FC<HoverPaneProps> = React.memo(({ hoveredData, xAxisMode, startTime }) => {
   if (!hoveredData) {
     return (
-      <div className="hover-pane hover-pane--empty">
+      <div className="w-[110px] flex-shrink-0 flex flex-col pl-2 text-xs border-l border-base-300 ml-2 items-center justify-center text-center text-base-content/40">
         <p>Hover over charts to see values here</p>
       </div>
     );
@@ -31,7 +31,7 @@ const HoverPane: React.FC<HoverPaneProps> = React.memo(({ hoveredData, xAxisMode
     : formatElapsed(hoveredData.time - startTime.getTime());
 
   return (
-    <div className="hover-pane">
+    <div className="w-[110px] flex-shrink-0 flex flex-col pl-2 text-xs border-l border-base-300 ml-2">
       <HoverRow icon="⏱" value={timeStr} />
       <HoverRow icon="→" value={`${hoveredData.distance.toFixed(1)} km`} />
       <HoverRow icon="↑" value={`${Math.round(hoveredData.elevation)} m`} />
