@@ -34,4 +34,4 @@ reports/
 *.njsproj
 *.sln
 *.sw?
-.superpowers/*
+.superpowers/*.worktrees/
