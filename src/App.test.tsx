@@ -32,8 +32,6 @@ let capturedHoverCb: ((index: number | null) => void) | null = null;
 // capturedTempWindData / capturedPrecipData capture last props for weather assertions.
 let capturedTempWindData: Array<{ line1?: number; line2?: number }> = [];
 let capturedPrecipData: Array<{ line1?: number; line2?: number }> = [];
-let capturedTempWindWeatherAvailable: boolean | null | undefined = undefined;
-let capturedPrecipWeatherAvailable: boolean | null | undefined = undefined;
 
 // ── Mocks ───────────────────────────────────────────────────────────────────
 
@@ -106,10 +104,8 @@ vi.mock('./components/WeatherLineChart', () => ({
     const isTempWind = line1Config.label === 'Temp';
     if (isTempWind) {
       capturedTempWindData = data;
-      capturedTempWindWeatherAvailable = weatherAvailable;
     } else {
       capturedPrecipData = data;
-      capturedPrecipWeatherAvailable = weatherAvailable;
     }
     return (
       <div
@@ -159,8 +155,6 @@ describe('App', () => {
     capturedHoverCb = null;
     capturedTempWindData = [];
     capturedPrecipData = [];
-    capturedTempWindWeatherAvailable = undefined;
-    capturedPrecipWeatherAvailable = undefined;
     vi.spyOn(window, 'alert').mockImplementation(() => {});
   });
 
@@ -198,9 +192,6 @@ describe('App', () => {
       expect(screen.getByTestId('tempwind-chart')).toBeInTheDocument()
     );
 
-    // Ride Details collapses after upload — open it first
-    fireEvent.click(screen.getByText('Ride Details'));
-
     vi.mocked(DEFAULT_PROVIDER.fetchWeather).mockResolvedValue(new Map([[0, { ...mockWeather, temp: 30 }]]));
     fireEvent.change(screen.getByLabelText('Average Speed (km/h)'), { target: { value: '10' } });
 
@@ -216,9 +207,6 @@ describe('App', () => {
     await uploadFile();
     await waitFor(() => expect(screen.getByTestId('tempwind-chart')).toBeInTheDocument());
 
-    // Ride Details collapses after upload — open it first
-    fireEvent.click(screen.getByText('Ride Details'));
-
     vi.mocked(DEFAULT_PROVIDER.fetchWeather).mockResolvedValue(new Map([[0, { ...mockWeather, precipProb: 75 }]]));
     fireEvent.change(screen.getByLabelText('Average Speed (km/h)'), { target: { value: '10' } });
 
@@ -232,9 +220,6 @@ describe('App', () => {
     await uploadFile();
     await waitFor(() => expect(screen.getByTestId('tempwind-chart')).toBeInTheDocument());
 
-    // Ride Details collapses after upload — open it first
-    fireEvent.click(screen.getByText('Ride Details'));
-
     vi.mocked(DEFAULT_PROVIDER.fetchWeather).mockResolvedValue(new Map([[0, { ...mockWeather, precipitation: 3.5 }]]));
     fireEvent.change(screen.getByLabelText('Average Speed (km/h)'), { target: { value: '10' } });
 
@@ -247,9 +232,6 @@ describe('App', () => {
     render(<App />);
     await uploadFile();
     await waitFor(() => expect(screen.getByTestId('tempwind-chart')).toBeInTheDocument());
-
-    // Ride Details collapses after upload — open it first
-    fireEvent.click(screen.getByText('Ride Details'));
 
     // Pick a date 2 days from now — always different from today's default, always in picker range
     const d = new Date();
@@ -278,9 +260,6 @@ describe('App', () => {
     render(<App />);
     await uploadFile();
     await waitFor(() => screen.getByTestId('elevation-chart'));
-
-    // Ride Details collapses after upload — open it first
-    fireEvent.click(screen.getByText('Ride Details'));
 
     expect(screen.getByText('Time Display')).toBeInTheDocument();
     expect(screen.getByText('Clock')).toBeInTheDocument();
