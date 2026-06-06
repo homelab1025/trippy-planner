@@ -488,17 +488,19 @@ function App() {
               </div>
             ) : (
               <>
-                <ElevationChart
-                  data={elevationData}
-                  totalDistance={route.totalDistance}
-                  climbs={climbs}
-                  avgSpeed={avgSpeed}
-                  startTime={startTime}
-                  xAxisMode={xAxisMode}
-                  onHoverIndex={onHoverIndex}
-                  onResize={setChartWidth}
-                  hoveredIndex={hoveredIndex}
-                />
+                <div className="flex-1 min-w-0">
+                  <ElevationChart
+                    data={elevationData}
+                    totalDistance={route.totalDistance}
+                    climbs={climbs}
+                    avgSpeed={avgSpeed}
+                    startTime={startTime}
+                    xAxisMode={xAxisMode}
+                    onHoverIndex={onHoverIndex}
+                    onResize={setChartWidth}
+                    hoveredIndex={hoveredIndex}
+                  />
+                </div>
                 <HoverPane hoveredData={hoveredData} xAxisMode={xAxisMode} startTime={startTime} />
               </>
             )}
