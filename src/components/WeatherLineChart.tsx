@@ -50,7 +50,8 @@ const WeatherLineChart: React.FC<WeatherLineChartProps> = React.memo(({
           dataKey="time"
           type="number"
           domain={['dataMin', 'dataMax']}
-          hide={hideAxes}
+          height={hideAxes ? 0 : undefined}
+          tick={hideAxes ? false : undefined}
           tickFormatter={(v) => xAxisMode === 'clock'
             ? new Date(v).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             : formatElapsed(v - (data[0]?.time ?? v))
@@ -64,7 +65,7 @@ const WeatherLineChart: React.FC<WeatherLineChartProps> = React.memo(({
           yAxisId={line1Config.yAxisId}
           width={hideAxes ? 45 : undefined}
           domain={line1Config.domain}
-          hide={hideAxes}
+          tick={hideAxes ? false : undefined}
           axisLine={false}
           tickLine={false}
           fontSize={10}
@@ -76,7 +77,7 @@ const WeatherLineChart: React.FC<WeatherLineChartProps> = React.memo(({
           orientation="right"
           width={hideAxes ? 0 : undefined}
           domain={line2Config.domain}
-          hide={hideAxes}
+          tick={hideAxes ? false : undefined}
           axisLine={false}
           tickLine={false}
           fontSize={10}
