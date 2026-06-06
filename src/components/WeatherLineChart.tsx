@@ -59,7 +59,7 @@ const WeatherLineChart: React.FC<WeatherLineChartProps> = React.memo(({
         />
         <YAxis
           yAxisId={line1Config.yAxisId}
-          width={hideAxes ? 45 : undefined}
+          width={hideAxes ? 45 : 45}
           domain={line1Config.domain}
           tick={hideAxes ? false : undefined}
           axisLine={false}
@@ -67,18 +67,6 @@ const WeatherLineChart: React.FC<WeatherLineChartProps> = React.memo(({
           fontSize={10}
           stroke="#888"
           tickFormatter={(v) => line1Config.format(v)}
-        />
-        <YAxis
-          yAxisId={line2Config.yAxisId}
-          orientation="right"
-          width={hideAxes ? 0 : undefined}
-          domain={line2Config.domain}
-          tick={hideAxes ? false : undefined}
-          axisLine={false}
-          tickLine={false}
-          fontSize={10}
-          stroke="#888"
-          tickFormatter={(v) => line2Config.format(v)}
         />
         {hoveredIndex !== null && data[hoveredIndex] != null && (
           <ReferenceLine
