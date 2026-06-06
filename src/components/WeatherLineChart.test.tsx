@@ -49,7 +49,6 @@ const defaultProps = {
   data: sampleData,
   line1Config,
   line2Config,
-  xAxisMode: 'clock' as const,
   hoveredIndex: null as number | null,
   onHoverIndex: vi.fn(),
   weatherAvailable: true as boolean | null,
@@ -85,11 +84,11 @@ describe('WeatherLineChart', () => {
     expect(screen.queryByText('Weather data unavailable for the selected date')).not.toBeInTheDocument();
   });
 
-  it('renders reference line at hovered point time when hoveredIndex is set', () => {
+  it('renders reference line at hovered point distance when hoveredIndex is set', () => {
     render(<WeatherLineChart {...defaultProps} hoveredIndex={1} />);
     const line = screen.getByTestId('reference-line');
     expect(line).toBeInTheDocument();
-    expect(line.dataset.x).toBe('2000');
+    expect(line.dataset.x).toBe('1');
   });
 
   it('does not render reference line when hoveredIndex is null', () => {
