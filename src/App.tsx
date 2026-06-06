@@ -71,7 +71,7 @@ function App() {
   const chartData = useWeatherChartData({ route, weatherPoints, chartWidth, avgSpeed, startTime });
 
   const elevationData = useMemo(
-    () => chartData.map(({ distance, elevation, time }) => ({ distance, elevation, time })),
+    () => chartData.map(({ distance, elevation }) => ({ distance, elevation })),
     [chartData]
   );
 
@@ -298,7 +298,7 @@ function App() {
               </div>
 
               <div>
-                <div className="label-text text-sm mb-2">X Axis Mode</div>
+                <div className="label-text text-sm mb-2">Time Display</div>
                 <div className="join">
                   <button
                     className={`btn btn-sm join-item ${xAxisMode === 'clock' ? 'btn-primary' : ''}`}
@@ -333,7 +333,6 @@ function App() {
                     data={tempWindData}
                     line1Config={TEMP_LINE}
                     line2Config={WIND_LINE}
-                    xAxisMode={xAxisMode}
                     hoveredIndex={hoveredIndex}
                     onHoverIndex={onHoverIndex}
                     weatherAvailable={weatherAvailable}
@@ -471,11 +470,7 @@ function App() {
                   <div style={{ height: 300 }}>
                     <ElevationChart
                       data={elevationData}
-                      totalDistance={route.totalDistance}
                       climbs={climbs}
-                      avgSpeed={avgSpeed}
-                      startTime={startTime}
-                      xAxisMode={xAxisMode}
                       onHoverIndex={onHoverIndex}
                       onResize={setChartWidth}
                       hoveredIndex={hoveredIndex}
@@ -486,7 +481,6 @@ function App() {
                       data={precipData}
                       line1Config={PROB_LINE}
                       line2Config={AMOUNT_LINE}
-                      xAxisMode={xAxisMode}
                       hoveredIndex={hoveredIndex}
                       onHoverIndex={onHoverIndex}
                       weatherAvailable={weatherAvailable}
