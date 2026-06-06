@@ -21,6 +21,7 @@ reports/
 # Local tool config
 .antigravitycli/
 .claude/
+.playwright-mcp/
 
 # Editor directories and files
 .vscode/*

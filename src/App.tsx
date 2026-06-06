@@ -205,7 +205,7 @@ function App() {
       {/* Navbar */}
       <div className="navbar bg-primary text-primary-content rounded-box shadow-lg px-4 flex-shrink-0">
         <div className="flex-none gap-3">
-          <img src={logo} alt="Trippy Planner" className="w-10 h-10 rounded-full object-cover" />
+          <img src={logo} alt="Trippy Planner" className="w-[60px] h-[60px] rounded-full object-cover self-center" />
           <h1 className="text-xl font-bold">Trippy Planner</h1>
         </div>
         {route && (
