@@ -46,21 +46,20 @@ const WeatherLineChart: React.FC<WeatherLineChartProps> = React.memo(({
         onMouseLeave={() => onHoverIndex(null)}
       >
         {!hideAxes && <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />}
-        {!hideAxes && (
-          <XAxis
-            dataKey="time"
-            type="number"
-            domain={['dataMin', 'dataMax']}
-            tickFormatter={(v) => xAxisMode === 'clock'
-              ? new Date(v).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-              : formatElapsed(v - (data[0]?.time ?? v))
-            }
-            fontSize={11}
-            tickLine={false}
-            axisLine={false}
-            stroke="#888"
-          />
-        )}
+        <XAxis
+          dataKey="time"
+          type="number"
+          domain={['dataMin', 'dataMax']}
+          hide={hideAxes}
+          tickFormatter={(v) => xAxisMode === 'clock'
+            ? new Date(v).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            : formatElapsed(v - (data[0]?.time ?? v))
+          }
+          fontSize={11}
+          tickLine={false}
+          axisLine={false}
+          stroke="#888"
+        />
         <YAxis
           yAxisId={line1Config.yAxisId}
           domain={line1Config.domain}
