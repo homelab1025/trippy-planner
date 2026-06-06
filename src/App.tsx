@@ -202,12 +202,12 @@ function App() {
   return (
     <div className="flex flex-col h-screen max-w-[1400px] mx-auto p-6 gap-6">
 
-      {/* Navbar */}
-      <div className="navbar bg-primary text-primary-content rounded-box shadow-lg px-4 flex-shrink-0">
-        <div className="flex-none gap-3">
-          <img src={logo} alt="Trippy Planner" className="w-[60px] h-[60px] rounded-full object-cover self-center" />
-          <h1 className="text-xl font-bold">Trippy Planner</h1>
-        </div>
+      {/* Navbar with logo overlapping its bottom-left edge */}
+      <div className="relative flex-shrink-0">
+        <div className="navbar bg-primary text-primary-content rounded-box shadow-lg pl-[185px] pr-4 min-h-[58px]">
+          <div className="flex-none gap-3">
+            <h1 className="text-xl font-bold">Trippy Planner</h1>
+          </div>
         {route && (
           <div className="flex-1 text-center text-sm opacity-90 px-4">
             {route.name}: {(route.totalDistance / 1000).toFixed(1)} km · {Math.round(route.totalElevationGain)} m of character-building
@@ -227,13 +227,21 @@ function App() {
           </label>
           <input id="gpx-upload" type="file" accept=".gpx" onChange={handleFileUpload} disabled={loading} className="hidden" />
         </div>
+        </div>
+        <div className="absolute bottom-0 left-1 translate-y-1/2 z-10">
+          <img
+            src={logo}
+            alt="Trippy Planner"
+            className="h-[102px] w-auto drop-shadow-lg"
+          />
+        </div>
       </div>
 
       {/* Main grid */}
       <div className="grid lg:grid-cols-[320px_1fr] grid-cols-1 gap-6 flex-1 min-h-0">
 
         {/* Sidebar — single-open accordion via collapse-open + activePanel state */}
-        <div className="flex flex-col overflow-y-auto">
+        <div className="flex flex-col overflow-y-auto pt-7">
 
           {/* Ride Details */}
           <div className={`collapse collapse-arrow bg-base-100 shadow rounded-b-none rounded-t-box border border-base-300 ${activePanel === 'ride' ? 'collapse-open' : ''}`}>

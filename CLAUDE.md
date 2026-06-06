@@ -41,3 +41,7 @@ Single-page React app. All application state lives in `App.tsx` — no global st
 - Leaflet requires its CSS imported inside the component file and a manual icon fix (default marker images break with Vite's asset hashing — see `MapComponent.tsx:11-17`).
 - `gpxparser` types the cumulative distance field as `any` — cast is necessary at `gpxParser.ts:31`.
 - Playwright tests run against the live dev server on port 5173. The `webServer` config in `playwright.config.ts` starts it automatically but reuses an existing server if one is already running.
+
+### Playwright
+
+- whenever taking screenshots, they will be placed in playwright-screenshots/, not anywhere else.
