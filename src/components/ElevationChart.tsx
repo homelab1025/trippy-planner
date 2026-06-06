@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import {
-  ComposedChart, Area, XAxis, YAxis, CartesianGrid, ReferenceLine, ReferenceDot, ResponsiveContainer,
+  ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, ReferenceLine, ReferenceDot, ResponsiveContainer,
 } from 'recharts';
 import type { Climb } from '../utils/climbDetector';
 import ClimbOverlay, { type ClimbRange } from './ClimbOverlay';
@@ -8,6 +8,7 @@ import ClimbOverlay, { type ClimbRange } from './ClimbOverlay';
 export interface ElevationPoint {
   distance: number;
   elevation: number;
+  temp?: number;
 }
 
 interface ElevationChartProps {
@@ -70,6 +71,16 @@ const ElevationChart: React.FC<ElevationChartProps> = ({
             stroke="#888"
             tickFormatter={(v) => `${Math.round(v)}m`}
           />
+          <YAxis
+            yAxisId="temp"
+            orientation="right"
+            domain={['auto', 'auto']}
+            tickLine={false}
+            fontSize={10}
+            stroke="#888"
+            tickFormatter={(v) => `${Math.round(v)}°C`}
+            tick={hoveredIndex !== null}
+          />
           <Area
             yAxisId="elevation"
             type="monotone"
@@ -80,6 +91,14 @@ const ElevationChart: React.FC<ElevationChartProps> = ({
             name="Elevation"
             dot={false}
             activeDot={false}
+            isAnimationActive={false}
+          />
+          <Line
+            yAxisId="temp"
+            type="monotone"
+            dataKey="temp"
+            stroke="#ff7300"
+            dot={false}
             isAnimationActive={false}
           />
           <ClimbOverlay climbRanges={climbRanges} data={data} />
@@ -101,6 +120,26 @@ const ElevationChart: React.FC<ElevationChartProps> = ({
                 stroke="white"
                 strokeWidth={2}
               />
+              {data[hoveredIndex].temp != null && (
+                <>
+                  <ReferenceLine
+                    x={data[hoveredIndex].distance}
+                    yAxisId="temp"
+                    stroke="#aaa"
+                    strokeWidth={1}
+                    strokeDasharray="3 3"
+                  />
+                  <ReferenceDot
+                    x={data[hoveredIndex].distance}
+                    y={data[hoveredIndex].temp}
+                    yAxisId="temp"
+                    r={4}
+                    fill="#ff7300"
+                    stroke="white"
+                    strokeWidth={2}
+                  />
+                </>
+              )}
             </>
           )}
         </ComposedChart>
