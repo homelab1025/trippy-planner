@@ -18,6 +18,7 @@ vi.mock('recharts', () => ({
     return <div>{children}</div>;
   },
   Area: ({ dataKey }: { dataKey: string }) => <div data-testid={`area-${dataKey}`} />,
+  Line: ({ dataKey }: { dataKey: string }) => <div data-testid={`line-${dataKey}`} />,
   ReferenceLine: ({ x }: { x: number }) => <div data-testid="reference-line" data-x={x} />,
   ReferenceDot: ({ x, y }: { x: number; y: number }) => <div data-testid="reference-dot" data-x={x} data-y={y} />,
   XAxis: () => null,
@@ -107,5 +108,34 @@ describe('ElevationChart', () => {
     render(<ElevationChart {...defaultProps} />);
     act(() => { capturedMouseLeave?.(); });
     expect(defaultProps.onHoverIndex).toHaveBeenCalledWith(null);
+  });
+
+  it('renders temperature line when data contains temp values', () => {
+    const dataWithTemp: ElevationPoint[] = [
+      { distance: 0, elevation: 100, temp: 15 },
+      { distance: 1, elevation: 200, temp: 12 },
+    ];
+    render(<ElevationChart {...defaultProps} data={dataWithTemp} />);
+    expect(screen.getByTestId('line-temp')).toBeInTheDocument();
+  });
+
+  it('renders temperature reference line and dot when hoveredIndex has temp data', () => {
+    const dataWithTemp: ElevationPoint[] = [
+      { distance: 0, elevation: 100, temp: 15 },
+      { distance: 1, elevation: 200, temp: 12 },
+    ];
+    render(<ElevationChart {...defaultProps} data={dataWithTemp} hoveredIndex={1} />);
+    const refLines = screen.getAllByTestId('reference-line');
+    const refDots = screen.getAllByTestId('reference-dot');
+    expect(refLines.length).toBeGreaterThanOrEqual(2);
+    expect(refDots.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('does not render temperature reference line and dot when hoveredIndex has no temp', () => {
+    render(<ElevationChart {...defaultProps} hoveredIndex={1} />);
+    const refLines = screen.getAllByTestId('reference-line');
+    const refDots = screen.getAllByTestId('reference-dot');
+    expect(refLines.length).toBe(1);
+    expect(refDots.length).toBe(1);
   });
 });

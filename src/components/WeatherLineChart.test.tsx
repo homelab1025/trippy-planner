@@ -124,4 +124,19 @@ describe('WeatherLineChart', () => {
     act(() => { capturedMouseLeave?.(); });
     expect(defaultProps.onHoverIndex).toHaveBeenCalledWith(null);
   });
+
+  it('renders line1 but not line2 when line2Config is undefined', () => {
+    const propsWithoutLine2 = { ...defaultProps, line2Config: undefined };
+    render(<WeatherLineChart {...propsWithoutLine2} />);
+    expect(screen.getByTestId('line-line1')).toBeInTheDocument();
+    expect(screen.queryByTestId('line-line2')).not.toBeInTheDocument();
+  });
+
+  it('renders reference line when line2Config is undefined and hoveredIndex is set', () => {
+    const propsWithoutLine2 = { ...defaultProps, line2Config: undefined };
+    render(<WeatherLineChart {...propsWithoutLine2} hoveredIndex={1} />);
+    const line = screen.getByTestId('reference-line');
+    expect(line).toBeInTheDocument();
+    expect(line.dataset.x).toBe('1');
+  });
 });
