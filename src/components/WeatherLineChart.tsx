@@ -19,6 +19,7 @@ export interface WeatherLineConfig {
   domain?: [number, number];
 }
 
+// TODO: refactor line1Config/line2Config into a single array of line configs
 interface WeatherLineChartProps {
   data: WeatherLinePoint[];
   line1Config: WeatherLineConfig;
