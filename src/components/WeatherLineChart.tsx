@@ -36,7 +36,7 @@ const WeatherLineChart: React.FC<WeatherLineChartProps> = React.memo(({
     <ResponsiveContainer width="100%" height="100%">
       <ComposedChart
         data={data}
-        margin={hideAxes ? { top: 4, right: 10, left: 10, bottom: 0 } : { top: 10, right: 10, left: 10, bottom: 0 }}
+        margin={hideAxes ? { top: 4, right: 55, left: 10, bottom: 0 } : { top: 10, right: 10, left: 10, bottom: 0 }}
         onMouseMove={(state) => {
           const idx = state.activeTooltipIndex != null ? Number(state.activeTooltipIndex) : NaN;
           if (isNaN(idx) || !data[idx]) { onHoverIndex(null); return; }
