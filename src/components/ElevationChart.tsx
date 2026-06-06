@@ -38,7 +38,7 @@ const ElevationChart: React.FC<ElevationChartProps> = ({
       <ResponsiveContainer width="100%" height="100%" onResize={(w) => onResize(w)}>
         <ComposedChart
           data={data}
-          margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
+          margin={{ top: 10, right: hasTemp ? 10 : 55, left: 10, bottom: 0 }}
           onMouseMove={(state) => {
             const idx = state.activeTooltipIndex != null ? Number(state.activeTooltipIndex) : NaN;
             if (isNaN(idx) || !data[idx]) { onHoverIndex(null); return; }

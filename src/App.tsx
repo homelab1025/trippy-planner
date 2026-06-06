@@ -17,7 +17,7 @@ import { useWeatherChartData } from './hooks/useWeatherChartData';
 import type { ChartDataPoint, WeatherSample } from './hooks/useWeatherChartData';
 
 const WIND_LINE: WeatherLineConfig = {
-  label: 'Wind', color: '#4A9FD9', format: (v) => `${Math.round(v)} km/h`, yAxisId: 'right',
+  label: 'Wind', color: '#4A9FD9', format: (v) => `${Math.round(v)} km/h`, yAxisId: 'left',
 };
 const PROB_LINE: WeatherLineConfig = {
   label: 'Prob', color: '#4A90D9', format: (v) => `${Math.round(v)}%`, yAxisId: 'left', domain: [0, 100],
