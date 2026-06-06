@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import {
-  ComposedChart, Area, XAxis, YAxis, CartesianGrid, ReferenceLine, ReferenceDot, ResponsiveContainer,
+  ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, ReferenceLine, ReferenceDot, ResponsiveContainer,
 } from 'recharts';
 import type { Climb } from '../utils/climbDetector';
 import ClimbOverlay, { type ClimbRange } from './ClimbOverlay';
@@ -8,6 +8,7 @@ import ClimbOverlay, { type ClimbRange } from './ClimbOverlay';
 export interface ElevationPoint {
   distance: number;
   elevation: number;
+  temp?: number;
 }
 
 interface ElevationChartProps {
@@ -29,6 +30,8 @@ const ElevationChart: React.FC<ElevationChartProps> = ({
     })),
     [climbs]
   );
+
+  const hasTemp = data.some(d => d.temp != null);
 
   return (
     <div style={{ flex: 1, minWidth: 0, height: '100%', position: 'relative' }}>
@@ -70,6 +73,18 @@ const ElevationChart: React.FC<ElevationChartProps> = ({
             stroke="#888"
             tickFormatter={(v) => `${Math.round(v)}m`}
           />
+          {hasTemp && (
+            <YAxis
+              yAxisId="temp"
+              orientation="right"
+              width={45}
+              axisLine={false}
+              tickLine={false}
+              fontSize={10}
+              stroke="#ff7300"
+              tickFormatter={(v) => `${Math.round(v)}°C`}
+            />
+          )}
           <Area
             yAxisId="elevation"
             type="monotone"
@@ -82,6 +97,17 @@ const ElevationChart: React.FC<ElevationChartProps> = ({
             activeDot={false}
             isAnimationActive={false}
           />
+          {hasTemp && (
+            <Line
+              yAxisId="temp"
+              type="monotone"
+              dataKey="temp"
+              stroke="#ff7300"
+              dot={false}
+              name="Temperature"
+              isAnimationActive={false}
+            />
+          )}
           <ClimbOverlay climbRanges={climbRanges} data={data} />
           {hoveredIndex !== null && data[hoveredIndex] != null && (
             <>
