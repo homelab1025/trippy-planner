@@ -16,9 +16,6 @@ import HoverPane from './components/HoverPane';
 import { useWeatherChartData } from './hooks/useWeatherChartData';
 import type { ChartDataPoint, WeatherSample } from './hooks/useWeatherChartData';
 
-const TEMP_LINE: WeatherLineConfig = {
-  label: 'Temp', color: '#ff7300', format: (v) => `${Math.round(v)}°C`, yAxisId: 'left',
-};
 const WIND_LINE: WeatherLineConfig = {
   label: 'Wind', color: '#4A9FD9', format: (v) => `${Math.round(v)} km/h`, yAxisId: 'right',
 };
@@ -71,12 +68,12 @@ function App() {
   const chartData = useWeatherChartData({ route, weatherPoints, chartWidth, avgSpeed, startTime });
 
   const elevationData = useMemo(
-    () => chartData.map(({ distance, elevation }) => ({ distance, elevation })),
+    () => chartData.map(({ distance, elevation, temp }) => ({ distance, elevation, temp })),
     [chartData]
   );
 
-  const tempWindData = useMemo(
-    () => chartData.map(({ time, distance, temp, windSpeed }) => ({ time, distance, line1: temp, line2: windSpeed })),
+  const windData = useMemo(
+    () => chartData.map(({ time, distance, windSpeed }) => ({ time, distance, line1: windSpeed })),
     [chartData]
   );
 
@@ -452,18 +449,17 @@ function App() {
                       hoveredIndex={hoveredIndex}
                     />
                   </div>
-                  <div className="border-t border-base-200" style={{ height: 80 }}>
+                  <div className="border-t border-base-200" style={{ height: 40 }}>
                     <WeatherLineChart
-                      data={tempWindData}
-                      line1Config={TEMP_LINE}
-                      line2Config={WIND_LINE}
+                      data={windData}
+                      line1Config={WIND_LINE}
                       hoveredIndex={hoveredIndex}
                       onHoverIndex={onHoverIndex}
                       weatherAvailable={weatherAvailable}
                       hideAxes
                     />
                   </div>
-                  <div className="border-t border-base-200" style={{ height: 80 }}>
+                  <div className="border-t border-base-200" style={{ height: 40 }}>
                     <WeatherLineChart
                       data={precipData}
                       line1Config={PROB_LINE}
