@@ -74,6 +74,7 @@ const ElevationChart: React.FC<ElevationChartProps> = ({
           />
           <YAxis
             yAxisId="elevation"
+            width={45}
             domain={[(dataMin: number) => dataMin - 10, 'auto']}
             axisLine={false}
             tickLine={false}
