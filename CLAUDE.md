@@ -48,6 +48,8 @@ Single-page React app. All application state lives in `App.tsx` — no global st
 
 ## Pull Requests
 
+When commit is done at the end, make sure you commit the spec if there is one.
+
 After creating a PR for a feature, check whether a corresponding spec file exists in `docs/superpowers/specs/` (naming pattern: `YYYY-MM-DD-<feature-slug>-design.md`). If one matches, mark it as viewed on the PR using the GitHub GraphQL API:
 
 ```bash
