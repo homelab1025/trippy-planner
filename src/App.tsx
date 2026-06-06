@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { format } from 'date-fns';
-import { Upload, Map as MapIcon, CloudRain, ChevronDown, ChevronRight } from 'lucide-react';
+import { Upload, Map as MapIcon, CloudRain } from 'lucide-react';
 import logo from './assets/logo.png';
 import { parseGPXAsync } from './workers/gpxWorkerClient';
 import type { RouteData, RoutePoint } from './utils/gpxParser';
@@ -232,213 +232,233 @@ function App() {
       {/* Main grid */}
       <div className="grid lg:grid-cols-[320px_1fr] grid-cols-1 gap-6 flex-1 min-h-0">
 
-        {/* ── Sidebar goes here (Task 4) ── */}
-        <aside className="sidebar">
-          <div className="sidebar-scrollable">
-            <div className="glass-panel control-card">
-              <h3
-                onClick={() => setActivePanel(p => p === 'ride' ? null : 'ride')}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', marginBottom: activePanel === 'ride' ? '20px' : 0 }}
-              >
-                Ride Details
-                {activePanel === 'ride' ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-              </h3>
-              {activePanel === 'ride' && (
+        {/* Sidebar — single-open accordion via collapse-open + activePanel state */}
+        <div className="flex flex-col overflow-y-auto">
+
+          {/* Ride Details */}
+          <div className={`collapse collapse-arrow bg-base-100 shadow rounded-b-none rounded-t-box border border-base-300 ${activePanel === 'ride' ? 'collapse-open' : ''}`}>
+            <div
+              className="collapse-title font-medium cursor-pointer"
+              onClick={() => setActivePanel(p => p === 'ride' ? null : 'ride')}
+            >
+              Ride Details
+            </div>
+            <div className="collapse-content flex flex-col gap-3">
+
+              <div className="form-control w-full">
+                <label htmlFor="avg-speed" className="label pb-1">
+                  <span className="label-text">Average Speed (km/h)</span>
+                </label>
+                <input
+                  id="avg-speed"
+                  type="number"
+                  value={avgSpeed}
+                  onChange={(e) => setAvgSpeed(Number(e.target.value))}
+                  min="5"
+                  max="60"
+                  className="input input-bordered input-sm w-full"
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <div className="form-control flex-1">
+                  <label htmlFor="start-date" className="label pb-1">
+                    <span className="label-text">Start Date</span>
+                  </label>
+                  <input
+                    id="start-date"
+                    type="date"
+                    value={getLocalDateString(startTime)}
+                    onChange={(e) => handleDateChange(e.target.value)}
+                    min={todayStr}
+                    max={maxDateStr}
+                    className="input input-bordered input-sm w-full"
+                  />
+                </div>
+                <div className="form-control flex-1">
+                  <label htmlFor="start-time" className="label pb-1">
+                    <span className="label-text">Start Time</span>
+                  </label>
+                  <input
+                    id="start-time"
+                    type="time"
+                    value={getLocalTimeString(startTime)}
+                    onChange={(e) => handleTimeChange(e.target.value)}
+                    className="input input-bordered input-sm w-full"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="label-text text-sm mb-2">X Axis Mode</div>
+                <div className="join">
+                  <button
+                    className={`btn btn-sm join-item ${xAxisMode === 'clock' ? 'btn-primary' : ''}`}
+                    onClick={() => setXAxisMode('clock')}
+                  >
+                    Clock
+                  </button>
+                  <button
+                    className={`btn btn-sm join-item ${xAxisMode === 'elapsed' ? 'btn-primary' : ''}`}
+                    onClick={() => setXAxisMode('elapsed')}
+                  >
+                    Elapsed
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          {/* Weather */}
+          <div className={`collapse collapse-arrow bg-base-100 shadow rounded-none border-x border-b border-base-300 ${activePanel === 'weather' ? 'collapse-open' : ''}`}>
+            <div
+              className="collapse-title font-medium cursor-pointer"
+              onClick={() => setActivePanel(p => p === 'weather' ? null : 'weather')}
+            >
+              Weather
+            </div>
+            <div className="collapse-content">
+              {route ? (
                 <>
-                  <div className="input-group">
-                    <label htmlFor="avg-speed">Average Speed (km/h)</label>
-                    <input
-                      id="avg-speed"
-                      type="number"
-                      value={avgSpeed}
-                      onChange={(e) => setAvgSpeed(Number(e.target.value))}
-                      min="5"
-                      max="60"
+                  <div className="h-[180px] flex-shrink-0 overflow-hidden">
+                    <WeatherLineChart
+                      data={tempWindData}
+                      line1Config={TEMP_LINE}
+                      line2Config={WIND_LINE}
+                      xAxisMode={xAxisMode}
+                      hoveredIndex={hoveredIndex}
+                      onHoverIndex={onHoverIndex}
+                      weatherAvailable={weatherAvailable}
                     />
                   </div>
-                  <div className="datetime-row">
-                    <div className="input-group">
-                      <label htmlFor="start-date">Start Date</label>
-                      <input
-                        id="start-date"
-                        type="date"
-                        value={getLocalDateString(startTime)}
-                        onChange={(e) => handleDateChange(e.target.value)}
-                        min={todayStr}
-                        max={maxDateStr}
-                      />
-                    </div>
-                    <div className="input-group">
-                      <label htmlFor="start-time">Start Time</label>
-                      <input
-                        id="start-time"
-                        type="time"
-                        value={getLocalTimeString(startTime)}
-                        onChange={(e) => handleTimeChange(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div style={{ marginTop: '16px', display: 'flex', gap: '8px' }}>
-                    <button
-                      className={xAxisMode === 'clock' ? 'btn-primary' : ''}
-                      style={xAxisMode === 'clock'
-                        ? { padding: '6px 16px', fontSize: '0.875rem' }
-                        : { padding: '6px 16px', fontSize: '0.875rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontWeight: '600' }
-                      }
-                      onClick={() => setXAxisMode('clock')}
-                    >
-                      Clock
-                    </button>
-                    <button
-                      className={xAxisMode === 'elapsed' ? 'btn-primary' : ''}
-                      style={xAxisMode === 'elapsed'
-                        ? { padding: '6px 16px', fontSize: '0.875rem' }
-                        : { padding: '6px 16px', fontSize: '0.875rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontWeight: '600' }
-                      }
-                      onClick={() => setXAxisMode('elapsed')}
-                    >
-                      Elapsed
-                    </button>
+                  <div className="h-[180px] flex-shrink-0 overflow-hidden mt-3">
+                    <WeatherLineChart
+                      data={precipData}
+                      line1Config={PROB_LINE}
+                      line2Config={AMOUNT_LINE}
+                      xAxisMode={xAxisMode}
+                      hoveredIndex={hoveredIndex}
+                      onHoverIndex={onHoverIndex}
+                      weatherAvailable={weatherAvailable}
+                    />
                   </div>
                 </>
-              )}
-            </div>
-
-            <div className="glass-panel weather-card">
-              <h3
-                onClick={() => setActivePanel(p => p === 'weather' ? null : 'weather')}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', marginBottom: activePanel === 'weather' ? '12px' : 0 }}
-              >
-                Weather
-                {activePanel === 'weather' ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-              </h3>
-              {activePanel === 'weather' && (
-                route ? (
-                  <>
-                    <div className="tempwind-container">
-                      <WeatherLineChart
-                        data={tempWindData}
-                        line1Config={TEMP_LINE}
-                        line2Config={WIND_LINE}
-                        xAxisMode={xAxisMode}
-                        hoveredIndex={hoveredIndex}
-                        onHoverIndex={onHoverIndex}
-                        weatherAvailable={weatherAvailable}
-                      />
-                    </div>
-                    <div className="precip-container" style={{ marginTop: '12px' }}>
-                      <WeatherLineChart
-                        data={precipData}
-                        line1Config={PROB_LINE}
-                        line2Config={AMOUNT_LINE}
-                        xAxisMode={xAxisMode}
-                        hoveredIndex={hoveredIndex}
-                        onHoverIndex={onHoverIndex}
-                        weatherAvailable={weatherAvailable}
-                      />
-                    </div>
-                  </>
-                ) : (
-                  <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '8px 0' }}>
-                    Load a route to see weather
-                  </p>
-                )
-              )}
-            </div>
-
-            <div className="glass-panel stats-card tech-details-card">
-              <h3
-                onClick={() => setActivePanel(p => p === 'tech' ? null : 'tech')}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', marginBottom: activePanel === 'tech' ? '20px' : 0 }}
-              >
-                Tech Details
-                {activePanel === 'tech' ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-              </h3>
-              {activePanel === 'tech' && (
-                <>
-                  <div className="input-group">
-                    <label htmlFor="dp-epsilon">DP Epsilon (m)</label>
-                    <input
-                      id="dp-epsilon"
-                      type="number"
-                      min="1"
-                      step="1"
-                      value={dpEpsilon}
-                      disabled={route !== null}
-                      onChange={(e) => {
-                        const n = Number(e.target.value);
-                        if (Number.isFinite(n)) setDpEpsilon(Math.max(1, n));
-                      }}
-                    />
-                  </div>
-                  <div className="input-group" style={{ marginTop: '16px' }}>
-                    <label htmlFor="dp-max-gap">Max Gap (m)</label>
-                    <input
-                      id="dp-max-gap"
-                      type="number"
-                      min="1"
-                      step="10"
-                      value={dpMaxGap}
-                      disabled={route !== null}
-                      onChange={(e) => {
-                        const n = Number(e.target.value);
-                        if (Number.isFinite(n)) setDpMaxGap(Math.max(1, n));
-                      }}
-                    />
-                  </div>
-                  <div className="stats-grid" style={{ marginTop: '20px' }}>
-                    <div className="stat-item">
-                      <span className="stat-label">Original Points</span>
-                      <span className="stat-value">{route ? route.originalPointCount.toLocaleString() : '—'}</span>
-                    </div>
-                    <div className="stat-item">
-                      <span className="stat-label">Map Points</span>
-                      <span className="stat-value">{route ? route.points.length.toLocaleString() : '—'}</span>
-                    </div>
-                    <div className="stat-item">
-                      <span className="stat-label">Parse time</span>
-                      <span className="stat-value">{parseMetrics ? `${parseMetrics.totalMs.toFixed(0)} ms` : '—'}</span>
-                    </div>
-                    <div className="stat-item">
-                      <span className="stat-label">File</span>
-                      <span className="stat-value">{parseMetrics ? `${parseMetrics.fileSizeKb.toFixed(1)} KB` : '—'}</span>
-                    </div>
-                  </div>
-                  <div className="input-group" style={{ marginTop: '16px' }}>
-                    <label htmlFor="weather-provider">Weather Provider</label>
-                    <select
-                      id="weather-provider"
-                      value={selectedProvider.id}
-                      onChange={(e) => {
-                        const next = PROVIDERS.find(p => p.id === e.target.value && p.available);
-                        if (next) setSelectedProvider(next);
-                      }}
-                    >
-                      {PROVIDERS.map(p => (
-                        <option key={p.id} value={p.id} disabled={!p.available}>
-                          {p.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="input-group" style={{ marginTop: '16px', flexDirection: 'row', alignItems: 'center', gap: '8px' }}>
-                    <input
-                      id="weather-debug"
-                      type="checkbox"
-                      checked={weatherDebug}
-                      onChange={(e) => setWeatherDebugState(e.target.checked)}
-                    />
-                    <label htmlFor="weather-debug" style={{ marginBottom: 0, cursor: 'pointer' }}>Weather debug</label>
-                  </div>
-                  <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
-                    <div className="build-info-version">v{__APP_VERSION__}</div>
-                    <div className="build-info-meta">{buildDate}</div>
-                  </div>
-                </>
+              ) : (
+                <p className="text-base-content/50 text-sm text-center py-2">
+                  Load a route to see weather
+                </p>
               )}
             </div>
           </div>
-        </aside>
+
+          {/* Tech Details */}
+          <div className={`collapse collapse-arrow bg-base-100 shadow rounded-t-none rounded-b-box border-x border-b border-base-300 ${activePanel === 'tech' ? 'collapse-open' : ''}`}>
+            <div
+              className="collapse-title font-medium cursor-pointer"
+              onClick={() => setActivePanel(p => p === 'tech' ? null : 'tech')}
+            >
+              Tech Details
+            </div>
+            <div className="collapse-content flex flex-col gap-3">
+
+              <div className="form-control w-full">
+                <label htmlFor="dp-epsilon" className="label pb-1">
+                  <span className="label-text">DP Epsilon (m)</span>
+                </label>
+                <input
+                  id="dp-epsilon"
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={dpEpsilon}
+                  disabled={route !== null}
+                  onChange={(e) => {
+                    const n = Number(e.target.value);
+                    if (Number.isFinite(n)) setDpEpsilon(Math.max(1, n));
+                  }}
+                  className="input input-bordered input-sm w-full"
+                />
+              </div>
+
+              <div className="form-control w-full">
+                <label htmlFor="dp-max-gap" className="label pb-1">
+                  <span className="label-text">Max Gap (m)</span>
+                </label>
+                <input
+                  id="dp-max-gap"
+                  type="number"
+                  min="1"
+                  step="10"
+                  value={dpMaxGap}
+                  disabled={route !== null}
+                  onChange={(e) => {
+                    const n = Number(e.target.value);
+                    if (Number.isFinite(n)) setDpMaxGap(Math.max(1, n));
+                  }}
+                  className="input input-bordered input-sm w-full"
+                />
+              </div>
+
+              <div className="stats stats-vertical bg-base-200 shadow w-full">
+                <div className="stat py-2 px-3">
+                  <div className="stat-title text-xs">Original Points</div>
+                  <div className="stat-value text-base">{route ? route.originalPointCount.toLocaleString() : '—'}</div>
+                </div>
+                <div className="stat py-2 px-3">
+                  <div className="stat-title text-xs">Map Points</div>
+                  <div className="stat-value text-base">{route ? route.points.length.toLocaleString() : '—'}</div>
+                </div>
+                <div className="stat py-2 px-3">
+                  <div className="stat-title text-xs">Parse time</div>
+                  <div className="stat-value text-base">{parseMetrics ? `${parseMetrics.totalMs.toFixed(0)} ms` : '—'}</div>
+                </div>
+                <div className="stat py-2 px-3">
+                  <div className="stat-title text-xs">File</div>
+                  <div className="stat-value text-base">{parseMetrics ? `${parseMetrics.fileSizeKb.toFixed(1)} KB` : '—'}</div>
+                </div>
+              </div>
+
+              <div className="form-control w-full">
+                <label htmlFor="weather-provider" className="label pb-1">
+                  <span className="label-text">Weather Provider</span>
+                </label>
+                <select
+                  id="weather-provider"
+                  value={selectedProvider.id}
+                  onChange={(e) => {
+                    const next = PROVIDERS.find(p => p.id === e.target.value && p.available);
+                    if (next) setSelectedProvider(next);
+                  }}
+                  className="select select-bordered select-sm w-full"
+                >
+                  {PROVIDERS.map(p => (
+                    <option key={p.id} value={p.id} disabled={!p.available}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <label className="label cursor-pointer justify-start gap-3 p-0">
+                <input
+                  id="weather-debug"
+                  type="checkbox"
+                  checked={weatherDebug}
+                  onChange={(e) => setWeatherDebugState(e.target.checked)}
+                  className="checkbox checkbox-primary checkbox-sm"
+                />
+                <span className="label-text">Weather debug</span>
+              </label>
+
+              <div className="divider my-0" />
+              <div className="text-sm font-semibold">v{__APP_VERSION__}</div>
+              <div className="text-xs text-base-content/50">{buildDate}</div>
+
+            </div>
+          </div>
+
+        </div>
 
         {/* Display area */}
         <div className="flex flex-col gap-6 min-h-0">
