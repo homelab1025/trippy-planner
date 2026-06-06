@@ -327,22 +327,15 @@ function App() {
               Weather
             </div>
             <div className="collapse-content">
-              {route ? (
-                <div className="h-[180px] flex-shrink-0 overflow-hidden">
-                  <WeatherLineChart
-                    data={tempWindData}
-                    line1Config={TEMP_LINE}
-                    line2Config={WIND_LINE}
-                    hoveredIndex={hoveredIndex}
-                    onHoverIndex={onHoverIndex}
-                    weatherAvailable={weatherAvailable}
-                  />
-                </div>
-              ) : (
-                <p className="text-base-content/50 text-sm text-center py-2">
-                  Load a route to see weather
-                </p>
-              )}
+               {route ? (
+                 <p className="text-base-content/50 text-sm text-center py-2">
+                   Weather chart moved to main display
+                 </p>
+               ) : (
+                 <p className="text-base-content/50 text-sm text-center py-2">
+                   Load a route to see weather
+                 </p>
+               )}
             </div>
           </div>
 
@@ -474,6 +467,17 @@ function App() {
                       onHoverIndex={onHoverIndex}
                       onResize={setChartWidth}
                       hoveredIndex={hoveredIndex}
+                    />
+                  </div>
+                  <div className="border-t border-base-200" style={{ height: 80 }}>
+                    <WeatherLineChart
+                      data={tempWindData}
+                      line1Config={TEMP_LINE}
+                      line2Config={WIND_LINE}
+                      hoveredIndex={hoveredIndex}
+                      onHoverIndex={onHoverIndex}
+                      weatherAvailable={weatherAvailable}
+                      hideAxes
                     />
                   </div>
                   <div className="border-t border-base-200" style={{ height: 80 }}>
