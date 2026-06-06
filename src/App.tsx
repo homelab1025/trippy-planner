@@ -480,7 +480,7 @@ function App() {
           </div>
 
           {/* Elevation + hover pane card */}
-          <div className="card bg-base-100 shadow flex-1 min-h-0 overflow-hidden p-5 flex">
+          <div className="card bg-base-100 shadow flex-1 min-h-0 overflow-hidden p-5 flex flex-row">
             {!route ? (
               <div className="flex flex-col items-center justify-center flex-1 text-base-content/40 gap-4">
                 <CloudRain size={32} />
@@ -488,19 +488,17 @@ function App() {
               </div>
             ) : (
               <>
-                <div className="flex-1 min-w-0">
-                  <ElevationChart
-                    data={elevationData}
-                    totalDistance={route.totalDistance}
-                    climbs={climbs}
-                    avgSpeed={avgSpeed}
-                    startTime={startTime}
-                    xAxisMode={xAxisMode}
-                    onHoverIndex={onHoverIndex}
-                    onResize={setChartWidth}
-                    hoveredIndex={hoveredIndex}
-                  />
-                </div>
+                <ElevationChart
+                  data={elevationData}
+                  totalDistance={route.totalDistance}
+                  climbs={climbs}
+                  avgSpeed={avgSpeed}
+                  startTime={startTime}
+                  xAxisMode={xAxisMode}
+                  onHoverIndex={onHoverIndex}
+                  onResize={setChartWidth}
+                  hoveredIndex={hoveredIndex}
+                />
                 <HoverPane hoveredData={hoveredData} xAxisMode={xAxisMode} startTime={startTime} />
               </>
             )}
