@@ -328,30 +328,17 @@ function App() {
             </div>
             <div className="collapse-content">
               {route ? (
-                <>
-                  <div className="h-[180px] flex-shrink-0 overflow-hidden">
-                    <WeatherLineChart
-                      data={tempWindData}
-                      line1Config={TEMP_LINE}
-                      line2Config={WIND_LINE}
-                      xAxisMode={xAxisMode}
-                      hoveredIndex={hoveredIndex}
-                      onHoverIndex={onHoverIndex}
-                      weatherAvailable={weatherAvailable}
-                    />
-                  </div>
-                  <div className="h-[180px] flex-shrink-0 overflow-hidden mt-3">
-                    <WeatherLineChart
-                      data={precipData}
-                      line1Config={PROB_LINE}
-                      line2Config={AMOUNT_LINE}
-                      xAxisMode={xAxisMode}
-                      hoveredIndex={hoveredIndex}
-                      onHoverIndex={onHoverIndex}
-                      weatherAvailable={weatherAvailable}
-                    />
-                  </div>
-                </>
+                <div className="h-[180px] flex-shrink-0 overflow-hidden">
+                  <WeatherLineChart
+                    data={tempWindData}
+                    line1Config={TEMP_LINE}
+                    line2Config={WIND_LINE}
+                    xAxisMode={xAxisMode}
+                    hoveredIndex={hoveredIndex}
+                    onHoverIndex={onHoverIndex}
+                    weatherAvailable={weatherAvailable}
+                  />
+                </div>
               ) : (
                 <p className="text-base-content/50 text-sm text-center py-2">
                   Load a route to see weather
@@ -471,26 +458,42 @@ function App() {
         {/* Display area */}
         <div className="flex flex-col gap-6 min-h-0">
 
-          {/* Elevation + hover pane card */}
-          <div className="card bg-base-100 shadow h-[350px] flex-shrink-0 overflow-hidden p-5 flex flex-row">
+          {/* Elevation + precip + hover pane card */}
+          <div className="card bg-base-100 shadow flex-shrink-0 overflow-hidden p-5 flex flex-row">
             {!route ? (
-              <div className="flex flex-col items-center justify-center flex-1 text-base-content/40 gap-4">
+              <div className="flex flex-col items-center justify-center flex-1 text-base-content/40 gap-4" style={{ height: 300 }}>
                 <CloudRain size={32} />
                 <p>Weather timeline will appear here</p>
               </div>
             ) : (
               <>
-                <ElevationChart
-                  data={elevationData}
-                  totalDistance={route.totalDistance}
-                  climbs={climbs}
-                  avgSpeed={avgSpeed}
-                  startTime={startTime}
-                  xAxisMode={xAxisMode}
-                  onHoverIndex={onHoverIndex}
-                  onResize={setChartWidth}
-                  hoveredIndex={hoveredIndex}
-                />
+                <div className="flex flex-col flex-1 min-w-0">
+                  <div style={{ height: 300 }}>
+                    <ElevationChart
+                      data={elevationData}
+                      totalDistance={route.totalDistance}
+                      climbs={climbs}
+                      avgSpeed={avgSpeed}
+                      startTime={startTime}
+                      xAxisMode={xAxisMode}
+                      onHoverIndex={onHoverIndex}
+                      onResize={setChartWidth}
+                      hoveredIndex={hoveredIndex}
+                    />
+                  </div>
+                  <div className="border-t border-base-200" style={{ height: 80 }}>
+                    <WeatherLineChart
+                      data={precipData}
+                      line1Config={PROB_LINE}
+                      line2Config={AMOUNT_LINE}
+                      xAxisMode={xAxisMode}
+                      hoveredIndex={hoveredIndex}
+                      onHoverIndex={onHoverIndex}
+                      weatherAvailable={weatherAvailable}
+                      hideAxes
+                    />
+                  </div>
+                </div>
                 <HoverPane hoveredData={hoveredData} xAxisMode={xAxisMode} startTime={startTime} />
               </>
             )}
