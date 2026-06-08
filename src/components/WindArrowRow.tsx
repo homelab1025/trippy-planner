@@ -6,12 +6,13 @@ interface WindArrowRowProps {
   samplePoints: ChartDataPoint[];
   distanceRange: [number, number];
   chartWidth: number;
+  hoveredDistance: number | null;
 }
 
 const PLOT_LEFT = 55;
 const PLOT_RIGHT_OFFSET = 55;
 
-const WindArrowRow: React.FC<WindArrowRowProps> = ({ samplePoints, distanceRange, chartWidth }) => {
+const WindArrowRow: React.FC<WindArrowRowProps> = ({ samplePoints, distanceRange, chartWidth, hoveredDistance }) => {
   if (!samplePoints.length || chartWidth < 1) return null;
 
   const [dMin, dMax] = distanceRange;
@@ -59,6 +60,13 @@ const WindArrowRow: React.FC<WindArrowRowProps> = ({ samplePoints, distanceRange
             </text>
           );
         })}
+        {hoveredDistance !== null && (
+          <line
+            x1={xOf(hoveredDistance)} y1={0}
+            x2={xOf(hoveredDistance)} y2={40}
+            stroke="#aaa" strokeWidth={1} strokeDasharray="3 3"
+          />
+        )}
       </svg>
     </div>
   );

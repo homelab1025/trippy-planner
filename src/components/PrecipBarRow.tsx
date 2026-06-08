@@ -6,6 +6,7 @@ interface PrecipBarRowProps {
   samplePoints: ChartDataPoint[];
   distanceRange: [number, number];
   chartWidth: number;
+  hoveredDistance: number | null;
 }
 
 const PLOT_LEFT = 55;
@@ -14,7 +15,7 @@ const MAX_BAR_HEIGHT = 28;
 const BAR_BOTTOM_Y = 36;
 const BAR_GAP = 2;
 
-const PrecipBarRow: React.FC<PrecipBarRowProps> = ({ samplePoints, distanceRange, chartWidth }) => {
+const PrecipBarRow: React.FC<PrecipBarRowProps> = ({ samplePoints, distanceRange, chartWidth, hoveredDistance }) => {
   if (!samplePoints.length || chartWidth < 1) return null;
 
   const [dMin, dMax] = distanceRange;
@@ -55,6 +56,13 @@ const PrecipBarRow: React.FC<PrecipBarRowProps> = ({ samplePoints, distanceRange
             />
           );
         })}
+        {hoveredDistance !== null && (
+          <line
+            x1={xOf(hoveredDistance)} y1={0}
+            x2={xOf(hoveredDistance)} y2={40}
+            stroke="#aaa" strokeWidth={1} strokeDasharray="3 3"
+          />
+        )}
       </svg>
     </div>
   );

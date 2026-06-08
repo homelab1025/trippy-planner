@@ -443,6 +443,7 @@ function App() {
                       samplePoints={samplePoints}
                       distanceRange={distanceRange}
                       chartWidth={chartWidth}
+                      hoveredDistance={hoveredIndex !== null ? (chartData[hoveredIndex]?.distance ?? null) : null}
                     />
                   </div>
                   <div className="border-t border-base-200" style={{ height: 40 }}>
@@ -450,6 +451,7 @@ function App() {
                       samplePoints={samplePoints}
                       distanceRange={distanceRange}
                       chartWidth={chartWidth}
+                      hoveredDistance={hoveredIndex !== null ? (chartData[hoveredIndex]?.distance ?? null) : null}
                     />
                   </div>
                 </div>
