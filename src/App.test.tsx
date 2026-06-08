@@ -29,10 +29,6 @@ const mockWeather = {
 // capturedHoverCb is populated by the ElevationChart stub below.
 let capturedHoverCb: ((index: number | null) => void) | null = null;
 
-// capturedWindData / capturedPrecipData capture last props for weather assertions.
-let capturedWindData: Array<{ line1?: number; line2?: number }> = [];
-let capturedPrecipData: Array<{ line1?: number; line2?: number }> = [];
-
 // ── Mocks ───────────────────────────────────────────────────────────────────
 
 vi.mock('./workers/gpxWorkerClient', () => ({
@@ -92,28 +88,16 @@ vi.mock('./components/ElevationChart', () => ({
   },
 }));
 
-vi.mock('./components/WeatherLineChart', () => ({
-  default: ({ data, line1Config, weatherAvailable }: {
-    data: Array<{ line1?: number; line2?: number; time: number; distance: number }>;
-    line1Config: { label: string };
-    line2Config?: { label: string };
-    hoveredIndex: number | null;
-    onHoverIndex: (index: number | null) => void;
-    weatherAvailable: boolean | null;
-  }) => {
-    const isWind = line1Config.label === 'Wind';
-    if (isWind) {
-      capturedWindData = data;
-    } else {
-      capturedPrecipData = data;
-    }
-    return (
-      <div
-        data-testid={isWind ? 'wind-chart' : 'precip-chart'}
-        data-weather-available={String(weatherAvailable)}
-      />
-    );
-  },
+vi.mock('./components/WindArrowRow', () => ({
+  default: ({ samplePoints }: { samplePoints: unknown[] }) => (
+    <div data-testid="wind-chart" data-sample-count={samplePoints.length} />
+  ),
+}));
+
+vi.mock('./components/PrecipBarRow', () => ({
+  default: ({ samplePoints }: { samplePoints: unknown[] }) => (
+    <div data-testid="precip-chart" data-sample-count={samplePoints.length} />
+  ),
 }));
 
 vi.mock('./components/HoverPane', () => ({
@@ -153,8 +137,6 @@ describe('App', () => {
       new Map([[0, { ...mockWeather, temp: 99 }]])
     );
     capturedHoverCb = null;
-    capturedWindData = [];
-    capturedPrecipData = [];
     vi.spyOn(window, 'alert').mockImplementation(() => {});
   });
 
@@ -198,8 +180,8 @@ describe('App', () => {
     await waitFor(() =>
       expect(DEFAULT_PROVIDER.fetchWeather).toHaveBeenCalledTimes(2)
     );
-    expect(capturedWindData.length).toBeGreaterThan(0);
-    expect(capturedPrecipData.length).toBeGreaterThan(0);
+    expect(Number(screen.getByTestId('wind-chart').dataset.sampleCount)).toBeGreaterThan(0);
+    expect(Number(screen.getByTestId('precip-chart').dataset.sampleCount)).toBeGreaterThan(0);
   });
 
   it('weather precipProb flows from service through chart data', async () => {
@@ -211,8 +193,8 @@ describe('App', () => {
     fireEvent.change(screen.getByLabelText('Average Speed (km/h)'), { target: { value: '10' } });
 
     await waitFor(() => expect(DEFAULT_PROVIDER.fetchWeather).toHaveBeenCalledTimes(2));
-    expect(capturedWindData.length).toBeGreaterThan(0);
-    expect(capturedPrecipData.length).toBeGreaterThan(0);
+    expect(Number(screen.getByTestId('wind-chart').dataset.sampleCount)).toBeGreaterThan(0);
+    expect(Number(screen.getByTestId('precip-chart').dataset.sampleCount)).toBeGreaterThan(0);
   });
 
   it('weather precipitation flows from service through chart data', async () => {
@@ -224,8 +206,8 @@ describe('App', () => {
     fireEvent.change(screen.getByLabelText('Average Speed (km/h)'), { target: { value: '10' } });
 
     await waitFor(() => expect(DEFAULT_PROVIDER.fetchWeather).toHaveBeenCalledTimes(2));
-    expect(capturedWindData.length).toBeGreaterThan(0);
-    expect(capturedPrecipData.length).toBeGreaterThan(0);
+    expect(Number(screen.getByTestId('wind-chart').dataset.sampleCount)).toBeGreaterThan(0);
+    expect(Number(screen.getByTestId('precip-chart').dataset.sampleCount)).toBeGreaterThan(0);
   });
 
   it('changing start date re-fetches weather and updates display', async () => {
@@ -294,23 +276,6 @@ describe('App', () => {
     expect(window.alert).not.toHaveBeenCalled();
     // Charts render (route was set despite weather failure)
     expect(screen.getByTestId('elevation-chart')).toBeInTheDocument();
-  });
-
-  it('passes weatherAvailable=true to wind chart when weather fetch succeeds', async () => {
-    render(<App />);
-    await uploadFile();
-    await waitFor(() =>
-      expect(screen.getByTestId('wind-chart').dataset.weatherAvailable).toBe('true')
-    );
-  });
-
-  it('passes weatherAvailable=false to wind chart when weather fetch returns null', async () => {
-    vi.mocked(DEFAULT_PROVIDER.fetchWeather).mockResolvedValue(new Map());
-    render(<App />);
-    await uploadFile();
-    await waitFor(() =>
-      expect(screen.getByTestId('wind-chart').dataset.weatherAvailable).toBe('false')
-    );
   });
 
   it('switching provider re-fetches weather using the new provider', async () => {

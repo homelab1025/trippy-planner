@@ -10,21 +10,11 @@ import { PROVIDERS, DEFAULT_PROVIDER, setWeatherDebug } from './services/weather
 import type { WeatherProvider, WeatherRequest } from './services/weatherProviders';
 import MapComponent from './components/MapComponent';
 import ElevationChart from './components/ElevationChart';
-import WeatherLineChart from './components/WeatherLineChart';
-import type { WeatherLineConfig } from './components/WeatherLineChart';
 import HoverPane from './components/HoverPane';
+import WindArrowRow from './components/WindArrowRow';
+import PrecipBarRow from './components/PrecipBarRow';
 import { useWeatherChartData } from './hooks/useWeatherChartData';
 import type { ChartDataPoint, WeatherSample } from './hooks/useWeatherChartData';
-
-const WIND_LINE: WeatherLineConfig = {
-  label: 'Wind', color: '#4A9FD9', format: (v) => `${Math.round(v)} km/h`, yAxisId: 'left',
-};
-const PROB_LINE: WeatherLineConfig = {
-  label: 'Prob', color: '#4A90D9', format: (v) => `${Math.round(v)}%`, yAxisId: 'left', domain: [0, 100],
-};
-const AMOUNT_LINE: WeatherLineConfig = {
-  label: 'Amount', color: '#A0C8F0', format: (v) => `${v.toFixed(1)} mm`, yAxisId: 'right',
-};
 
 const getLocalDateString = (date: Date): string => {
   const year = date.getFullYear();
@@ -54,7 +44,6 @@ function App() {
   const [parseMetrics, setParseMetrics] = useState<{ totalMs: number; fileSizeKb: number } | null>(null);
   const [weatherDebug, setWeatherDebugState] = useState(false);
   const [activePanel, setActivePanel] = useState<'ride' | 'tech' | null>('ride');
-  const [weatherAvailable, setWeatherAvailable] = useState<boolean | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<WeatherProvider>(DEFAULT_PROVIDER);
   const [chartWidth, setChartWidth] = useState(800);
 
@@ -72,13 +61,15 @@ function App() {
     [chartData]
   );
 
-  const windData = useMemo(
-    () => chartData.map(({ time, distance, windSpeed }) => ({ time, distance, line1: windSpeed })),
+  const samplePoints = useMemo(
+    () => chartData.filter(p => p.isSample),
     [chartData]
   );
 
-  const precipData = useMemo(
-    () => chartData.map(({ time, distance, precipProb, precipitation }) => ({ time, distance, line1: precipProb, line2: precipitation })),
+  const distanceRange = useMemo(
+    (): [number, number] => chartData.length
+      ? [chartData[0].distance, chartData[chartData.length - 1].distance]
+      : [0, 1],
     [chartData]
   );
 
@@ -132,7 +123,6 @@ function App() {
   };
 
   const updateWeather = useCallback(async (currentRoute: RouteData, speed: number, start: Date, provider: WeatherProvider) => {
-    setWeatherAvailable(null);
     const interval = currentRoute.totalDistance / 10;
     const requestMap = new Map<number, WeatherRequest>();
     const metaMap = new Map<number, { point: RoutePoint; arrivalTime: Date; label: string }>();
@@ -158,11 +148,9 @@ function App() {
         filtered.push({ ...weather, ...meta });
       }
       setWeatherPoints(filtered);
-      setWeatherAvailable(filtered.length > 0);
     } catch (error) {
       console.error('Weather fetch failed:', error);
       setWeatherPoints([]);
-      setWeatherAvailable(false);
     }
   }, []);
 
@@ -450,24 +438,17 @@ function App() {
                     />
                   </div>
                   <div className="border-t border-base-200" style={{ height: 40 }}>
-                    <WeatherLineChart
-                      data={windData}
-                      line1Config={WIND_LINE}
-                      hoveredIndex={hoveredIndex}
-                      onHoverIndex={onHoverIndex}
-                      weatherAvailable={weatherAvailable}
-                      hideAxes
+                    <WindArrowRow
+                      samplePoints={samplePoints}
+                      distanceRange={distanceRange}
+                      chartWidth={chartWidth}
                     />
                   </div>
                   <div className="border-t border-base-200" style={{ height: 40 }}>
-                    <WeatherLineChart
-                      data={precipData}
-                      line1Config={PROB_LINE}
-                      line2Config={AMOUNT_LINE}
-                      hoveredIndex={hoveredIndex}
-                      onHoverIndex={onHoverIndex}
-                      weatherAvailable={weatherAvailable}
-                      hideAxes
+                    <PrecipBarRow
+                      samplePoints={samplePoints}
+                      distanceRange={distanceRange}
+                      chartWidth={chartWidth}
                     />
                   </div>
                 </div>
