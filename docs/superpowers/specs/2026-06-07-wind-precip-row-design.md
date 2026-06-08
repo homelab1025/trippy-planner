@@ -144,11 +144,28 @@ Bar SVG element: `<rect>` with `fill="#3b82f6"`, `opacity`, positioned with bott
 
 **No-data state:** When `samplePoints` is empty, render nothing.
 
+## Deletions
+
+### `WeatherLineChart.tsx` and `WeatherLineChart.test.tsx`
+
+Both files are deleted. `WeatherLineChart` has no remaining callers after this change.
+
+### `App.tsx` — dead code removed
+
+- `import WeatherLineChart` and `import type { WeatherLineConfig }` — deleted
+- `WIND_LINE`, `PROB_LINE`, `AMOUNT_LINE` consts — deleted
+- `windData` and `precipData` memos — deleted
+- `weatherAvailable` state and `setWeatherAvailable` — deleted. The new rows render nothing when `samplePoints` is empty, which already covers the loading and fetch-failure states without needing an explicit flag.
+
+### `App.test.tsx` — stale test code removed
+
+- The `vi.mock('./components/WeatherLineChart', ...)` block — deleted
+- The two tests asserting `weatherAvailable` propagation to the wind chart — deleted
+
 ## `App.tsx` changes
 
-Remove `WIND_LINE`, `PROB_LINE`, `AMOUNT_LINE` consts — no longer used. Remove the `WeatherLineChart` import (used only for these two rows; the component file itself is kept). Import `WindArrowRow` and `PrecipBarRow`.
+Import `WindArrowRow` and `PrecipBarRow`. Replace:
 
-Replace:
 ```tsx
 <div className="border-t border-base-200" style={{ height: 40 }}>
   <WeatherLineChart data={windData} line1Config={WIND_LINE} ... />
@@ -159,6 +176,7 @@ Replace:
 ```
 
 With:
+
 ```tsx
 <div className="border-t border-base-200" style={{ height: 40 }}>
   <WindArrowRow samplePoints={samplePoints} distanceRange={distanceRange} chartWidth={chartWidth} />
@@ -167,8 +185,6 @@ With:
   <PrecipBarRow samplePoints={samplePoints} distanceRange={distanceRange} chartWidth={chartWidth} />
 </div>
 ```
-
-The existing `windData` and `precipData` memos can be removed. `WeatherLineChart` import and `hoveredIndex`/`onHoverIndex` props are no longer needed for these two rows (hover is handled by the elevation chart above).
 
 ## Testing
 
