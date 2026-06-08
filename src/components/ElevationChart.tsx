@@ -5,6 +5,9 @@ import {
 import type { Climb } from '../utils/climbDetector';
 import ClimbOverlay, { type ClimbRange } from './ClimbOverlay';
 
+export const CHART_MARGIN_LEFT = 10;
+export const CHART_YAXIS_LEFT_WIDTH = 45;
+
 export interface ElevationPoint {
   distance: number;
   elevation: number;
@@ -38,7 +41,7 @@ const ElevationChart: React.FC<ElevationChartProps> = ({
       <ResponsiveContainer width="100%" height="100%" onResize={onResize}>
         <ComposedChart
           data={data}
-          margin={{ top: 10, right: hasTemp ? 10 : 55, left: 10, bottom: 0 }}
+          margin={{ top: 10, right: hasTemp ? 10 : 55, left: CHART_MARGIN_LEFT, bottom: 0 }}
           onMouseMove={(state) => {
             const idx = state.activeTooltipIndex != null ? Number(state.activeTooltipIndex) : NaN;
             if (isNaN(idx) || !data[idx]) { onHoverIndex(null); return; }
@@ -65,7 +68,7 @@ const ElevationChart: React.FC<ElevationChartProps> = ({
           />
           <YAxis
             yAxisId="elevation"
-            width={45}
+            width={CHART_YAXIS_LEFT_WIDTH}
             domain={[(dataMin: number) => dataMin - 10, 'auto']}
             axisLine={false}
             tickLine={false}
