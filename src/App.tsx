@@ -190,7 +190,7 @@ function App() {
   }, [route, chartData]);
 
   return (
-    <div className="flex flex-col h-screen max-w-[1400px] mx-auto p-6 gap-6">
+    <div className="flex flex-col h-screen overflow-y-auto max-w-[1400px] mx-auto p-6 gap-6">
 
       {/* Navbar with logo overlapping its bottom-left edge */}
       <div className="relative flex-shrink-0">
@@ -461,7 +461,7 @@ function App() {
           </div>
 
           {/* Map card */}
-          <div className="card bg-base-100 shadow flex-1 min-h-0 overflow-hidden">
+          <div className="card bg-base-100 shadow flex-1 min-h-[300px] overflow-hidden">
             {!route ? (
               <div className="flex flex-col items-center justify-center h-full text-base-content/40 gap-4">
                 <MapIcon size={48} />
