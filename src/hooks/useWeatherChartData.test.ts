@@ -87,4 +87,28 @@ describe('buildChartData', () => {
     expect(mid?.precipProb).toBeCloseTo(50, 0);
     expect(mid?.precipitation).toBeCloseTo(1, 0);
   });
+
+  it('interpolates windDeg between sample points', () => {
+    const pts = [
+      { distance: 0, ele: 100 },
+      { distance: 1000, ele: 100 },
+      { distance: 2000, ele: 100 },
+    ];
+    const route = makeRoute(pts);
+    const makeWP = (idx: number, windDeg: number) => ({
+      point: route.points[idx],
+      arrivalTime: new Date(START.getTime() + idx * 3_600_000),
+      label: String(idx),
+      temp: 0, precipProb: 0, precipitation: 0, windSpeed: 0, windDeg,
+    });
+    const result = buildChartData({
+      route,
+      weatherPoints: [makeWP(0, 0), makeWP(2, 180)],
+      chartWidth: 1000,
+      avgSpeed: 20,
+      startTime: START,
+    });
+    const mid = result.find(p => Math.abs(p.distance - 1) < 0.01);
+    expect(mid?.windDeg).toBeCloseTo(90, 0);
+  });
 });
