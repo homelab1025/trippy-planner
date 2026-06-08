@@ -35,7 +35,7 @@ const ElevationChart: React.FC<ElevationChartProps> = ({
 
   return (
     <div style={{ flex: 1, minWidth: 0, height: '100%', position: 'relative' }}>
-      <ResponsiveContainer width="100%" height="100%" onResize={(w) => onResize(w)}>
+      <ResponsiveContainer width="100%" height="100%" onResize={onResize}>
         <ComposedChart
           data={data}
           margin={{ top: 10, right: hasTemp ? 10 : 55, left: 10, bottom: 0 }}
