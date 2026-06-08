@@ -1,6 +1,7 @@
 import React from 'react';
 import { Wind } from 'lucide-react';
 import type { ChartDataPoint } from '../hooks/useWeatherChartData';
+import { CHART_MARGIN_LEFT, CHART_YAXIS_LEFT_WIDTH } from './chartConstants';
 
 interface WindArrowRowProps {
   samplePoints: ChartDataPoint[];
@@ -9,7 +10,7 @@ interface WindArrowRowProps {
   hoveredDistance: number | null;
 }
 
-const PLOT_LEFT = 55;
+const PLOT_LEFT = CHART_MARGIN_LEFT + CHART_YAXIS_LEFT_WIDTH;
 const PLOT_RIGHT_OFFSET = 55;
 
 const WindArrowRow: React.FC<WindArrowRowProps> = ({ samplePoints, distanceRange, chartWidth, hoveredDistance }) => {
