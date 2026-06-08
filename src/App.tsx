@@ -88,6 +88,7 @@ function App() {
     setStartTime(newDate);
   };
 
+  // TODO: test handleTimeChange - verify time parsing, boundary conditions (midnight rollover), and that it correctly updates startTime state
   const handleTimeChange = (timeStr: string) => {
     if (!timeStr) return;
     const [hours, minutes] = timeStr.split(':').map(Number);
