@@ -38,8 +38,10 @@ const PrecipBarsLayer: React.FC<PrecipBarsLayerProps> = ({ samplePoints, distanc
         const prob = sample.precipProb ?? 0;
         const barHeight = Math.max((precip / maxPrecip) * MAX_BAR_HEIGHT, 2);
         const opacity = Math.max(prob / 100, 0.05);
-        const x1 = xScale(startDist)!;
-        const barWidth = Math.max(xScale(endDist)! - x1 - BAR_GAP, 1);
+        const x1 = xScale(startDist);
+        const x2 = xScale(endDist);
+        if (x1 == null || x2 == null) return null;
+        const barWidth = Math.max(x2 - x1 - BAR_GAP, 1);
         return (
           <rect
             key={i}
