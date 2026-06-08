@@ -10,6 +10,7 @@ export interface ChartDataPoint {
   precipProb: number | undefined;
   precipitation: number | undefined;
   windSpeed: number | undefined;
+  windDeg: number | undefined;
   time: number;           // ms timestamp
   isSample: boolean;
 }
@@ -45,6 +46,7 @@ export function buildChartData({
     precipProb: undefined,
     precipitation: undefined,
     windSpeed: undefined,
+    windDeg: undefined,
     time: startTime.getTime() + (pt.distance / (avgSpeed * 1000)) * 3_600_000,
     isSample: false,
   }));
@@ -56,6 +58,7 @@ export function buildChartData({
     d[rIdx].precipProb = wp.precipProb;
     d[rIdx].precipitation = wp.precipitation;
     d[rIdx].windSpeed = wp.windSpeed;
+    d[rIdx].windDeg = wp.windDeg;
     d[rIdx].time = wp.arrivalTime.getTime();
     d[rIdx].isSample = true;
   });
@@ -75,23 +78,26 @@ export function buildChartData({
 
   for (let i = 0; i < sampleIdxs.length - 1; i++) {
     const lo = sampleIdxs[i], hi = sampleIdxs[i + 1];
-    const tLo = downsampled[lo].temp, tHi = downsampled[hi].temp;
+    const tLo = downsampled[lo].temp,    tHi = downsampled[hi].temp;
     const ppLo = downsampled[lo].precipProb, ppHi = downsampled[hi].precipProb;
     const pLo = downsampled[lo].precipitation, pHi = downsampled[hi].precipitation;
-    const wsLo = downsampled[lo].windSpeed, wsHi = downsampled[hi].windSpeed;
-    const timeLo = downsampled[lo].time, timeHi = downsampled[hi].time;
+    const wsLo = downsampled[lo].windSpeed,  wsHi = downsampled[hi].windSpeed;
+    const wdLo = downsampled[lo].windDeg,    wdHi = downsampled[hi].windDeg;
+    const timeLo = downsampled[lo].time,    timeHi = downsampled[hi].time;
     if (
       tLo == null || tHi == null || ppLo == null || ppHi == null ||
       pLo == null || pHi == null || wsLo == null || wsHi == null ||
+      wdLo == null || wdHi == null ||
       timeLo == null || timeHi == null
     ) continue;
     for (let j = lo + 1; j < hi; j++) {
       const t = (j - lo) / (hi - lo);
-      downsampled[j].temp = tLo + (tHi - tLo) * t;
-      downsampled[j].precipProb = ppLo + (ppHi - ppLo) * t;
-      downsampled[j].precipitation = pLo + (pHi - pLo) * t;
-      downsampled[j].windSpeed = wsLo + (wsHi - wsLo) * t;
-      downsampled[j].time = timeLo + (timeHi - timeLo) * t;
+      downsampled[j].temp          = tLo  + (tHi  - tLo)  * t;
+      downsampled[j].precipProb    = ppLo + (ppHi - ppLo) * t;
+      downsampled[j].precipitation = pLo  + (pHi  - pLo)  * t;
+      downsampled[j].windSpeed     = wsLo + (wsHi - wsLo) * t;
+      downsampled[j].windDeg       = wdLo + (wdHi - wdLo) * t;
+      downsampled[j].time          = timeLo + (timeHi - timeLo) * t;
     }
   }
 
