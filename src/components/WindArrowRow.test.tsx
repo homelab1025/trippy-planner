@@ -1,11 +1,30 @@
 // @vitest-environment jsdom
+import React from 'react';
 import { render } from '@testing-library/react';
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import WindArrowRow from './WindArrowRow';
 import type { ChartDataPoint } from '../hooks/useWeatherChartData';
 
 afterEach(cleanup);
+
+vi.mock('recharts', async () => {
+  const actual = await vi.importActual<typeof import('recharts')>('recharts');
+  return {
+    ...actual,
+    ResponsiveContainer: ({ children }: { children: React.ReactNode }) =>
+      React.createElement(React.Fragment, null, children),
+    ComposedChart: ({ children }: { children: React.ReactNode }) =>
+      React.createElement('svg', null, children),
+    XAxis: () => null,
+    YAxis: () => null,
+    ReferenceLine: ({ x, stroke, strokeDasharray }: { x?: number; stroke?: string; strokeDasharray?: string }) =>
+      x != null
+        ? React.createElement('line', { x1: x, x2: x, y1: 0, y2: 40, stroke, 'stroke-dasharray': strokeDasharray })
+        : null,
+    useXAxisScale: () => (v: number) => v * 69 + 55,
+  };
+});
 
 const makeSample = (distance: number, windSpeed: number, windDeg: number): ChartDataPoint => ({
   distance, elevation: 100, temp: 20, precipProb: 50, precipitation: 1,
@@ -15,7 +34,7 @@ const makeSample = (distance: number, windSpeed: number, windDeg: number): Chart
 describe('WindArrowRow', () => {
   it('renders nothing when samplePoints is empty', () => {
     const { container } = render(
-      <WindArrowRow samplePoints={[]} distanceRange={[0, 10]} chartWidth={800} />
+      <WindArrowRow samplePoints={[]} distanceRange={[0, 10]} />
     );
     expect(container.firstChild).toBeNull();
   });
@@ -25,7 +44,6 @@ describe('WindArrowRow', () => {
       <WindArrowRow
         samplePoints={[makeSample(2, 15, 90), makeSample(5, 20, 180)]}
         distanceRange={[0, 10]}
-        chartWidth={800}
       />
     );
     expect(container.querySelectorAll('g[data-arrow]')).toHaveLength(2);
@@ -36,7 +54,6 @@ describe('WindArrowRow', () => {
       <WindArrowRow
         samplePoints={[makeSample(5, 20, 135)]}
         distanceRange={[0, 10]}
-        chartWidth={800}
       />
     );
     const g = container.querySelector('g[data-arrow]');
@@ -48,7 +65,6 @@ describe('WindArrowRow', () => {
       <WindArrowRow
         samplePoints={[makeSample(5, 17.6, 0)]}
         distanceRange={[0, 10]}
-        chartWidth={800}
       />
     );
     expect(getByText('18')).toBeTruthy();
@@ -59,10 +75,9 @@ describe('WindArrowRow', () => {
       <WindArrowRow
         samplePoints={[makeSample(5, 10, 0)]}
         distanceRange={[0, 10]}
-        chartWidth={800}
       />
     );
-    const baseline = container.querySelector('line');
+    const baseline = container.querySelector('line[stroke="#bfdbfe"]');
     expect(baseline?.getAttribute('stroke-dasharray')).toBeTruthy();
   });
 });

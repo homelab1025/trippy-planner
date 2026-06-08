@@ -442,7 +442,6 @@ function App() {
                     <WindArrowRow
                       samplePoints={samplePoints}
                       distanceRange={distanceRange}
-                      chartWidth={chartWidth}
                       hoveredDistance={hoveredIndex !== null ? (chartData[hoveredIndex]?.distance ?? null) : null}
                     />
                   </div>
