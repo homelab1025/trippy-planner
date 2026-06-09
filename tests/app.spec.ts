@@ -95,6 +95,9 @@ test('uploading a second file replaces the first route', async ({ page }) => {
   await expect(page.getByText('Sample Ride')).not.toBeVisible();
 });
 
+// TODO: this test only checks the toggle's checked state, not whether the displayed time
+// actually changes format. See 'clock/elapsed toggle changes time format shown in hover pane'
+// for the meaningful coverage.
 test('clock/elapsed toggle switches mode', async ({ page }) => {
   await page.goto('/');
 
@@ -164,4 +167,25 @@ test('hovering over a chart shows values in hover pane', async ({ page }) => {
   await elevationRow.hover({ position: { x: 100, y: 50 } });
 
   await expect(page.locator('.hover-pane')).not.toContainText(/hover over charts/i);
+});
+
+test('clock/elapsed toggle changes time format shown in hover pane', async ({ page }) => {
+  await page.goto('/');
+  await page.setInputFiles('input[type="file"]', 'public/sample-route.gpx');
+  await expect(page.locator('.header-stats')).toContainText('Sample Ride');
+
+  const elevationRow = page.locator('.elevation-row');
+  await elevationRow.hover({ position: { x: 100, y: 50 } });
+  await expect(page.locator('.hover-pane')).not.toContainText(/hover over charts/i);
+
+  // Clock mode: time is HH:MM (contains a colon)
+  await expect(page.locator('.hover-pane')).toContainText(/\d{1,2}:\d{2}/);
+
+  // Switch to elapsed
+  await page.locator('#xaxis-toggle').click();
+  await elevationRow.hover({ position: { x: 100, y: 50 } });
+
+  // Elapsed mode: time is Xh YYm or Ym (no colon)
+  await expect(page.locator('.hover-pane')).toContainText(/\d+h \d+m|\d+m/);
+  await expect(page.locator('.hover-pane')).not.toContainText(/\d{1,2}:\d{2}/);
 });
