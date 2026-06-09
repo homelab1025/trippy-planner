@@ -51,7 +51,6 @@ function App() {
     avgSpeed: number;
     startTime: Date;
     selectedProvider: WeatherProvider;
-    route: RouteData;
   } | null>(null);
 
   const buildDate = format(new Date(__BUILD_DATE__), 'd MMM yyyy HH:mm');
@@ -123,7 +122,7 @@ function App() {
       setRoute(parsedRoute);
       setWeatherLoading(true);
       const success = await updateWeather(parsedRoute, avgSpeed, startTime, selectedProvider);
-      if (success) setLastFetchedParams({ avgSpeed, startTime, selectedProvider, route: parsedRoute });
+      if (success) setLastFetchedParams({ avgSpeed, startTime, selectedProvider });
     } catch (error) {
       console.error('Failed to parse GPX:', error);
       const message = error instanceof Error ? error.message : 'Failed to parse GPX file. Please ensure it is a valid track.';
@@ -136,7 +135,6 @@ function App() {
 
   const isDirty = route !== null &&
     lastFetchedParams !== null && (
-      lastFetchedParams.route !== route ||
       lastFetchedParams.avgSpeed !== avgSpeed ||
       lastFetchedParams.startTime.getTime() !== startTime.getTime() ||
       lastFetchedParams.selectedProvider !== selectedProvider
@@ -181,7 +179,7 @@ function App() {
     setWeatherLoading(true);
     try {
       const success = await updateWeather(route, avgSpeed, startTime, selectedProvider);
-      if (success) setLastFetchedParams({ avgSpeed, startTime, selectedProvider, route });
+      if (success) setLastFetchedParams({ avgSpeed, startTime, selectedProvider });
     } finally {
       setWeatherLoading(false);
     }
