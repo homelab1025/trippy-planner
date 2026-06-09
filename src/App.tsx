@@ -121,22 +121,26 @@ function App() {
       const measure = performance.measure('gpx-parse', 'gpx-parse-start', 'gpx-parse-end');
       setParseMetrics({ totalMs: measure.duration, fileSizeKb });
       setRoute(parsedRoute);
+      setWeatherLoading(true);
+      const success = await updateWeather(parsedRoute, avgSpeed, startTime, selectedProvider);
+      if (success) setLastFetchedParams({ avgSpeed, startTime, selectedProvider, route: parsedRoute });
     } catch (error) {
       console.error('Failed to parse GPX:', error);
       const message = error instanceof Error ? error.message : 'Failed to parse GPX file. Please ensure it is a valid track.';
       alert(message);
     } finally {
       setLoading(false);
+      setWeatherLoading(false);
     }
   };
 
-  const isDirty = route !== null && (
-    lastFetchedParams === null ||
-    lastFetchedParams.route !== route ||
-    lastFetchedParams.avgSpeed !== avgSpeed ||
-    lastFetchedParams.startTime.getTime() !== startTime.getTime() ||
-    lastFetchedParams.selectedProvider !== selectedProvider
-  );
+  const isDirty = route !== null &&
+    lastFetchedParams !== null && (
+      lastFetchedParams.route !== route ||
+      lastFetchedParams.avgSpeed !== avgSpeed ||
+      lastFetchedParams.startTime.getTime() !== startTime.getTime() ||
+      lastFetchedParams.selectedProvider !== selectedProvider
+    );
 
   const updateWeather = useCallback(async (currentRoute: RouteData, speed: number, start: Date, provider: WeatherProvider): Promise<boolean> => {
     const interval = currentRoute.totalDistance / 10;

@@ -175,9 +175,6 @@ describe('App', () => {
   it('changing avg speed re-fetches weather and updates charts', async () => {
     render(<App />);
     await uploadFile();
-    await waitFor(() => expect(screen.getByTestId('wind-chart')).toBeInTheDocument());
-
-    await clickRefreshWeather();
     await waitFor(() => expect(DEFAULT_PROVIDER.fetchWeather).toHaveBeenCalledTimes(1));
 
     vi.mocked(DEFAULT_PROVIDER.fetchWeather).mockResolvedValue(new Map([[0, { ...mockWeather, temp: 30 }]]));
@@ -192,9 +189,6 @@ describe('App', () => {
   it('weather precipProb flows from service through chart data', async () => {
     render(<App />);
     await uploadFile();
-    await waitFor(() => expect(screen.getByTestId('wind-chart')).toBeInTheDocument());
-
-    await clickRefreshWeather();
     await waitFor(() => expect(DEFAULT_PROVIDER.fetchWeather).toHaveBeenCalledTimes(1));
 
     vi.mocked(DEFAULT_PROVIDER.fetchWeather).mockResolvedValue(new Map([[0, { ...mockWeather, precipProb: 75 }]]));
@@ -209,9 +203,6 @@ describe('App', () => {
   it('weather precipitation flows from service through chart data', async () => {
     render(<App />);
     await uploadFile();
-    await waitFor(() => expect(screen.getByTestId('wind-chart')).toBeInTheDocument());
-
-    await clickRefreshWeather();
     await waitFor(() => expect(DEFAULT_PROVIDER.fetchWeather).toHaveBeenCalledTimes(1));
 
     vi.mocked(DEFAULT_PROVIDER.fetchWeather).mockResolvedValue(new Map([[0, { ...mockWeather, precipitation: 3.5 }]]));
@@ -226,9 +217,6 @@ describe('App', () => {
   it('changing start date re-fetches weather and updates display', async () => {
     render(<App />);
     await uploadFile();
-    await waitFor(() => expect(screen.getByTestId('wind-chart')).toBeInTheDocument());
-
-    await clickRefreshWeather();
     await waitFor(() => expect(DEFAULT_PROVIDER.fetchWeather).toHaveBeenCalledTimes(1));
 
     // Pick a date 2 days from now — always different from today's default, always in picker range
@@ -287,25 +275,21 @@ describe('App', () => {
     render(<App />);
     await uploadFile();
 
-    // Route name appears in header stats
-    await waitFor(() => expect(screen.getByText(/Test Route/)).toBeInTheDocument());
-
-    // Click refresh — fetch will fail
-    await clickRefreshWeather();
+    // Auto-fetch runs on load and fails
     await waitFor(() => expect(DEFAULT_PROVIDER.fetchWeather).toHaveBeenCalled());
 
     // No wrong alert about GPX parsing failure
     expect(window.alert).not.toHaveBeenCalled();
     // Charts render (route was set despite weather failure)
     expect(screen.getByTestId('elevation-chart')).toBeInTheDocument();
-    // Button stays visible so user can retry
-    expect(screen.getByText('Refresh')).toBeInTheDocument();
+    // Button does not show — isDirty requires lastFetchedParams !== null
+    expect(screen.queryByText('Refresh')).not.toBeInTheDocument();
   });
 
   it('switching provider re-fetches weather using the new provider', async () => {
     render(<App />);
     await uploadFile();
-    await waitFor(() => expect(screen.getByTestId('wind-chart')).toBeInTheDocument());
+    await waitFor(() => expect(DEFAULT_PROVIDER.fetchWeather).toHaveBeenCalledTimes(1));
 
     // Open Tech Details to reveal the provider selector
     fireEvent.click(screen.getByText('Tech Details'));
