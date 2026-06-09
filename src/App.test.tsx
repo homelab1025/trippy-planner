@@ -125,8 +125,8 @@ async function uploadFile() {
 }
 
 async function clickRefreshWeather() {
-  await waitFor(() => expect(screen.getByText('Refresh Weather')).toBeInTheDocument());
-  await act(async () => { fireEvent.click(screen.getByText('Refresh Weather')); });
+  await waitFor(() => expect(screen.getByText('Refresh')).toBeInTheDocument());
+  await act(async () => { fireEvent.click(screen.getByText('Refresh')); });
 }
 
 // ── Tests ────────────────────────────────────────────────────────────────────
@@ -299,7 +299,7 @@ describe('App', () => {
     // Charts render (route was set despite weather failure)
     expect(screen.getByTestId('elevation-chart')).toBeInTheDocument();
     // Button stays visible so user can retry
-    expect(screen.getByText('Refresh Weather')).toBeInTheDocument();
+    expect(screen.getByText('Refresh')).toBeInTheDocument();
   });
 
   it('switching provider re-fetches weather using the new provider', async () => {
