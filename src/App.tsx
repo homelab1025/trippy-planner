@@ -190,16 +190,20 @@ function App() {
   }, [route, chartData]);
 
   return (
-    <div className="flex flex-col h-screen overflow-y-auto max-w-[1400px] mx-auto p-6 gap-6">
+    <div className="flex flex-col h-screen overflow-y-auto max-w-[1400px] mx-auto p-3 sm:p-6 gap-4 sm:gap-6">
 
-      {/* Navbar with logo overlapping its bottom-left edge */}
+      {/* Navbar with logo overlapping its bottom-left edge on lg+; inline on mobile */}
       <div className="relative flex-shrink-0">
-        <div className="navbar bg-primary text-primary-content rounded-box shadow-lg pl-[185px] pr-4 min-h-[58px]">
+        <div className="navbar bg-primary text-primary-content rounded-box shadow-lg lg:pl-[185px] pr-4 min-h-[58px]">
+          {/* Logo inline on mobile only */}
+          <div className="flex-none lg:hidden mr-2">
+            <img src={logo} alt="Trippy Planner" className="h-9 w-auto" />
+          </div>
           <div className="flex-none gap-3">
             <h1 className="text-xl font-bold">Trippy Planner</h1>
           </div>
         {route && (
-          <div className="header-stats flex-1 text-center text-sm opacity-90 px-4">
+          <div className="header-stats hidden md:flex flex-1 text-center text-sm opacity-90 px-4">
             {route.name}: {(route.totalDistance / 1000).toFixed(1)} km · {Math.round(route.totalElevationGain)} m of character-building
           </div>
         )}
@@ -208,17 +212,20 @@ function App() {
             htmlFor="gpx-upload"
             className={`btn btn-sm btn-outline text-primary-content border-primary-content hover:bg-primary-content hover:text-primary gap-2 ${loading ? 'btn-disabled pointer-events-none' : ''}`}
           >
-            {loading ? 'Processing...' : (
+            {loading ? (
+              <span className="hidden sm:inline">Processing...</span>
+            ) : (
               <>
                 <Upload size={16} />
-                Upload GPX
+                <span className="hidden sm:inline">Upload GPX</span>
               </>
             )}
           </label>
           <input id="gpx-upload" type="file" accept=".gpx" onChange={handleFileUpload} disabled={loading} className="hidden" />
         </div>
         </div>
-        <div className="absolute bottom-0 left-1 translate-y-1/2 z-10">
+        {/* Logo overflowing below navbar — desktop only */}
+        <div className="hidden lg:block absolute bottom-0 left-1 translate-y-1/2 z-10">
           <img
             src={logo}
             alt="Trippy Planner"
@@ -228,10 +235,10 @@ function App() {
       </div>
 
       {/* Main grid */}
-      <div className="grid lg:grid-cols-[320px_1fr] grid-cols-1 gap-6 flex-1 min-h-0">
+      <div className="grid lg:grid-cols-[320px_1fr] grid-cols-1 gap-4 sm:gap-6 flex-1 min-h-0">
 
         {/* Sidebar — single-open accordion via collapse-open + activePanel state */}
-        <div className="flex flex-col overflow-y-auto pt-7">
+        <div className="flex flex-col overflow-y-auto lg:pt-7">
 
           {/* Ride Details */}
           <div className={`control-card collapse collapse-arrow bg-base-100 shadow rounded-b-none rounded-t-box border border-base-300 ${activePanel === 'ride' ? 'collapse-open' : ''}`}>
