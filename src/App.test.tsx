@@ -124,6 +124,11 @@ async function uploadFile() {
   await act(async () => { fireEvent.change(input); });
 }
 
+async function clickRefreshWeather() {
+  await waitFor(() => expect(screen.getByText('Refresh Weather')).toBeInTheDocument());
+  await act(async () => { fireEvent.click(screen.getByText('Refresh Weather')); });
+}
+
 // ── Tests ────────────────────────────────────────────────────────────────────
 
 describe('App', () => {
@@ -170,16 +175,16 @@ describe('App', () => {
   it('changing avg speed re-fetches weather and updates charts', async () => {
     render(<App />);
     await uploadFile();
-    await waitFor(() =>
-      expect(screen.getByTestId('wind-chart')).toBeInTheDocument()
-    );
+    await waitFor(() => expect(screen.getByTestId('wind-chart')).toBeInTheDocument());
+
+    await clickRefreshWeather();
+    await waitFor(() => expect(DEFAULT_PROVIDER.fetchWeather).toHaveBeenCalledTimes(1));
 
     vi.mocked(DEFAULT_PROVIDER.fetchWeather).mockResolvedValue(new Map([[0, { ...mockWeather, temp: 30 }]]));
     fireEvent.change(screen.getByLabelText('Average Speed (km/h)'), { target: { value: '10' } });
 
-    await waitFor(() =>
-      expect(DEFAULT_PROVIDER.fetchWeather).toHaveBeenCalledTimes(2)
-    );
+    await clickRefreshWeather();
+    await waitFor(() => expect(DEFAULT_PROVIDER.fetchWeather).toHaveBeenCalledTimes(2));
     expect(Number(screen.getByTestId('wind-chart').dataset.sampleCount)).toBeGreaterThan(0);
     expect(Number(screen.getByTestId('precip-chart').dataset.sampleCount)).toBeGreaterThan(0);
   });
@@ -189,9 +194,13 @@ describe('App', () => {
     await uploadFile();
     await waitFor(() => expect(screen.getByTestId('wind-chart')).toBeInTheDocument());
 
+    await clickRefreshWeather();
+    await waitFor(() => expect(DEFAULT_PROVIDER.fetchWeather).toHaveBeenCalledTimes(1));
+
     vi.mocked(DEFAULT_PROVIDER.fetchWeather).mockResolvedValue(new Map([[0, { ...mockWeather, precipProb: 75 }]]));
     fireEvent.change(screen.getByLabelText('Average Speed (km/h)'), { target: { value: '10' } });
 
+    await clickRefreshWeather();
     await waitFor(() => expect(DEFAULT_PROVIDER.fetchWeather).toHaveBeenCalledTimes(2));
     expect(Number(screen.getByTestId('wind-chart').dataset.sampleCount)).toBeGreaterThan(0);
     expect(Number(screen.getByTestId('precip-chart').dataset.sampleCount)).toBeGreaterThan(0);
@@ -202,9 +211,13 @@ describe('App', () => {
     await uploadFile();
     await waitFor(() => expect(screen.getByTestId('wind-chart')).toBeInTheDocument());
 
+    await clickRefreshWeather();
+    await waitFor(() => expect(DEFAULT_PROVIDER.fetchWeather).toHaveBeenCalledTimes(1));
+
     vi.mocked(DEFAULT_PROVIDER.fetchWeather).mockResolvedValue(new Map([[0, { ...mockWeather, precipitation: 3.5 }]]));
     fireEvent.change(screen.getByLabelText('Average Speed (km/h)'), { target: { value: '10' } });
 
+    await clickRefreshWeather();
     await waitFor(() => expect(DEFAULT_PROVIDER.fetchWeather).toHaveBeenCalledTimes(2));
     expect(Number(screen.getByTestId('wind-chart').dataset.sampleCount)).toBeGreaterThan(0);
     expect(Number(screen.getByTestId('precip-chart').dataset.sampleCount)).toBeGreaterThan(0);
@@ -215,6 +228,9 @@ describe('App', () => {
     await uploadFile();
     await waitFor(() => expect(screen.getByTestId('wind-chart')).toBeInTheDocument());
 
+    await clickRefreshWeather();
+    await waitFor(() => expect(DEFAULT_PROVIDER.fetchWeather).toHaveBeenCalledTimes(1));
+
     // Pick a date 2 days from now — always different from today's default, always in picker range
     const d = new Date();
     d.setDate(d.getDate() + 2);
@@ -223,6 +239,7 @@ describe('App', () => {
     vi.mocked(DEFAULT_PROVIDER.fetchWeather).mockResolvedValue(new Map([[0, { ...mockWeather, temp: 35 }]]));
     fireEvent.change(screen.getByLabelText('Start Date'), { target: { value: twoDaysAhead } });
 
+    await clickRefreshWeather();
     await waitFor(() => expect(DEFAULT_PROVIDER.fetchWeather).toHaveBeenCalledTimes(2));
   });
 
@@ -270,12 +287,17 @@ describe('App', () => {
 
     // Route name appears in header stats
     await waitFor(() => expect(screen.getByText(/Test Route/)).toBeInTheDocument());
-    // Fetches were attempted (not silently skipped)
-    expect(DEFAULT_PROVIDER.fetchWeather).toHaveBeenCalled();
+
+    // Click refresh — fetch will fail
+    await clickRefreshWeather();
+    await waitFor(() => expect(DEFAULT_PROVIDER.fetchWeather).toHaveBeenCalled());
+
     // No wrong alert about GPX parsing failure
     expect(window.alert).not.toHaveBeenCalled();
     // Charts render (route was set despite weather failure)
     expect(screen.getByTestId('elevation-chart')).toBeInTheDocument();
+    // Button stays visible so user can retry
+    expect(screen.getByText('Refresh Weather')).toBeInTheDocument();
   });
 
   it('switching provider re-fetches weather using the new provider', async () => {
@@ -286,14 +308,13 @@ describe('App', () => {
     // Open Tech Details to reveal the provider selector
     fireEvent.click(screen.getByText('Tech Details'));
 
-    // Switch to the second provider
+    // Switch to the second provider — button should appear since params changed
     fireEvent.change(screen.getByLabelText('Weather Provider'), {
       target: { value: 'second-provider' },
     });
 
-    await waitFor(() =>
-      expect(PROVIDERS[1].fetchWeather).toHaveBeenCalled()
-    );
+    await clickRefreshWeather();
+    await waitFor(() => expect(PROVIDERS[1].fetchWeather).toHaveBeenCalled());
   });
 
   it('selecting an unavailable provider does not change selectedProvider', async () => {
