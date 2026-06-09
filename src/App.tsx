@@ -334,7 +334,7 @@ function App() {
                     ) : (
                       <RefreshCw size={13} />
                     )}
-                    {weatherLoading ? 'Fetching…' : 'Refresh Weather'}
+                    {weatherLoading ? 'Fetching…' : 'Refresh'}
                   </button>
                 )}
               </div>
