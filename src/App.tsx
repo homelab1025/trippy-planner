@@ -313,38 +313,31 @@ function App() {
                 </div>
               </div>
 
-              <div>
-                <div className="label-text text-sm mb-2">Time Display</div>
-                <div className="join">
+              <div className="flex items-center gap-2">
+                <span className="label-text text-sm">Clock</span>
+                <input
+                  id="xaxis-toggle"
+                  type="checkbox"
+                  className="toggle toggle-primary toggle-sm"
+                  checked={xAxisMode === 'elapsed'}
+                  onChange={(e) => setXAxisMode(e.target.checked ? 'elapsed' : 'clock')}
+                />
+                <span className="label-text text-sm">Elapsed</span>
+                {isDirty && (
                   <button
-                    className={`btn btn-sm join-item ${xAxisMode === 'clock' ? 'btn-primary' : ''}`}
-                    onClick={() => setXAxisMode('clock')}
+                    className={`btn btn-sm btn-primary ml-auto gap-1.5 ${weatherLoading ? 'btn-disabled' : ''}`}
+                    onClick={handleRefreshWeather}
+                    disabled={weatherLoading}
                   >
-                    Clock
+                    {weatherLoading ? (
+                      <span className="loading loading-spinner loading-xs" />
+                    ) : (
+                      <RefreshCw size={13} />
+                    )}
+                    {weatherLoading ? 'Fetching…' : 'Refresh Weather'}
                   </button>
-                  <button
-                    className={`btn btn-sm join-item ${xAxisMode === 'elapsed' ? 'btn-primary' : ''}`}
-                    onClick={() => setXAxisMode('elapsed')}
-                  >
-                    Elapsed
-                  </button>
-                </div>
+                )}
               </div>
-
-              {isDirty && (
-                <button
-                  className={`btn btn-sm btn-primary w-full gap-2 ${weatherLoading ? 'btn-disabled' : ''}`}
-                  onClick={handleRefreshWeather}
-                  disabled={weatherLoading}
-                >
-                  {weatherLoading ? (
-                    <span className="loading loading-spinner loading-xs" />
-                  ) : (
-                    <RefreshCw size={14} />
-                  )}
-                  {weatherLoading ? 'Fetching…' : 'Refresh Weather'}
-                </button>
-              )}
 
             </div>
           </div>
