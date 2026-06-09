@@ -313,7 +313,7 @@ function App() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 w-full">
                 <span className="label-text text-sm">Clock</span>
                 <input
                   id="xaxis-toggle"
