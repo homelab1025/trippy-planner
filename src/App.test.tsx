@@ -255,18 +255,20 @@ describe('App', () => {
     expect(map.dataset.hovered).toBe('48.005,2.005');
   });
 
-  it('Time Display toggle buttons are present and clickable', async () => {
+  it('Time Display toggle is present and switches modes', async () => {
     render(<App />);
     await uploadFile();
     await waitFor(() => screen.getByTestId('elevation-chart'));
 
-    expect(screen.getByText('Time Display')).toBeInTheDocument();
     expect(screen.getByText('Clock')).toBeInTheDocument();
     expect(screen.getByText('Elapsed')).toBeInTheDocument();
 
-    // Clicking the buttons should not throw
-    fireEvent.click(screen.getByText('Elapsed'));
-    fireEvent.click(screen.getByText('Clock'));
+    const toggle = screen.getByRole('checkbox', { name: '' }) as HTMLInputElement;
+    expect(toggle.checked).toBe(false); // clock mode by default
+    fireEvent.click(toggle);
+    expect(toggle.checked).toBe(true);  // elapsed mode
+    fireEvent.click(toggle);
+    expect(toggle.checked).toBe(false); // back to clock
   });
 
   it('parse error shows alert, does not set route, does not fetch weather', async () => {
