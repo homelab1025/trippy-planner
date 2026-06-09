@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { format } from 'date-fns';
-import { Upload, Map as MapIcon, CloudRain } from 'lucide-react';
+import { Upload, Map as MapIcon, CloudRain, RefreshCw } from 'lucide-react';
 import logo from './assets/logo.png';
 import { parseGPXAsync } from './workers/gpxWorkerClient';
 import type { RouteData, RoutePoint } from './utils/gpxParser';
@@ -35,6 +35,7 @@ function App() {
   const [startTime, setStartTime] = useState<Date>(new Date());
   const [weatherPoints, setWeatherPoints] = useState<WeatherSample[]>([]);
   const [loading, setLoading] = useState(false);
+  const [weatherLoading, setWeatherLoading] = useState(false);
   const [hoveredPoint, setHoveredPoint] = useState<{ lat: number; lng: number } | null>(null);
   const [hoveredData, setHoveredData] = useState<ChartDataPoint | null>(null);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
@@ -46,6 +47,12 @@ function App() {
   const [activePanel, setActivePanel] = useState<'ride' | 'tech' | null>('ride');
   const [selectedProvider, setSelectedProvider] = useState<WeatherProvider>(DEFAULT_PROVIDER);
   const [chartWidth, setChartWidth] = useState(800);
+  const [lastFetchedParams, setLastFetchedParams] = useState<{
+    avgSpeed: number;
+    startTime: Date;
+    selectedProvider: WeatherProvider;
+    route: RouteData;
+  } | null>(null);
 
   const buildDate = format(new Date(__BUILD_DATE__), 'd MMM yyyy HH:mm');
 
@@ -123,7 +130,15 @@ function App() {
     }
   };
 
-  const updateWeather = useCallback(async (currentRoute: RouteData, speed: number, start: Date, provider: WeatherProvider) => {
+  const isDirty = route !== null && (
+    lastFetchedParams === null ||
+    lastFetchedParams.route !== route ||
+    lastFetchedParams.avgSpeed !== avgSpeed ||
+    lastFetchedParams.startTime.getTime() !== startTime.getTime() ||
+    lastFetchedParams.selectedProvider !== selectedProvider
+  );
+
+  const updateWeather = useCallback(async (currentRoute: RouteData, speed: number, start: Date, provider: WeatherProvider): Promise<boolean> => {
     const interval = currentRoute.totalDistance / 10;
     const requestMap = new Map<number, WeatherRequest>();
     const metaMap = new Map<number, { point: RoutePoint; arrivalTime: Date; label: string }>();
@@ -149,19 +164,23 @@ function App() {
         filtered.push({ ...weather, ...meta });
       }
       setWeatherPoints(filtered);
+      return true;
     } catch (error) {
       console.error('Weather fetch failed:', error);
       setWeatherPoints([]);
+      return false;
     }
   }, []);
 
-  React.useEffect(() => {
-    const fetchWeather = async () => {
-      if (route) {
-        await updateWeather(route, avgSpeed, startTime, selectedProvider);
-      }
-    };
-    fetchWeather();
+  const handleRefreshWeather = useCallback(async () => {
+    if (!route) return;
+    setWeatherLoading(true);
+    try {
+      const success = await updateWeather(route, avgSpeed, startTime, selectedProvider);
+      if (success) setLastFetchedParams({ avgSpeed, startTime, selectedProvider, route });
+    } finally {
+      setWeatherLoading(false);
+    }
   }, [route, avgSpeed, startTime, selectedProvider, updateWeather]);
 
   React.useEffect(() => {
@@ -311,6 +330,21 @@ function App() {
                   </button>
                 </div>
               </div>
+
+              {isDirty && (
+                <button
+                  className={`btn btn-sm btn-primary w-full gap-2 ${weatherLoading ? 'btn-disabled' : ''}`}
+                  onClick={handleRefreshWeather}
+                  disabled={weatherLoading}
+                >
+                  {weatherLoading ? (
+                    <span className="loading loading-spinner loading-xs" />
+                  ) : (
+                    <RefreshCw size={14} />
+                  )}
+                  {weatherLoading ? 'Fetching…' : 'Refresh Weather'}
+                </button>
+              )}
 
             </div>
           </div>
