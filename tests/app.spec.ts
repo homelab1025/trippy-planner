@@ -95,21 +95,21 @@ test('uploading a second file replaces the first route', async ({ page }) => {
   await expect(page.getByText('Sample Ride')).not.toBeVisible();
 });
 
-test('clock/elapsed toggle changes button active state', async ({ page }) => {
+test('clock/elapsed toggle switches mode', async ({ page }) => {
   await page.goto('/');
 
-  // Clock button is active by default (has btn-primary class)
-  const clockBtn = page.getByRole('button', { name: 'Clock' });
-  const elapsedBtn = page.getByRole('button', { name: 'Elapsed' });
-  await expect(clockBtn).toHaveClass(/btn-primary/);
-  await expect(elapsedBtn).not.toHaveClass(/btn-primary/);
+  const toggle = page.locator('#xaxis-toggle');
 
-  await elapsedBtn.click();
-  await expect(elapsedBtn).toHaveClass(/btn-primary/);
-  await expect(clockBtn).not.toHaveClass(/btn-primary/);
+  // Clock mode by default — toggle unchecked
+  await expect(toggle).not.toBeChecked();
 
-  await clockBtn.click();
-  await expect(clockBtn).toHaveClass(/btn-primary/);
+  // Switch to Elapsed
+  await toggle.click();
+  await expect(toggle).toBeChecked();
+
+  // Switch back to Clock
+  await toggle.click();
+  await expect(toggle).not.toBeChecked();
 });
 
 test('version is shown inside Tech Details panel', async ({ page }) => {
