@@ -31,7 +31,7 @@ Single-page React app. All application state lives in `App.tsx` — no global st
 
 2. **Weather fetching** (`src/services/weatherService.ts`) — calls Open-Meteo's free API (no key required). Samples 11 evenly-spaced points along the route, calculates each point's arrival time from `avgSpeed` + `startTime`, then fetches hourly forecasts. Falls back to a synthetic mock when the API returns no match for the hour. Open-Meteo only provides a 7-day forecast window, so the date picker is capped at today + 7 days.
 
-3. **Display** — `MapComponent.tsx` renders the route polyline and weather markers via `react-leaflet`; `WeatherTimeline.tsx` renders an elevation + temperature overlay chart via `recharts`.
+3. **Display** — `MapComponent.tsx` renders the route polyline and a hover crosshair via `react-leaflet`; `ElevationChart.tsx` renders an elevation + temperature overlay chart via `recharts`, with `WindArrowRow.tsx` and `PrecipBarRow.tsx` below it on the same distance axis.
 
 `App.tsx` owns the `route`, `avgSpeed`, `startTime`, and `weatherPoints` state. A `useEffect` re-runs weather fetching whenever any of those change.
 
