@@ -5,7 +5,7 @@ A route weather planner for cyclists and hikers. Upload a GPX file, set your sta
 ## Features
 
 - **GPX route loading** — upload any GPX track file to visualise your route
-- **Interactive map** — the full route is drawn on a map with weather markers at evenly-spaced sample points showing temperature, precipitation, wind speed, and weather condition
+- **Interactive map** — the full route is drawn on a map; hovering over the timeline moves a crosshair on the map to the corresponding position along the route
 - **Route stats** — distance and elevation gain are shown after loading a file; a Tech Details panel shows the original and decimated point counts
 - **Configurable ride parameters** — set your average speed (km/h) and planned start date/time to calculate when you'll reach each point
 - **Real weather data** — uses the Open-Meteo free API (no API key required); samples 11 evenly-spaced points along the route and fetches hourly forecasts for each, based on your calculated arrival time
@@ -14,8 +14,9 @@ A route weather planner for cyclists and hikers. Upload a GPX file, set your sta
 ### Timeline
 
 - a combined chart shows the elevation profile overlaid with interpolated temperature across the route
-- the X axis shows the time
-- when hovering over the timeline, a tooltip is shown that contains the km, elevation, temperature and time
+- the X axis shows distance (km)
+- a wind arrow row and a precipitation bar row are rendered below the chart, aligned to the same distance axis
+- when hovering over the chart, a side pane shows the time (clock or elapsed), distance, elevation, temperature, wind speed, and precipitation probability + amount at that point
 
 ## TODO
 
@@ -34,7 +35,6 @@ A route weather planner for cyclists and hikers. Upload a GPX file, set your sta
 - Provide support for multiple weather forecast providers and let the user choose.
 - **Replace hand-rolled UI components with a React component library.** The accordion, buttons, and inputs are currently hand-rolled with custom CSS. Replace with a component library (e.g. [shadcn/ui](https://ui.shadcn.com/) or [Radix UI](https://www.radix-ui.com/)) to gain accessibility, keyboard navigation, and animations for free.
 - **Show the climbs in the weather timeline**
-- **Show precipitation on map marker popups.** `precipProb` is already fetched from Open-Meteo and stored in `WeatherData`, but the popup in `MapComponent.tsx` only renders temp, condition, and wind speed. Add precipitation probability to the popup.
 - **Decimate the map polyline with Douglas-Peucker.** Douglas-Peucker at 5 m epsilon runs at parse time (inside the web worker). The decimated set is used for the map polyline, weather sampling, and LTTB chart input. Original point count is stored separately and displayed in the new Tech Details sidebar panel.
 - **Move GPX parsing to a Web Worker.** `parseGPX` runs synchronously on the main thread — large GPX files (50k+ points, common on long rides) freeze the UI during upload. Post the raw XML string to a worker and return `RouteData` to the main thread.
 - **Downsample elevation chart points.** LTTB (Largest Triangle Three Buckets) downsampling applied to chart data; target point count scales with the rendered chart width (1 point per CSS pixel) so rendering is efficient at any screen size. Weather sample points are always preserved through downsampling.
