@@ -52,7 +52,7 @@ describe('buildChartData', () => {
     const route = makeRoute(pts);
     const makeWP = (idx: number, temp: number, windSpeed: number) => ({
       point: route.points[idx],
-      arrivalTime: new Date(START.getTime() + idx * 3_600_000),
+      arrivalTime: new Date(START.getTime() + idx * 180_000),
       label: String(idx),
       temp, precipProb: 0, precipitation: 0, windSpeed, windDeg: 0,
     });
@@ -72,7 +72,7 @@ describe('buildChartData', () => {
     const route = makeRoute(pts);
     const makeWP = (idx: number, precipProb: number, precipitation: number) => ({
       point: route.points[idx],
-      arrivalTime: new Date(START.getTime() + idx * 3_600_000),
+      arrivalTime: new Date(START.getTime() + idx * 180_000),
       label: String(idx),
       temp: 0, precipProb, precipitation, windSpeed: 0, windDeg: 0,
     });
@@ -97,18 +97,109 @@ describe('buildChartData', () => {
     const route = makeRoute(pts);
     const makeWP = (idx: number, windDeg: number) => ({
       point: route.points[idx],
-      arrivalTime: new Date(START.getTime() + idx * 3_600_000),
+      arrivalTime: new Date(START.getTime() + idx * 180_000),
       label: String(idx),
-      temp: 0, precipProb: 0, precipitation: 0, windSpeed: 0, windDeg,
+      temp: 0, precipProb: 0, precipitation: 0, windSpeed: 10, windDeg,
     });
     const result = buildChartData({
       route,
-      weatherPoints: [makeWP(0, 0), makeWP(2, 180)],
+      weatherPoints: [makeWP(0, 0), makeWP(2, 90)],
       chartWidth: 1000,
       avgSpeed: 20,
       startTime: START,
     });
     const mid = result.find(p => Math.abs(p.distance - 1) < 0.01);
-    expect(mid?.windDeg).toBeCloseTo(90, 0);
+    expect(mid?.windDeg).toBeCloseTo(45, 0);
+  });
+
+  it('interpolates wind direction correctly across the 0/360 boundary', () => {
+    const pts = [
+      { distance: 0, ele: 100 },
+      { distance: 1000, ele: 100 },
+      { distance: 2000, ele: 100 },
+    ];
+    const route = makeRoute(pts);
+    const makeWP = (idx: number, windDeg: number) => ({
+      point: route.points[idx],
+      arrivalTime: new Date(START.getTime() + idx * 180_000),
+      label: String(idx),
+      temp: 0, precipProb: 0, precipitation: 0, windSpeed: 10, windDeg,
+    });
+    // 350° → 10°: correct midpoint is 0° (north); scalar gives 180° (south)
+    const result = buildChartData({
+      route,
+      weatherPoints: [makeWP(0, 350), makeWP(2, 10)],
+      chartWidth: 1000,
+      avgSpeed: 20,
+      startTime: START,
+    });
+    const mid = result.find(p => Math.abs(p.distance - 1) < 0.01);
+    const deg = mid?.windDeg ?? 0;
+    // 0° and 360° are equivalent; measure angular distance from north
+    expect(Math.min(deg, 360 - deg)).toBeCloseTo(0, 0);
+  });
+
+  it('interpolated wind speed reflects vector magnitude, not scalar average', () => {
+    const pts = [
+      { distance: 0, ele: 100 },
+      { distance: 1000, ele: 100 },
+      { distance: 2000, ele: 100 },
+    ];
+    const route = makeRoute(pts);
+    const makeWP = (idx: number, windDeg: number, windSpeed: number) => ({
+      point: route.points[idx],
+      arrivalTime: new Date(START.getTime() + idx * 180_000),
+      label: String(idx),
+      temp: 0, precipProb: 0, precipitation: 0, windSpeed, windDeg,
+    });
+    // 30 km/h NW (315°) → 30 km/h NE (45°): vector midpoint is ~21.2 km/h N (0°)
+    // scalar interpolation would give 30 km/h — wrong
+    const result = buildChartData({
+      route,
+      weatherPoints: [makeWP(0, 315, 30), makeWP(2, 45, 30)],
+      chartWidth: 1000,
+      avgSpeed: 20,
+      startTime: START,
+    });
+    const mid = result.find(p => Math.abs(p.distance - 1) < 0.01);
+    expect(mid?.windSpeed).toBeCloseTo(30 / Math.SQRT2, 0); // ≈ 21.2
+    expect(mid?.windDeg).toBeCloseTo(0, 0);
+  });
+
+  it('uses time-based interpolation factor, not index-based', () => {
+    // Route: 3 pts at 0m, 1000m, 2000m. avgSpeed=20 km/h gives model time at pt[1]:
+    //   START + (1000 / 20000) * 3_600_000 = START + 180_000ms (3 min)
+    // Sample times: sample0=START, sample2=START+1h
+    //   → t at pt[1] = 3min / 1h = 0.05, far from 0.5 (index midpoint)
+    const pts = [
+      { distance: 0, ele: 100 },
+      { distance: 1000, ele: 100 },
+      { distance: 2000, ele: 100 },
+    ];
+    const route = makeRoute(pts);
+    const result = buildChartData({
+      route,
+      weatherPoints: [
+        {
+          point: route.points[0],
+          arrivalTime: START,
+          label: '0',
+          temp: 0, precipProb: 0, precipitation: 0, windSpeed: 0, windDeg: 0,
+        },
+        {
+          point: route.points[2],
+          arrivalTime: new Date(START.getTime() + 3_600_000), // 1 hour later
+          label: '2',
+          temp: 100, precipProb: 0, precipitation: 0, windSpeed: 0, windDeg: 0,
+        },
+      ],
+      chartWidth: 1000,
+      avgSpeed: 20,
+      startTime: START,
+    });
+    const mid = result.find(p => Math.abs(p.distance - 1) < 0.01);
+    // time-based: t ≈ 0.05 → temp ≈ 5
+    // index-based: t = 0.5 → temp ≈ 50
+    expect(mid?.temp).toBeCloseTo(5, 0);
   });
 });

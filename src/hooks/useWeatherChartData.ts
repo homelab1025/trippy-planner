@@ -90,13 +90,21 @@ export function buildChartData({
       wdLo == null || wdHi == null ||
       timeLo == null || timeHi == null
     ) continue;
+    const uLo = -wsLo * Math.sin(wdLo * Math.PI / 180);
+    const vLo = -wsLo * Math.cos(wdLo * Math.PI / 180);
+    const uHi = -wsHi * Math.sin(wdHi * Math.PI / 180);
+    const vHi = -wsHi * Math.cos(wdHi * Math.PI / 180);
     for (let j = lo + 1; j < hi; j++) {
-      const t = (j - lo) / (hi - lo);
+      const t = timeHi !== timeLo
+        ? (downsampled[j].time - timeLo) / (timeHi - timeLo)
+        : (j - lo) / (hi - lo);
       downsampled[j].temp          = tLo  + (tHi  - tLo)  * t;
       downsampled[j].precipProb    = ppLo + (ppHi - ppLo) * t;
       downsampled[j].precipitation = pLo  + (pHi  - pLo)  * t;
-      downsampled[j].windSpeed     = wsLo + (wsHi - wsLo) * t;
-      downsampled[j].windDeg       = wdLo + (wdHi - wdLo) * t;
+      const u = uLo + (uHi - uLo) * t;
+      const v = vLo + (vHi - vLo) * t;
+      downsampled[j].windSpeed     = Math.sqrt(u * u + v * v);
+      downsampled[j].windDeg       = (Math.atan2(-u, -v) * 180 / Math.PI + 360) % 360;
       downsampled[j].time          = timeLo + (timeHi - timeLo) * t;
     }
   }
