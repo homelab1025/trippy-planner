@@ -141,12 +141,18 @@ function App() {
     );
 
   const updateWeather = useCallback(async (currentRoute: RouteData, speed: number, start: Date, provider: WeatherProvider): Promise<boolean> => {
-    const interval = currentRoute.totalDistance / 10;
+    let WEATHER_POINTS_DISTANCE = 5000;
+    let WEATHER_POINTS_COUNT = currentRoute.totalDistance / WEATHER_POINTS_DISTANCE;
+    if (WEATHER_POINTS_COUNT < 10) {
+      WEATHER_POINTS_COUNT = 10;
+      WEATHER_POINTS_DISTANCE = currentRoute.totalDistance / WEATHER_POINTS_COUNT;
+    }
+    // const interval = currentRoute.totalDistance / WEATHER_POINTS;
     const requestMap = new Map<number, WeatherRequest>();
     const metaMap = new Map<number, { point: RoutePoint; arrivalTime: Date; label: string }>();
     const seenIndices = new Set<number>();
-    for (let i = 0; i <= 10; i++) {
-      const distance = i * interval;
+    for (let i = 0; i <= WEATHER_POINTS_COUNT; i++) {
+      const distance = i * WEATHER_POINTS_DISTANCE;
       const idx = currentRoute.points.findIndex(p => p.distance >= distance);
       const pointIdx = idx === -1 ? currentRoute.points.length - 1 : idx;
       if (seenIndices.has(pointIdx)) continue;
