@@ -50,4 +50,4 @@ const HoverPane: React.FC<HoverPaneProps> = React.memo(({ hoveredData, xAxisMode
   );
 });
 
-export default HoverPane;
+export { HoverPane };

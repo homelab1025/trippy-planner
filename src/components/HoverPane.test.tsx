@@ -1,8 +1,7 @@
 // @vitest-environment jsdom
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, afterEach } from 'vitest';
-import React from 'react';
-import HoverPane from './HoverPane';
+import { HoverPane } from './HoverPane';
 import type { ChartDataPoint } from '../hooks/useWeatherChartData';
 import { cleanup } from '@testing-library/react';
 
@@ -15,6 +14,7 @@ const fullData: ChartDataPoint = {
   precipProb: 40,
   precipitation: 0.2,
   windSpeed: 23,
+  windDeg: 270,
   time: new Date('2026-06-03T12:34:00Z').getTime(),
   isSample: true,
 };

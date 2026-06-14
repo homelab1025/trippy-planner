@@ -4,5 +4,5 @@ export const selfHostedProvider: WeatherProvider = {
   id: 'self-hosted',
   label: 'Trippy Weather (coming soon)',
   available: false,
-  fetchWeather: async (_points) => new Map(),
+  fetchWeather: async () => new Map(),
 };

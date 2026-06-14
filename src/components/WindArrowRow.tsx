@@ -7,7 +7,7 @@ interface WindArrowRowProps {
   samplePoints: ChartDataPoint[];
   distanceRange: [number, number];
   chartWidth: number;
-  hoveredDistance: number | null;
+  hoveredDistance?: number | null;
 }
 
 const PLOT_LEFT = CHART_MARGIN_LEFT + CHART_YAXIS_LEFT_WIDTH;
@@ -61,7 +61,7 @@ const WindArrowRow: React.FC<WindArrowRowProps> = ({ samplePoints, distanceRange
             </text>
           );
         })}
-        {hoveredDistance !== null && (
+        {hoveredDistance !== null && hoveredDistance !== undefined && (
           <line
             x1={xOf(hoveredDistance)} y1={0}
             x2={xOf(hoveredDistance)} y2={40}
@@ -73,4 +73,4 @@ const WindArrowRow: React.FC<WindArrowRowProps> = ({ samplePoints, distanceRange
   );
 };
 
-export default WindArrowRow;
+export { WindArrowRow };

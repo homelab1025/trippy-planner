@@ -2,7 +2,7 @@
 import { render, screen, cleanup, act } from '@testing-library/react';
 import { vi, describe, it, expect, afterEach, beforeEach } from 'vitest';
 import React from 'react';
-import ElevationChart, { type ElevationPoint } from './ElevationChart';
+import { ElevationChart, type ElevationPoint } from './ElevationChart';
 
 let capturedMouseMove: ((state: { activeTooltipIndex?: number | null }) => void) | null = null;
 let capturedMouseLeave: (() => void) | null = null;
@@ -28,7 +28,7 @@ vi.mock('recharts', () => ({
 }));
 
 vi.mock('./ClimbOverlay', () => ({
-  default: () => <div data-testid="climb-overlay" />,
+  ClimbOverlay: () => <div data-testid="climb-overlay" />,
 }));
 
 const sampleData: ElevationPoint[] = [
