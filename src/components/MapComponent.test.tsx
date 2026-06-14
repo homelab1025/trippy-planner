@@ -1,15 +1,15 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import MapComponent from './MapComponent';
+import { MapComponent } from './MapComponent';
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
 vi.mock('react-leaflet', () => ({
-  MapContainer: ({ children }: any) => <div data-testid="map-container">{children}</div>,
+  MapContainer: ({ children }: { children: React.ReactNode }) => <div data-testid="map-container">{children}</div>,
   TileLayer: () => null,
   Polyline: () => null,
-  CircleMarker: ({ center }: any) => (
+  CircleMarker: ({ center }: { center: [number, number] }) => (
     <div data-testid="circle-marker" data-lat={center[0]} data-lng={center[1]} />
   ),
   useMap: () => ({ fitBounds: vi.fn() }),

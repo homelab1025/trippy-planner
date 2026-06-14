@@ -48,7 +48,9 @@ export function douglasPeucker(points: RoutePoint[], epsilon: number): RoutePoin
   const stack: [number, number][] = [[0, points.length - 1]];
 
   while (stack.length > 0) {
-    const [start, end] = stack.pop()!;
+    const pair = stack.pop();
+    if (!pair) break;
+    const [start, end] = pair;
     if (end - start <= 1) continue;
 
     let maxDist = 0;

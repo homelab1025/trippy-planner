@@ -2,7 +2,7 @@
 import { render } from '@testing-library/react';
 import { describe, it, expect, afterEach } from 'vitest';
 import { cleanup } from '@testing-library/react';
-import WindArrowRow from './WindArrowRow';
+import { WindArrowRow } from './WindArrowRow';
 import type { ChartDataPoint } from '../hooks/useWeatherChartData';
 
 afterEach(cleanup);

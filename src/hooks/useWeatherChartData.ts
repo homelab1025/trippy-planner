@@ -85,10 +85,9 @@ export function buildChartData({
     const wdLo = downsampled[lo].windDeg,    wdHi = downsampled[hi].windDeg;
     const timeLo = downsampled[lo].time,    timeHi = downsampled[hi].time;
     if (
-      tLo == null || tHi == null || ppLo == null || ppHi == null ||
-      pLo == null || pHi == null || wsLo == null || wsHi == null ||
-      wdLo == null || wdHi == null ||
-      timeLo == null || timeHi == null
+      tLo === undefined || tHi === undefined || ppLo === undefined || ppHi === undefined ||
+      pLo === undefined || pHi === undefined || wsLo === undefined || wsHi === undefined ||
+      wdLo === undefined || wdHi === undefined
     ) continue;
     const uLo = -wsLo * Math.sin(wdLo * Math.PI / 180);
     const vLo = -wsLo * Math.cos(wdLo * Math.PI / 180);

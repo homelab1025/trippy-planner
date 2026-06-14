@@ -2,7 +2,7 @@
 import { render } from '@testing-library/react';
 import { describe, it, expect, afterEach } from 'vitest';
 import { cleanup } from '@testing-library/react';
-import PrecipBarRow from './PrecipBarRow';
+import { PrecipBarRow } from './PrecipBarRow';
 import type { ChartDataPoint } from '../hooks/useWeatherChartData';
 
 afterEach(cleanup);

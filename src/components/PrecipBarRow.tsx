@@ -7,7 +7,7 @@ interface PrecipBarRowProps {
   samplePoints: ChartDataPoint[];
   distanceRange: [number, number];
   chartWidth: number;
-  hoveredDistance: number | null;
+  hoveredDistance?: number | null;
 }
 
 const PLOT_LEFT = CHART_MARGIN_LEFT + CHART_YAXIS_LEFT_WIDTH;
@@ -57,7 +57,7 @@ const PrecipBarRow: React.FC<PrecipBarRowProps> = ({ samplePoints, distanceRange
             />
           );
         })}
-        {hoveredDistance !== null && (
+        {hoveredDistance !== null && hoveredDistance !== undefined && (
           <line
             x1={xOf(hoveredDistance)} y1={0}
             x2={xOf(hoveredDistance)} y2={40}
@@ -69,4 +69,4 @@ const PrecipBarRow: React.FC<PrecipBarRowProps> = ({ samplePoints, distanceRange
   );
 };
 
-export default PrecipBarRow;
+export { PrecipBarRow };
