@@ -3,7 +3,7 @@ import {
   ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, ReferenceLine, ReferenceDot, ResponsiveContainer,
 } from 'recharts';
 import type { Climb } from '../utils/climbDetector';
-import ClimbOverlay, { type ClimbRange } from './ClimbOverlay';
+import { ClimbOverlay, type ClimbRange } from './ClimbOverlay';
 import { CHART_MARGIN_LEFT, CHART_YAXIS_LEFT_WIDTH } from './chartConstants';
 
 export interface ElevationPoint {
@@ -41,7 +41,7 @@ const ElevationChart: React.FC<ElevationChartProps> = ({
           data={data}
           margin={{ top: 10, right: hasTemp ? 10 : 55, left: CHART_MARGIN_LEFT, bottom: 0 }}
           onMouseMove={(state) => {
-            const idx = state.activeTooltipIndex != null ? Number(state.activeTooltipIndex) : NaN;
+            const idx = state.activeTooltipIndex !== null && state.activeTooltipIndex !== undefined ? Number(state.activeTooltipIndex) : NaN;
             if (isNaN(idx) || !data[idx]) { onHoverIndex(null); return; }
             onHoverIndex(idx);
           }}
@@ -136,4 +136,5 @@ const ElevationChart: React.FC<ElevationChartProps> = ({
   );
 };
 
-export default React.memo(ElevationChart);
+const ElevationChartMemo = React.memo(ElevationChart);
+export { ElevationChartMemo as ElevationChart };

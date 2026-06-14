@@ -58,7 +58,7 @@ const ClimbOverlay: React.FC<ClimbOverlayProps> = ({ climbRanges, data }) => {
     .map(p => {
       const px = xScale(p.distance);
       const py = yScale(p.elevation);
-      return px != null && py != null ? { x: px, y: py, distance: p.distance, elevation: p.elevation } : null;
+      return typeof px === 'number' && typeof py === 'number' ? { x: px, y: py, distance: p.distance, elevation: p.elevation } : null;
     })
     .filter((p): p is { x: number; y: number; distance: number; elevation: number } => p !== null);
 
@@ -87,7 +87,7 @@ const ClimbOverlay: React.FC<ClimbOverlayProps> = ({ climbRanges, data }) => {
       {climbRanges.map((cr, i) => {
         const px1 = xScale(cr.x1);
         const px2 = xScale(cr.x2);
-        if (px1 == null || px2 == null) return null;
+        if (typeof px1 !== 'number' || typeof px2 !== 'number') return null;
         return (
           <rect
             key={`fill-${i}`}
@@ -198,4 +198,4 @@ const ClimbOverlay: React.FC<ClimbOverlayProps> = ({ climbRanges, data }) => {
   );
 };
 
-export default ClimbOverlay;
+export { ClimbOverlay };

@@ -1,8 +1,23 @@
 import axios from 'axios';
 import type { WeatherData, WeatherProvider, HttpClient } from './types';
 
-let _debug = false;
-export const setWeatherDebug = (enabled: boolean) => { _debug = enabled; };
+interface OpenMeteoHourly {
+  time: string[];
+  temperature_2m: number[];
+  apparent_temperature: number[];
+  precipitation_probability: number[];
+  precipitation: number[];
+  wind_speed_10m: number[];
+  wind_direction_10m: number[];
+  weather_code: number[];
+}
+
+interface OpenMeteoLocation {
+  hourly?: OpenMeteoHourly;
+}
+
+let debugEnabled = false;
+export const setWeatherDebug = (enabled: boolean) => { debugEnabled = enabled; };
 
 const getWeatherCondition = (code: number): string => {
   if (code === 0) return 'Clear';
@@ -36,10 +51,9 @@ export const createOpenMeteoProvider = (http: HttpClient = axios as HttpClient):
         },
       });
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const raw = response.data as any;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const locationData: any[] = Array.isArray(raw) ? raw : [raw];
+      // Open-Meteo returns a single object for one location, or an array for batch requests
+      const raw = response.data as OpenMeteoLocation | OpenMeteoLocation[];
+      const locationData: OpenMeteoLocation[] = Array.isArray(raw) ? raw : [raw];
 
       const result = new Map<number, WeatherData | null>();
 
@@ -60,7 +74,7 @@ export const createOpenMeteoProvider = (http: HttpClient = axios as HttpClient):
           continue;
         }
 
-        if (_debug) {
+        if (debugEnabled) {
           console.log('[weather:open-meteo]', {
             key, lat: req.lat, lon: req.lon,
             date: hourIso.slice(0, 10),

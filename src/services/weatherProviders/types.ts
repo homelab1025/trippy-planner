@@ -1,5 +1,3 @@
-// src/services/weatherProviders/types.ts
-
 export interface WeatherData {
   temp: number;
   feelsLike: number;
@@ -11,8 +9,7 @@ export interface WeatherData {
 }
 
 export interface HttpClient {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  get(url: string, config?: { params?: any }): Promise<{ data: any }>;
+  get(url: string, config?: { params?: Record<string, string> }): Promise<{ data: unknown }>;
 }
 
 export interface WeatherRequest {

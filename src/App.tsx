@@ -8,11 +8,11 @@ import { DP_EPSILON_METERS, DP_MAX_GAP_METERS } from './utils/douglasPeucker';
 import { detectClimbs } from './utils/climbDetector';
 import { PROVIDERS, DEFAULT_PROVIDER, setWeatherDebug } from './services/weatherProviders';
 import type { WeatherProvider, WeatherRequest } from './services/weatherProviders';
-import MapComponent from './components/MapComponent';
-import ElevationChart from './components/ElevationChart';
-import HoverPane from './components/HoverPane';
-import WindArrowRow from './components/WindArrowRow';
-import PrecipBarRow from './components/PrecipBarRow';
+import { MapComponent } from './components/MapComponent';
+import { ElevationChart } from './components/ElevationChart';
+import { HoverPane } from './components/HoverPane';
+import { WindArrowRow } from './components/WindArrowRow';
+import { PrecipBarRow } from './components/PrecipBarRow';
 import { useWeatherChartData } from './hooks/useWeatherChartData';
 import type { ChartDataPoint, WeatherSample } from './hooks/useWeatherChartData';
 
@@ -141,18 +141,17 @@ function App() {
     );
 
   const updateWeather = useCallback(async (currentRoute: RouteData, speed: number, start: Date, provider: WeatherProvider): Promise<boolean> => {
-    let WEATHER_POINTS_DISTANCE = 5000;
-    let WEATHER_POINTS_COUNT = currentRoute.totalDistance / WEATHER_POINTS_DISTANCE;
-    if (WEATHER_POINTS_COUNT < 10) {
-      WEATHER_POINTS_COUNT = 10;
-      WEATHER_POINTS_DISTANCE = currentRoute.totalDistance / WEATHER_POINTS_COUNT;
+    let weatherPointsDistance = 5000;
+    let weatherPointsCount = currentRoute.totalDistance / weatherPointsDistance;
+    if (weatherPointsCount < 10) {
+      weatherPointsCount = 10;
+      weatherPointsDistance = currentRoute.totalDistance / weatherPointsCount;
     }
-    // const interval = currentRoute.totalDistance / WEATHER_POINTS;
     const requestMap = new Map<number, WeatherRequest>();
     const metaMap = new Map<number, { point: RoutePoint; arrivalTime: Date; label: string }>();
     const seenIndices = new Set<number>();
-    for (let i = 0; i <= WEATHER_POINTS_COUNT; i++) {
-      const distance = i * WEATHER_POINTS_DISTANCE;
+    for (let i = 0; i <= weatherPointsCount; i++) {
+      const distance = i * weatherPointsDistance;
       const idx = currentRoute.points.findIndex(p => p.distance >= distance);
       const pointIdx = idx === -1 ? currentRoute.points.length - 1 : idx;
       if (seenIndices.has(pointIdx)) continue;
@@ -168,7 +167,8 @@ function App() {
       const filtered: WeatherSample[] = [];
       for (const [key, weather] of weatherResult) {
         if (weather === null) continue;
-        const meta = metaMap.get(key)!;
+        const meta = metaMap.get(key);
+        if (!meta) continue;
         filtered.push({ ...weather, ...meta });
       }
       setWeatherPoints(filtered);
@@ -524,4 +524,4 @@ function App() {
   );
 }
 
-export default App;
+export { App };

@@ -67,4 +67,4 @@ const MapComponent: React.FC<MapComponentProps> = ({ route, hoveredPoint, debugP
   );
 };
 
-export default MapComponent;
+export { MapComponent };

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act, cleanup } from '@testing-library/react';
-import App from './App';
+import { App } from './App';
 import { DEFAULT_PROVIDER, PROVIDERS } from './services/weatherProviders';
 import { parseGPXAsync } from './workers/gpxWorkerClient';
 
@@ -62,7 +62,7 @@ vi.mock('./services/weatherProviders', () => {
 });
 
 vi.mock('./components/MapComponent', () => ({
-  default: ({ hoveredPoint }: { hoveredPoint: { lat: number; lng: number } | null }) => (
+  MapComponent: ({ hoveredPoint }: { hoveredPoint: { lat: number; lng: number } | null }) => (
     <div
       data-testid="map"
       data-hovered={hoveredPoint ? `${hoveredPoint.lat},${hoveredPoint.lng}` : ''}
@@ -71,7 +71,7 @@ vi.mock('./components/MapComponent', () => ({
 }));
 
 vi.mock('./components/ElevationChart', () => ({
-  default: ({ onHoverIndex, data }: {
+  ElevationChart: ({ onHoverIndex, data }: {
     onHoverIndex: (index: number | null) => void;
     data: unknown[];
     climbs: unknown[];
@@ -89,19 +89,19 @@ vi.mock('./components/ElevationChart', () => ({
 }));
 
 vi.mock('./components/WindArrowRow', () => ({
-  default: ({ samplePoints }: { samplePoints: unknown[] }) => (
+  WindArrowRow: ({ samplePoints }: { samplePoints: unknown[] }) => (
     <div data-testid="wind-chart" data-sample-count={samplePoints.length} />
   ),
 }));
 
 vi.mock('./components/PrecipBarRow', () => ({
-  default: ({ samplePoints }: { samplePoints: unknown[] }) => (
+  PrecipBarRow: ({ samplePoints }: { samplePoints: unknown[] }) => (
     <div data-testid="precip-chart" data-sample-count={samplePoints.length} />
   ),
 }));
 
 vi.mock('./components/HoverPane', () => ({
-  default: ({ hoveredData }: {
+  HoverPane: ({ hoveredData }: {
     hoveredData: { temp?: number } | null;
     xAxisMode: 'clock' | 'elapsed';
     startTime: Date;
