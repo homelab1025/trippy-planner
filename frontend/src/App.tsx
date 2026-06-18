@@ -11,6 +11,7 @@ import { detectClimbs } from './utils/climbDetector';
 import { PROVIDERS, DEFAULT_PROVIDER, setWeatherDebug } from './services/weatherProviders';
 import type { WeatherProvider, WeatherRequest } from './services/weatherProviders';
 import { MapComponent } from './components/MapComponent';
+import { AuthHeader } from './components/AuthHeader';
 import { ElevationChart } from './components/ElevationChart';
 import { HoverPane } from './components/HoverPane';
 import { WindArrowRow } from './components/WindArrowRow';
@@ -253,6 +254,14 @@ function App() {
           </div>
           <div className="flex-none gap-3">
             <h1 className="text-xl font-bold">Trippy Planner</h1>
+            <AuthHeader
+              user={user}
+              onSignOut={() => {
+                authApi.deleteSession().catch(() => {})
+                clearToken()
+                setUser(null)
+              }}
+            />
           </div>
         {route && (
           <div className="header-stats hidden md:flex flex-1 text-center text-sm opacity-90 px-4">
