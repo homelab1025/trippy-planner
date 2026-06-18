@@ -1,4 +1,6 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { getToken, setToken, clearToken, isAuthenticated } from './auth';
+import { authApi } from './apiClient';
 import { format } from 'date-fns';
 import { Upload, Map as MapIcon, CloudRain, RefreshCw } from 'lucide-react';
 import logo from './assets/logo.png';
@@ -52,6 +54,8 @@ function App() {
     startTime: Date;
     selectedProvider: WeatherProvider;
   } | null>(null);
+
+  const [user, setUser] = useState<{ id: number; email: string } | null>(null);
 
   const buildDate = format(new Date(__BUILD_DATE__), 'd MMM yyyy HH:mm');
 
@@ -194,6 +198,27 @@ function App() {
   React.useEffect(() => {
     setWeatherDebug(weatherDebug);
   }, [weatherDebug]);
+
+  // Token landing — runs once on mount
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    if (token) {
+      setToken(token);
+      params.delete('token');
+      const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+      history.replaceState(null, '', newUrl);
+    }
+
+    if (isAuthenticated()) {
+      authApi.getMe()
+        .then(res => setUser(res.data))
+        .catch(() => {
+          clearToken();
+          setUser(null);
+        });
+    }
+  }, []);
 
   const onHoverIndex = useCallback((index: number | null) => {
     setHoveredIndex(index);

@@ -4,6 +4,7 @@ import { render, screen, fireEvent, waitFor, act, cleanup } from '@testing-libra
 import { App } from './App';
 import { DEFAULT_PROVIDER, PROVIDERS } from './services/weatherProviders';
 import { parseGPXAsync } from './workers/gpxWorkerClient';
+import { getToken, isAuthenticated } from './auth';
 
 // ── Fixtures ────────────────────────────────────────────────────────────────
 
@@ -33,6 +34,19 @@ let capturedHoverCb: ((index: number | null) => void) | null = null;
 
 vi.mock('./workers/gpxWorkerClient', () => ({
   parseGPXAsync: vi.fn(),
+}));
+
+vi.mock('./auth', () => ({
+  getToken: vi.fn(() => null),
+  setToken: vi.fn(),
+  clearToken: vi.fn(),
+  isAuthenticated: vi.fn(() => false),
+}));
+
+vi.mock('./apiClient', () => ({
+  authApi: { getMe: vi.fn() },
+  routesApi: {},
+  shareApi: {},
 }));
 
 vi.mock('./services/weatherProviders', () => {
@@ -320,3 +334,24 @@ describe('App', () => {
     expect(PROVIDERS[2].fetchWeather).not.toHaveBeenCalled();
   });
 });
+
+describe('token landing', () => {
+  beforeEach(() => {
+    window.history.replaceState({}, '', '/')
+  })
+
+  it('stores token from URL and strips it', async () => {
+    const { setToken } = await import('./auth')
+    const { authApi } = await import('./apiClient')
+    vi.mocked(setToken).mockImplementation(() => {})
+    vi.mocked(authApi.getMe).mockResolvedValue({ data: { id: 1, email: 'a@b.com' } })
+
+    window.history.replaceState({}, '', '/?token=mytesttoken')
+    render(<App />)
+
+    await waitFor(() => {
+      expect(setToken).toHaveBeenCalledWith('mytesttoken')
+      expect(window.location.search).toBe('')
+    })
+  })
+})
