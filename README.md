@@ -22,8 +22,6 @@ A route weather planner for cyclists and hikers. Upload a GPX file, set your sta
 
 - **Deduplicate Open-Meteo requests for nearby points.** Each weather sample point fires a separate API call. Open-Meteo returns the full hourly forecast for a location, so two sample points that are geographically close could share the same response. Implement a cache keyed on a rounded lat/lng grid (e.g. 0.1° resolution) and reuse the cached response instead of making a duplicate request.
 
-- **Investigate wind value interpolation accuracy.** Wind speed and direction shown on the timeline are interpolated between the 11 sample points, but the interpolation may not match actual wind conditions along the route — especially across terrain features. See [this Gemini discussion](https://gemini.google.com/share/20eb3eb2c936) for context.
-
 - **Debounce weather refetch on input changes.** Changing `avgSpeed` or `startTime` immediately triggers 11 parallel API calls per keystroke. Add a ~500ms debounce to the `useEffect` in `App.tsx`.
 
 - **Cancel in-flight weather requests when inputs change.** Stale responses can race and overwrite newer results. Pass an `AbortSignal` through 
@@ -32,6 +30,7 @@ A route weather planner for cyclists and hikers. Upload a GPX file, set your sta
 
 ## Done
 
+- **Investigate wind value interpolation accuracy.** Wind speed and direction shown on the timeline are interpolated between the 11 sample points, but the interpolation may not match actual wind conditions along the route — especially across terrain features. See [this Gemini discussion](https://gemini.google.com/share/20eb3eb2c936) for context.
 - Provide support for multiple weather forecast providers and let the user choose.
 - **Replace hand-rolled UI components with a React component library.** The accordion, buttons, and inputs are currently hand-rolled with custom CSS. Replace with a component library (e.g. [shadcn/ui](https://ui.shadcn.com/) or [Radix UI](https://www.radix-ui.com/)) to gain accessibility, keyboard navigation, and animations for free.
 - **Show the climbs in the weather timeline**
