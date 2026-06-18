@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { routesApi } from '../apiClient'
-import { RouteListItem } from '../api'
+import type { RouteListItem } from '../api'
 
 interface Props {
   onLoadRoute: (gpxContent: string, avgSpeedKmh: number, startTime: string) => void

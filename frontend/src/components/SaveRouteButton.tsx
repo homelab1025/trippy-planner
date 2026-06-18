@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { authApi, routesApi } from '../apiClient'
-import { CreateRouteRequest } from '../api'
+import type { CreateRouteRequest } from '../api'
 
 interface Props {
   isAuthenticated: boolean
