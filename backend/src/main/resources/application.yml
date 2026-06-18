@@ -1,0 +1,18 @@
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+  flyway:
+    enabled: true
+
+server:
+  servlet:
+    context-path: /api
+
+app:
+  base-url: ${APP_BASE_URL}
+  session-expiry-minutes: ${SESSION_EXPIRY_MINUTES:43200}
+
+resend:
+  api-key: ${RESEND_API_KEY}
