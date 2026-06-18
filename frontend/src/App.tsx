@@ -11,6 +11,7 @@ import { detectClimbs } from './utils/climbDetector';
 import { PROVIDERS, DEFAULT_PROVIDER, setWeatherDebug } from './services/weatherProviders';
 import type { WeatherProvider, WeatherRequest } from './services/weatherProviders';
 import { MapComponent } from './components/MapComponent';
+import { SaveRouteButton } from './components/SaveRouteButton';
 import { AuthHeader } from './components/AuthHeader';
 import { ElevationChart } from './components/ElevationChart';
 import { HoverPane } from './components/HoverPane';
@@ -57,6 +58,7 @@ function App() {
   } | null>(null);
 
   const [user, setUser] = useState<{ id: number; email: string } | null>(null);
+  const [rawGpxContent, setRawGpxContent] = useState<string | null>(null);
 
   const buildDate = format(new Date(__BUILD_DATE__), 'd MMM yyyy HH:mm');
 
@@ -124,6 +126,7 @@ function App() {
       performance.mark('gpx-parse-end');
       const measure = performance.measure('gpx-parse', 'gpx-parse-start', 'gpx-parse-end');
       setParseMetrics({ totalMs: measure.duration, fileSizeKb });
+      setRawGpxContent(text);
       setRoute(parsedRoute);
       setWeatherLoading(true);
       const success = await updateWeather(parsedRoute, avgSpeed, startTime, selectedProvider);
@@ -383,6 +386,19 @@ function App() {
 
             </div>
           </div>
+
+          {route && rawGpxContent && (
+            <SaveRouteButton
+              isAuthenticated={isAuthenticated()}
+              routeData={{
+                name: route.name ?? 'My Route',
+                gpxContent: rawGpxContent,
+                avgSpeedKmh: avgSpeed,
+                startTime: startTime,
+              }}
+              onSaved={() => {}}
+            />
+          )}
 
           {/* Tech Details */}
           <div className={`tech-details-card collapse collapse-arrow bg-base-100 shadow rounded-t-none rounded-b-box border-x border-b border-base-300 ${activePanel === 'tech' ? 'collapse-open' : ''}`}>
