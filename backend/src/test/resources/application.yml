@@ -1,0 +1,5 @@
+app:
+  base-url: http://localhost:5173
+  session-expiry-minutes: 43200
+resend:
+  api-key: test-key
