@@ -12,6 +12,7 @@ import { PROVIDERS, DEFAULT_PROVIDER, setWeatherDebug } from './services/weather
 import type { WeatherProvider, WeatherRequest } from './services/weatherProviders';
 import { MapComponent } from './components/MapComponent';
 import { SaveRouteButton } from './components/SaveRouteButton';
+import { MyRoutesPanel } from './components/MyRoutesPanel';
 import { AuthHeader } from './components/AuthHeader';
 import { ElevationChart } from './components/ElevationChart';
 import { HoverPane } from './components/HoverPane';
@@ -398,6 +399,21 @@ function App() {
               }}
               onSaved={() => {}}
             />
+          )}
+
+          {user && (
+            <div className="collapse collapse-arrow bg-base-100 shadow rounded-t-none rounded-b-box border-x border-b border-base-300">
+              <div className="collapse-title text-sm font-medium">My routes</div>
+              <div className="collapse-content">
+                <MyRoutesPanel
+                  onLoadRoute={(gpxContent, avgSpeedKmh, startTime) => {
+                    setRawGpxContent(gpxContent)
+                    setAvgSpeed(avgSpeedKmh)
+                    setStartTime(new Date(startTime))
+                  }}
+                />
+              </div>
+            </div>
           )}
 
           {/* Tech Details */}
