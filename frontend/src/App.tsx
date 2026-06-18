@@ -13,6 +13,7 @@ import type { WeatherProvider, WeatherRequest } from './services/weatherProvider
 import { MapComponent } from './components/MapComponent';
 import { SaveRouteButton } from './components/SaveRouteButton';
 import { MyRoutesPanel } from './components/MyRoutesPanel';
+import { ShareToggle } from './components/ShareToggle';
 import { AuthHeader } from './components/AuthHeader';
 import { ElevationChart } from './components/ElevationChart';
 import { HoverPane } from './components/HoverPane';
@@ -60,6 +61,9 @@ function App() {
 
   const [user, setUser] = useState<{ id: number; email: string } | null>(null);
   const [rawGpxContent, setRawGpxContent] = useState<string | null>(null);
+  const [savedRouteId, setSavedRouteId] = useState<string | null>(null);
+  const [routeIsPublic, setRouteIsPublic] = useState(false);
+  const [routeShareToken, setRouteShareToken] = useState<string | null>(null);
 
   const buildDate = format(new Date(__BUILD_DATE__), 'd MMM yyyy HH:mm');
 
@@ -397,7 +401,16 @@ function App() {
                 avgSpeedKmh: avgSpeed,
                 startTime: startTime,
               }}
-              onSaved={() => {}}
+              onSaved={(id) => setSavedRouteId(id)}
+            />
+          )}
+
+          {user && savedRouteId && (
+            <ShareToggle
+              routeId={savedRouteId}
+              isPublic={routeIsPublic}
+              shareToken={routeShareToken}
+              baseUrl={window.location.origin}
             />
           )}
 
