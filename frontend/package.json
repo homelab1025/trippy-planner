@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:mutation": "stryker run"
+    "test:mutation": "stryker run",
+    "generate:api": "openapi-generator-cli generate -i ../openapi.yaml -g typescript-axios -o src/api --additional-properties=supportsES6=true,withSeparateModelsAndApi=false,modelPropertyNaming=camelCase,enumPropertyNaming=camelCase"
   },
   "dependencies": {
     "axios": "^1.16.1",
@@ -25,6 +26,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@openapitools/openapi-generator-cli": "^2.38.0",
     "@playwright/test": "^1.60.0",
     "@stryker-mutator/core": "^9.6.1",
     "@stryker-mutator/vitest-runner": "^9.6.1",
