@@ -46,7 +46,7 @@ vi.mock('./auth', () => ({
 vi.mock('./apiClient', () => ({
   authApi: { getMe: vi.fn() },
   routesApi: {},
-  shareApi: {},
+  shareApi: { getSharedRoute: vi.fn() },
 }));
 
 vi.mock('./services/weatherProviders', () => {
@@ -352,6 +352,31 @@ describe('token landing', () => {
     await waitFor(() => {
       expect(setToken).toHaveBeenCalledWith('mytesttoken')
       expect(window.location.search).toBe('')
+    })
+  })
+})
+
+describe('public route view', () => {
+  it('loads a shared route from /share/:token URL', async () => {
+    window.history.replaceState({}, '', '/share/publictoken123')
+
+    const { shareApi, authApi } = await import('./apiClient')
+    vi.mocked(shareApi.getSharedRoute).mockResolvedValue({
+      data: {
+        id: 'uuid-1',
+        name: 'Shared Alpine Loop',
+        gpxContent: '<gpx><trk><trkseg></trkseg></trk></gpx>',
+        avgSpeedKmh: 20,
+        startTime: '2026-06-17T08:00:00Z',
+        isPublic: true,
+      },
+    })
+    vi.mocked(authApi.getMe).mockRejectedValue(new Error('unauthorized'))
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByText(/viewing a shared route/i)).toBeInTheDocument()
     })
   })
 })

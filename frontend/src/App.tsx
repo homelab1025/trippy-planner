@@ -14,6 +14,7 @@ import { MapComponent } from './components/MapComponent';
 import { SaveRouteButton } from './components/SaveRouteButton';
 import { MyRoutesPanel } from './components/MyRoutesPanel';
 import { ShareToggle } from './components/ShareToggle';
+import { shareApi } from './apiClient';
 import { AuthHeader } from './components/AuthHeader';
 import { ElevationChart } from './components/ElevationChart';
 import { HoverPane } from './components/HoverPane';
@@ -64,6 +65,7 @@ function App() {
   const [savedRouteId, setSavedRouteId] = useState<string | null>(null);
   const [routeIsPublic, setRouteIsPublic] = useState(false);
   const [routeShareToken, setRouteShareToken] = useState<string | null>(null);
+  const [isViewingShared, setIsViewingShared] = useState(false);
 
   const buildDate = format(new Date(__BUILD_DATE__), 'd MMM yyyy HH:mm');
 
@@ -227,6 +229,22 @@ function App() {
           setUser(null);
         });
     }
+
+    const pathParts = window.location.pathname.split('/');
+    if (pathParts[1] === 'share' && pathParts[2]) {
+      const shareToken = pathParts[2];
+      shareApi.getSharedRoute(shareToken)
+        .then(res => {
+          const data = res.data;
+          setIsViewingShared(true);
+          setRawGpxContent(data.gpxContent as string);
+          setAvgSpeed(data.avgSpeedKmh as number);
+          setStartTime(new Date(data.startTime as string));
+        })
+        .catch(() => {
+          // Token invalid or route made private — let user upload
+        });
+    }
   }, []);
 
   const onHoverIndex = useCallback((index: number | null) => {
@@ -275,6 +293,9 @@ function App() {
           <div className="header-stats hidden md:flex flex-1 text-center text-sm opacity-90 px-4">
             {route.name}: {(route.totalDistance / 1000).toFixed(1)} km · {Math.round(route.totalElevationGain)} m of character-building
           </div>
+        )}
+        {isViewingShared && (
+          <div className="badge badge-info badge-sm">Viewing a shared route</div>
         )}
         <div className="flex-none ml-auto">
           <label
@@ -392,7 +413,7 @@ function App() {
             </div>
           </div>
 
-          {route && rawGpxContent && (
+          {route && rawGpxContent && !isViewingShared && (
             <SaveRouteButton
               isAuthenticated={isAuthenticated()}
               routeData={{
@@ -405,7 +426,7 @@ function App() {
             />
           )}
 
-          {user && savedRouteId && (
+          {user && savedRouteId && !isViewingShared && (
             <ShareToggle
               routeId={savedRouteId}
               isPublic={routeIsPublic}
