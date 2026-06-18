@@ -1,0 +1,285 @@
+openapi: 3.0.3
+info:
+  title: Trippy Planner API
+  version: 1.0.0
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: /api
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+
+  schemas:
+    MagicLinkRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+
+    User:
+      type: object
+      required: [id, email]
+      properties:
+        id:
+          type: integer
+          format: int64
+        email:
+          type: string
+
+    RouteListItem:
+      type: object
+      required: [id, name, avgSpeedKmh, startTime, isPublic, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        avgSpeedKmh:
+          type: number
+          format: double
+        startTime:
+          type: string
+          format: date-time
+        isPublic:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    Route:
+      allOf:
+        - $ref: '#/components/schemas/RouteListItem'
+        - type: object
+          required: [gpxContent]
+          properties:
+            gpxContent:
+              type: string
+
+    CreateRouteRequest:
+      type: object
+      required: [name, gpxContent, avgSpeedKmh, startTime]
+      properties:
+        name:
+          type: string
+        gpxContent:
+          type: string
+        avgSpeedKmh:
+          type: number
+          format: double
+        startTime:
+          type: string
+          format: date-time
+
+    UpdateRouteRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        avgSpeedKmh:
+          type: number
+          format: double
+        startTime:
+          type: string
+          format: date-time
+
+    ShareResponse:
+      type: object
+      required: [shareToken]
+      properties:
+        shareToken:
+          type: string
+
+paths:
+  /auth/magic-link:
+    post:
+      summary: Request a magic link for passwordless authentication
+      tags: [auth]
+      operationId: requestMagicLink
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MagicLinkRequest'
+      responses:
+        '204':
+          description: Magic link sent (always, even if email unknown)
+
+  /auth/me:
+    get:
+      summary: Get the current authenticated user
+      tags: [auth]
+      operationId: getMe
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Invalid or expired token
+
+  /auth/session:
+    delete:
+      summary: Delete the current session (sign out)
+      tags: [auth]
+      operationId: deleteSession
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Session deleted
+
+  /routes:
+    get:
+      summary: List the current user's routes
+      tags: [routes]
+      operationId: listRoutes
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User's routes (no gpxContent)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RouteListItem'
+    post:
+      summary: Create a new route
+      tags: [routes]
+      operationId: createRoute
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRouteRequest'
+      responses:
+        '201':
+          description: Route created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Route'
+
+  /routes/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      summary: Get a full route by ID
+      tags: [routes]
+      operationId: getRoute
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Full route including gpxContent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Route'
+        '403':
+          description: Route belongs to another user
+        '404':
+          description: Route not found
+    put:
+      summary: Update a route's name, speed, or start time
+      tags: [routes]
+      operationId: updateRoute
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRouteRequest'
+      responses:
+        '200':
+          description: Updated route
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Route'
+    delete:
+      summary: Delete a route
+      tags: [routes]
+      operationId: deleteRoute
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Route deleted
+
+  /routes/{id}/share:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      summary: Share a route publicly
+      tags: [routes]
+      operationId: shareRoute
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Share token (idempotent — returns existing if already public)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShareResponse'
+    delete:
+      summary: Make a route private
+      tags: [routes]
+      operationId: unshareRoute
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Route made private, share link invalidated
+
+  /share/{shareToken}:
+    get:
+      summary: Get a publicly shared route
+      tags: [share]
+      operationId: getSharedRoute
+      parameters:
+        - name: shareToken
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Public route (no auth required)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Route'
+        '404':
+          description: Token not found or route no longer public
