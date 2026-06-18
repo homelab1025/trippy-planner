@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { getToken, setToken, clearToken, isAuthenticated } from './auth';
+import React, { useState, useCallback, useMemo } from 'react';
+import { setToken, clearToken, isAuthenticated } from './auth';
 import { authApi } from './apiClient';
 import { format } from 'date-fns';
 import { Upload, Map as MapIcon, CloudRain, RefreshCw } from 'lucide-react';
@@ -63,8 +63,6 @@ function App() {
   const [user, setUser] = useState<{ id: number; email: string } | null>(null);
   const [rawGpxContent, setRawGpxContent] = useState<string | null>(null);
   const [savedRouteId, setSavedRouteId] = useState<string | null>(null);
-  const [routeIsPublic, setRouteIsPublic] = useState(false);
-  const [routeShareToken, setRouteShareToken] = useState<string | null>(null);
   const [isViewingShared, setIsViewingShared] = useState(false);
 
   const buildDate = format(new Date(__BUILD_DATE__), 'd MMM yyyy HH:mm');
@@ -420,7 +418,7 @@ function App() {
                 name: route.name ?? 'My Route',
                 gpxContent: rawGpxContent,
                 avgSpeedKmh: avgSpeed,
-                startTime: startTime,
+                startTime: startTime.toISOString(),
               }}
               onSaved={(id) => setSavedRouteId(id)}
             />
@@ -429,8 +427,8 @@ function App() {
           {user && savedRouteId && !isViewingShared && (
             <ShareToggle
               routeId={savedRouteId}
-              isPublic={routeIsPublic}
-              shareToken={routeShareToken}
+              isPublic={false}
+              shareToken={null}
               baseUrl={window.location.origin}
             />
           )}
