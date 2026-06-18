@@ -1,0 +1,49 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: trippy
+      POSTGRES_USER: trippy
+      POSTGRES_PASSWORD: trippy
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trippy -d trippy"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/trippy
+      SPRING_DATASOURCE_USERNAME: trippy
+      SPRING_DATASOURCE_PASSWORD: trippy
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      APP_BASE_URL: ${APP_BASE_URL:-http://localhost:5173}
+      SESSION_EXPIRY_MINUTES: ${SESSION_EXPIRY_MINUTES:-43200}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/api/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    build:
+      context: ./frontend
+      target: build
+    command: npm run dev -- --host 0.0.0.0
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

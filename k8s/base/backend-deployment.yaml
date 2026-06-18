@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trippy-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: trippy-backend
+  template:
+    metadata:
+      labels:
+        app: trippy-backend
+    spec:
+      containers:
+        - name: trippy-backend
+          image: trippy-backend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+          envFrom:
+            - secretRef:
+                name: trippy-backend-secret
