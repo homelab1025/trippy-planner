@@ -1,10 +1,12 @@
 package com.trippyplanner.auth;
 
-import com.trippyplanner.model.User;
+import com.trippyplanner.common.TokenGenerator;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -20,39 +22,28 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestPropertySource(properties = {
     "app.session-expiry-minutes=43200"
 })
+@Import(AuthControllerTest.MocksConfig.class)
 class AuthControllerTest {
 
     @Autowired
     MockMvc mvc;
 
-    @MockBean
-    UserRepository userRepository;
-
-    @MockBean
-    SessionRepository sessionRepository;
-
-    @MockBean
-    com.trippyplanner.common.TokenGenerator tokenGenerator;
-
-    @MockBean
-    ResendEmailService emailService;
-
     @Test
     void requestMagicLinkReturns204() throws Exception {
-        when(userRepository.findOrCreate("user@example.com")).thenReturn(1L);
-        when(tokenGenerator.generate()).thenReturn("generatedtoken12345");
+        when(MocksConfig.userRepository.findOrCreate("user@example.com")).thenReturn(1L);
+        when(MocksConfig.tokenGenerator.generate()).thenReturn("generatedtoken12345");
 
         mvc.perform(post("/auth/magic-link")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"email\":\"user@example.com\"}"))
             .andExpect(status().isNoContent());
 
-        verify(emailService).sendMagicLink("user@example.com", "generatedtoken12345");
+        verify(MocksConfig.emailService).sendMagicLink("user@example.com", "generatedtoken12345");
     }
 
     @Test
     void getMeReturnsCurrentUser() throws Exception {
-        when(userRepository.findEmailById(42L)).thenReturn(Optional.of("me@example.com"));
+        when(MocksConfig.userRepository.findEmailById(42L)).thenReturn(Optional.of("me@example.com"));
 
         mvc.perform(get("/auth/me")
                 .requestAttr("userId", 42L))
@@ -67,6 +58,38 @@ class AuthControllerTest {
                 .requestAttr("sessionToken", "mytoken"))
             .andExpect(status().isNoContent());
 
-        verify(sessionRepository).delete("mytoken");
+        verify(MocksConfig.sessionRepository).delete("mytoken");
+    }
+
+    @TestConfiguration
+    static class MocksConfig {
+        static UserRepository userRepository;
+        static SessionRepository sessionRepository;
+        static TokenGenerator tokenGenerator;
+        static ResendEmailService emailService;
+
+        @Bean
+        UserRepository userRepository() {
+            userRepository = mock(UserRepository.class);
+            return userRepository;
+        }
+
+        @Bean
+        SessionRepository sessionRepository() {
+            sessionRepository = mock(SessionRepository.class);
+            return sessionRepository;
+        }
+
+        @Bean
+        TokenGenerator tokenGenerator() {
+            tokenGenerator = mock(TokenGenerator.class);
+            return tokenGenerator;
+        }
+
+        @Bean
+        ResendEmailService emailService() {
+            emailService = mock(ResendEmailService.class);
+            return emailService;
+        }
     }
 }

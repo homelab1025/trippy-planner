@@ -5,8 +5,10 @@ import com.trippyplanner.model.Route;
 import com.trippyplanner.model.RouteListItem;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -25,11 +27,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestPropertySource(properties = {
     "app.session-expiry-minutes=43200"
 })
+@Import(RoutesControllerTest.MocksConfig.class)
 class RoutesControllerTest {
 
     @Autowired MockMvc mvc;
-    @MockBean RouteRepository routeRepository;
-    @MockBean TokenGenerator tokenGenerator;
 
     private Route sampleRoute(UUID id) {
         Route r = new Route();
@@ -45,7 +46,7 @@ class RoutesControllerTest {
 
     @Test
     void listRoutesReturns200() throws Exception {
-        when(routeRepository.findAllByUserId(1L)).thenReturn(List.of(new RouteListItem()));
+        when(MocksConfig.routeRepository.findAllByUserId(1L)).thenReturn(List.of(new RouteListItem()));
 
         mvc.perform(get("/routes").requestAttr("userId", 1L))
             .andExpect(status().isOk())
@@ -55,8 +56,8 @@ class RoutesControllerTest {
     @Test
     void getRouteReturns200WhenOwner() throws Exception {
         UUID id = UUID.randomUUID();
-        when(routeRepository.findById(id)).thenReturn(Optional.of(sampleRoute(id)));
-        when(routeRepository.findOwnerUserId(id)).thenReturn(Optional.of(1L));
+        when(MocksConfig.routeRepository.findById(id)).thenReturn(Optional.of(sampleRoute(id)));
+        when(MocksConfig.routeRepository.findOwnerUserId(id)).thenReturn(Optional.of(1L));
 
         mvc.perform(get("/routes/{id}", id).requestAttr("userId", 1L))
             .andExpect(status().isOk())
@@ -66,8 +67,8 @@ class RoutesControllerTest {
     @Test
     void getRouteReturns403WhenNotOwner() throws Exception {
         UUID id = UUID.randomUUID();
-        when(routeRepository.findById(id)).thenReturn(Optional.of(sampleRoute(id)));
-        when(routeRepository.findOwnerUserId(id)).thenReturn(Optional.of(99L));
+        when(MocksConfig.routeRepository.findById(id)).thenReturn(Optional.of(sampleRoute(id)));
+        when(MocksConfig.routeRepository.findOwnerUserId(id)).thenReturn(Optional.of(99L));
 
         mvc.perform(get("/routes/{id}", id).requestAttr("userId", 1L))
             .andExpect(status().isForbidden());
@@ -76,7 +77,7 @@ class RoutesControllerTest {
     @Test
     void createRouteReturns201() throws Exception {
         UUID id = UUID.randomUUID();
-        when(routeRepository.save(eq(1L), any())).thenReturn(sampleRoute(id));
+        when(MocksConfig.routeRepository.save(eq(1L), any())).thenReturn(sampleRoute(id));
 
         mvc.perform(post("/routes")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -89,23 +90,41 @@ class RoutesControllerTest {
     @Test
     void deleteRouteReturns204() throws Exception {
         UUID id = UUID.randomUUID();
-        when(routeRepository.findOwnerUserId(id)).thenReturn(Optional.of(1L));
+        when(MocksConfig.routeRepository.findOwnerUserId(id)).thenReturn(Optional.of(1L));
 
         mvc.perform(delete("/routes/{id}", id).requestAttr("userId", 1L))
             .andExpect(status().isNoContent());
-        verify(routeRepository).delete(id);
+        verify(MocksConfig.routeRepository).delete(id);
     }
 
     @Test
     void shareRouteReturnsToken() throws Exception {
         UUID id = UUID.randomUUID();
-        when(routeRepository.findOwnerUserId(id)).thenReturn(Optional.of(1L));
-        when(routeRepository.findShareToken(id)).thenReturn(Optional.empty());
-        when(tokenGenerator.generate()).thenReturn("sharetoken12345678");
-        when(routeRepository.share(id, "sharetoken12345678")).thenReturn("sharetoken12345678");
+        when(MocksConfig.routeRepository.findOwnerUserId(id)).thenReturn(Optional.of(1L));
+        when(MocksConfig.routeRepository.findShareToken(id)).thenReturn(Optional.empty());
+        when(MocksConfig.tokenGenerator.generate()).thenReturn("sharetoken12345678");
+        when(MocksConfig.routeRepository.share(id, "sharetoken12345678")).thenReturn("sharetoken12345678");
 
         mvc.perform(post("/routes/{id}/share", id).requestAttr("userId", 1L))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.shareToken").value("sharetoken12345678"));
+    }
+
+    @TestConfiguration
+    static class MocksConfig {
+        static RouteRepository routeRepository;
+        static TokenGenerator tokenGenerator;
+
+        @Bean
+        RouteRepository routeRepository() {
+            routeRepository = mock(RouteRepository.class);
+            return routeRepository;
+        }
+
+        @Bean
+        TokenGenerator tokenGenerator() {
+            tokenGenerator = mock(TokenGenerator.class);
+            return tokenGenerator;
+        }
     }
 }
