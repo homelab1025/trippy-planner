@@ -9,8 +9,10 @@ COPY backend/.mvn/ .mvn/
 COPY backend/mvnw backend/pom.xml ./
 RUN ./mvnw dependency:go-offline -q
 COPY backend/src ./src
-RUN ./mvnw -Pnative native:compile -q
+# -DskipTests prevents the GraalVM native-maven-plugin from running tests during native image compilation.
+# Tests should be run separately BEFORE building the container image (see build pipeline documentation).
+RUN ./mvnw -Pnative native:compile -q -DskipTests
 
-FROM gcr.io/distroless/base-debian12
+FROM gcr.io/distroless/base-debian13
 COPY --from=build /app/target/backend /app/backend
 ENTRYPOINT ["/app/backend"]
