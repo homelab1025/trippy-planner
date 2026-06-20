@@ -11,7 +11,7 @@
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:mutation": "stryker run",
-    "generate:api": "openapi-generator-cli generate -i ../openapi.yaml -g typescript-axios -o src/api --additional-properties=supportsES6=true,withSeparateModelsAndApi=false,modelPropertyNaming=camelCase,enumPropertyNaming=camelCase"
+    "generate:api": "openapi-generator-cli generate -i ../openapi.yaml -g typescript-axios -o src/api --additional-properties=supportsES6=true,modelPropertyNaming=camelCase,enumPropertyNaming=camelCase"
   },
   "dependencies": {
     "axios": "^1.16.1",
