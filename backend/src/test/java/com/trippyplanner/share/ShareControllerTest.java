@@ -4,8 +4,10 @@ import com.trippyplanner.model.Route;
 import com.trippyplanner.routes.RouteRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -13,7 +15,7 @@ import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -21,10 +23,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestPropertySource(properties = {
     "app.session-expiry-minutes=43200"
 })
+@Import(ShareControllerTest.MocksConfig.class)
 class ShareControllerTest {
 
     @Autowired MockMvc mvc;
-    @MockBean RouteRepository routeRepository;
 
     @Test
     void returnsPublicRoute() throws Exception {
@@ -37,7 +39,7 @@ class ShareControllerTest {
         r.setCreatedAt(OffsetDateTime.now());
         r.setGpxContent("<gpx/>");
 
-        when(routeRepository.findByShareToken("validtoken")).thenReturn(Optional.of(r));
+        when(MocksConfig.routeRepository.findByShareToken("validtoken")).thenReturn(Optional.of(r));
 
         mvc.perform(get("/share/validtoken"))
             .andExpect(status().isOk())
@@ -47,9 +49,20 @@ class ShareControllerTest {
 
     @Test
     void returns404ForUnknownToken() throws Exception {
-        when(routeRepository.findByShareToken("notoken")).thenReturn(Optional.empty());
+        when(MocksConfig.routeRepository.findByShareToken("notoken")).thenReturn(Optional.empty());
 
         mvc.perform(get("/share/notoken"))
             .andExpect(status().isNotFound());
+    }
+
+    @TestConfiguration
+    static class MocksConfig {
+        static RouteRepository routeRepository;
+
+        @Bean
+        RouteRepository routeRepository() {
+            routeRepository = mock(RouteRepository.class);
+            return routeRepository;
+        }
     }
 }
