@@ -1,0 +1,1 @@
+docker run --rm -it --security-opt seccomp=unconfined -v "$PWD:/workspace" -v ~/.pi/agent:/root/.pi/agent -v /var/run/docker.sock:/var/run/docker.sock pi-sandbox
