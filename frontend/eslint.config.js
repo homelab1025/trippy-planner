@@ -7,6 +7,8 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
   globalIgnores(['dist']),
+  // Generated API code — skip linting (openapi-generator produces `any` types)
+  globalIgnores(['src/api/**']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [

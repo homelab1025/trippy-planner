@@ -4,7 +4,7 @@ import { render, screen, fireEvent, waitFor, act, cleanup } from '@testing-libra
 import { App } from './App';
 import { DEFAULT_PROVIDER, PROVIDERS } from './services/weatherProviders';
 import { parseGPXAsync } from './workers/gpxWorkerClient';
-import { getToken, isAuthenticated } from './auth';
+// auth is mocked via vi.mock — no direct imports needed
 
 // ── Fixtures ────────────────────────────────────────────────────────────────
 

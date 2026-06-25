@@ -1,7 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-
-const STORAGE_KEY = 'trippy_session_token'
+import { describe, it, expect, beforeEach } from 'vitest'
 
 describe('auth', () => {
   beforeEach(() => {
