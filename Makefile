@@ -1,4 +1,4 @@
-.PHONY: generate build dev test
+.PHONY: generate build dev test clean clean-frontend clean-backend
 
 # Full stack targets
 generate: generate-frontend generate-backend
@@ -29,3 +29,18 @@ build-backend:
 
 test-backend:
 	cd backend && ./mvnw test -q
+
+# Clean targets
+clean-frontend:
+	rm -rf frontend/dist
+	rm -f frontend/node_modules/.tmp/tsconfig.app.tsbuildinfo
+	rm -f frontend/node_modules/.tmp/tsconfig.node.tsbuildinfo
+	rm -rf frontend/src/api
+	echo "cleaned frontend"
+
+clean-backend:
+	rm -rf backend/target
+	echo "cleaned backend"
+
+clean: clean-frontend clean-backend
+	echo "cleaned everything"

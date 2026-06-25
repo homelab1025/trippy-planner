@@ -4,7 +4,7 @@ import type { RouteData } from '../utils/gpxParser';
 vi.mock('../utils/gpxParser', () => ({ parseGPX: vi.fn() }));
 
 // Node test env doesn't have 'self'; alias it to globalThis for the worker import.
-(globalThis as any).self = globalThis;
+(globalThis as unknown as { self: typeof globalThis }).self = globalThis;
 
 const { parseGPX } = await import('../utils/gpxParser');
 const parseGPXMock = vi.mocked(parseGPX);
@@ -13,7 +13,7 @@ const parseGPXMock = vi.mocked(parseGPX);
 await import('./gpxWorker');
 
 const fire = (data: { xml: string; epsilon: number; maxGapMeters: number }) =>
-  (globalThis as any).onmessage({ data });
+  (globalThis as unknown as { onmessage: (ev: { data: unknown }) => void }).onmessage({ data });
 
 const minimalRoute: RouteData = {
   name: 'R',
@@ -28,7 +28,7 @@ describe('gpxWorker onmessage', () => {
 
   beforeEach(() => {
     postMessage = vi.fn();
-    (globalThis as any).postMessage = postMessage;
+    (globalThis as unknown as { postMessage: ReturnType<typeof vi.fn> }).postMessage = postMessage;
     parseGPXMock.mockReset();
   });
 
