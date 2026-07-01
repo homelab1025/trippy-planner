@@ -25,7 +25,7 @@ generate-backend:
 	cd backend && ./mvnw generate-sources -q
 
 build-backend:
-	docker build -t trippy-backend:latest backend/
+	docker build -t trippy-backend:latest -f backend/Dockerfile .
 
 test-backend:
 	cd backend && ./mvnw test -q
