@@ -4,13 +4,7 @@
 
 **Tests MUST run BEFORE building the container image.**
 
-The current Dockerfile (`backend/Dockerfile`) has been updated to skip tests during native image compilation:
-
-```dockerfile
-RUN ./mvnw -Pnative native:compile -q -DskipTests
-```
-
-This is because the GraalVM `native-maven-plugin` runs tests as part of the `native:compile` goal by default. Tests are now skipped in the Docker build step, and will instead be executed as a separate CI job before the image is built.
+The backend Dockerfile runs `mvnw package -DskipTests` — tests are skipped in the Docker build step and must be executed as a separate CI job before the image is built.
 
 ### Build pipeline structure (to be implemented)
 
