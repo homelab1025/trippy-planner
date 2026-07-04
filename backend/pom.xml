@@ -16,7 +16,7 @@
     <version>1.0.0-SNAPSHOT</version>
 
     <properties>
-        <java.version>21</java.version>
+        <java.version>25</java.version>
         <openapi-generator.version>7.23.0</openapi-generator.version>
         <mockito.version>5.17.0</mockito.version>
         <testcontainers.version>2.0.5</testcontainers.version>
@@ -129,11 +129,8 @@
                 </configuration>
             </plugin>
             <plugin>
-                <groupId>org.graalvm.buildtools</groupId>
-                <artifactId>native-maven-plugin</artifactId>
-                <configuration>
-                    <mainClass>com.trippyplanner.TrippyPlannerApplication</mainClass>
-                </configuration>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
             <plugin>
                 <groupId>org.openapitools</groupId>

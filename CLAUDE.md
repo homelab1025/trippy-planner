@@ -25,7 +25,6 @@ cd frontend && npm run generate:api # regenerate TypeScript Axios client from op
 cd backend && ./mvnw spring-boot:run   # start backend at http://localhost:8080
 cd backend && ./mvnw test              # run unit + integration tests
 cd backend && ./mvnw generate-sources  # regenerate Spring interfaces from openapi.yaml
-cd backend && ./mvnw -Pnative native:compile  # build GraalVM native binary
 ```
 
 ### Full stack
@@ -50,7 +49,7 @@ The repo is a monorepo with two sub-projects:
 
   `frontend/src/App.tsx` owns the `route`, `avgSpeed`, `startTime`, and `weatherPoints` state. A `useEffect` re-runs weather fetching whenever any of those change.
 
-- **Backend** (`backend/`) — Java Spring Boot native binary. Generates controller interfaces and model DTOs from `openapi.yaml` at build time. Implements REST endpoints for auth, route persistence, and public sharing.
+- **Backend** (`backend/`) — Java Spring Boot service (JVM, fat JAR). Generates controller interfaces and model DTOs from `openapi.yaml` at build time. Implements REST endpoints for auth, route persistence, and public sharing.
 
 - **API contract** (`openapi.yaml`) — single source of truth. Both frontend and backend generate code from it at build time via `make generate`.
 
