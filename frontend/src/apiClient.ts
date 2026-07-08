@@ -12,6 +12,6 @@ axiosInstance.interceptors.request.use((config) => {
   return config
 })
 
-export const authApi = new AuthApi(undefined, '', axiosInstance)
-export const routesApi = new RoutesApi(undefined, '', axiosInstance)
-export const shareApi = new ShareApi(undefined, '', axiosInstance)
+export const authApi = new AuthApi(undefined, undefined, axiosInstance)
+export const routesApi = new RoutesApi(undefined, undefined, axiosInstance)
+export const shareApi = new ShareApi(undefined, undefined, axiosInstance)
