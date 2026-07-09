@@ -22,7 +22,7 @@ cd frontend && npm run generate:api # regenerate TypeScript Axios client from op
 
 ### Backend (run from `backend/`)
 ```bash
-cd backend && ./mvnw spring-boot:run   # start backend at http://localhost:8080
+cd backend && ./mvnw spring-boot:run -Dspring-boot.run.profiles=local   # start backend at http://localhost:8080
 cd backend && ./mvnw test              # run unit + integration tests
 cd backend && ./mvnw generate-sources  # regenerate Spring interfaces from openapi.yaml
 ```
