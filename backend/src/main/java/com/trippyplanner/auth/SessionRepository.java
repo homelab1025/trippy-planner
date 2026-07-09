@@ -28,6 +28,13 @@ public class SessionRepository {
         return results.stream().findFirst();
     }
 
+    public Optional<String> findValidSessionTokenByUserId(long userId) {
+        List<String> results = jdbc.queryForList(
+            "SELECT token FROM sessions WHERE user_id = ? AND expires_at > now() ORDER BY created_at DESC LIMIT 1",
+            String.class, userId);
+        return results.stream().findFirst();
+    }
+
     public void delete(String token) {
         jdbc.update("DELETE FROM sessions WHERE token = ?", token);
     }

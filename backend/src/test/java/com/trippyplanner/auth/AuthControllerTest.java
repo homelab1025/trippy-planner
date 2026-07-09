@@ -13,6 +13,8 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Optional;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.mockito.Mockito;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -28,9 +30,20 @@ class AuthControllerTest {
     @Autowired
     MockMvc mvc;
 
+    @BeforeEach
+    void setUp() {
+        Mockito.reset(
+            MocksConfig.userRepository,
+            MocksConfig.sessionRepository,
+            MocksConfig.tokenGenerator,
+            MocksConfig.emailService
+        );
+    }
+
     @Test
     void requestMagicLinkReturns204() throws Exception {
         when(MocksConfig.userRepository.findOrCreate("user@example.com")).thenReturn(1L);
+        when(MocksConfig.sessionRepository.findValidSessionTokenByUserId(1L)).thenReturn(Optional.empty());
         when(MocksConfig.tokenGenerator.generate()).thenReturn("generatedtoken12345");
 
         mvc.perform(post("/auth/magic-link")
@@ -39,6 +52,21 @@ class AuthControllerTest {
             .andExpect(status().isNoContent());
 
         verify(MocksConfig.emailService).sendMagicLink("user@example.com", "generatedtoken12345");
+    }
+
+    @Test
+    void requestMagicLinkReusesExistingSession() throws Exception {
+        when(MocksConfig.userRepository.findOrCreate("user@example.com")).thenReturn(1L);
+        when(MocksConfig.sessionRepository.findValidSessionTokenByUserId(1L))
+            .thenReturn(Optional.of("existingtoken67890"));
+
+        mvc.perform(post("/auth/magic-link")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"email\":\"user@example.com\"}"))
+            .andExpect(status().isNoContent());
+
+        verify(MocksConfig.emailService).sendMagicLink("user@example.com", "existingtoken67890");
+        verify(MocksConfig.sessionRepository, never()).save(any(), anyLong(), anyLong());
     }
 
     @Test

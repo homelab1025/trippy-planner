@@ -37,8 +37,13 @@ public class AuthController implements AuthApi {
     @Override
     public ResponseEntity<Void> requestMagicLink(MagicLinkRequest body) {
         long userId = userRepository.findOrCreate(body.getEmail());
-        String token = tokenGenerator.generate();
-        sessionRepository.save(token, userId, sessionExpiryMinutes);
+        String token = sessionRepository
+            .findValidSessionTokenByUserId(userId)
+            .orElseGet(() -> {
+                String newToken = tokenGenerator.generate();
+                sessionRepository.save(newToken, userId, sessionExpiryMinutes);
+                return newToken;
+            });
         emailService.sendMagicLink(body.getEmail(), token);
         return ResponseEntity.noContent().build();
     }

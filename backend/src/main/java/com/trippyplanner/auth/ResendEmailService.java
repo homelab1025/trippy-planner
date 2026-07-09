@@ -30,7 +30,7 @@ public class ResendEmailService {
     public void sendMagicLink(String email, String token) {
         String link = baseUrl + "/auth?token=" + token;
         String body = """
-                {"from":"noreply@trippy.app","to":"%s","subject":"Your Trippy Planner sign-in link","text":"Click to sign in: %s\\n\\nThis link is valid for 30 days."}
+                {"from":"trippy@homelab1025.com","to":"%s","subject":"Your Trippy Planner sign-in link","text":"Click to sign in: %s\\n\\nThis link is valid for 30 days."}
                 """.formatted(email, link);
 
         restClient.post()
