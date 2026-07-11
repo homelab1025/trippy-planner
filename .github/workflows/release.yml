@@ -35,7 +35,7 @@ jobs:
       - name: Compute versions
         id: versions
         run: |
-          CURRENT=$(node -p "require('./package.json').version")
+          CURRENT=$(node -p "require('./frontend/package.json').version")
           if [[ "$CURRENT" != *-SNAPSHOT ]]; then
             echo "ERROR: Expected a SNAPSHOT version, got: $CURRENT" && exit 1
           fi
@@ -60,7 +60,7 @@ jobs:
             --user $(id -u):$(id -g) \
             --env HOME=/tmp \
             -v "${{ github.workspace }}:/app" \
-            -w /app \
+            -w /app/frontend \
             node:24-alpine \
             sh -c "npm ci && npx vitest run"
 
@@ -72,9 +72,9 @@ jobs:
             --ipc=host \
             --security-opt seccomp=unconfined \
             -v "${{ github.workspace }}:/app" \
-            -w /app \
+            -w /app/frontend \
             mcr.microsoft.com/playwright:v1.60.0-noble \
-            bash -c "npm ci && npx playwright test"
+            sh -c "npm ci && npx playwright test"
 
       - name: Log in to the Container registry
         uses: docker/login-action@v4
@@ -83,18 +83,29 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push release Docker image
+      - name: Build and push frontend image
         uses: docker/build-push-action@v7
         with:
-          context: .
+          context: frontend
+          file: frontend/Dockerfile
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.versions.outputs.release }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${{ steps.versions.outputs.release }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:latest
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v7
+        with:
+          context: backend
+          file: backend/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ steps.versions.outputs.release }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:latest
 
       - name: Commit release version and tag
         run: |
-          git add package.json package-lock.json
+          git add frontend/package.json frontend/package-lock.json
           git commit -m "chore: release v${{ steps.versions.outputs.release }}"
           git tag -a "v${{ steps.versions.outputs.release }}" -m "Release v${{ steps.versions.outputs.release }}"
         shell: bash
@@ -105,7 +116,7 @@ jobs:
 
       - name: Commit next development version
         run: |
-          git add package.json package-lock.json
+          git add frontend/package.json frontend/package-lock.json
           git commit -m "chore: prepare for next development iteration ${{ steps.versions.outputs.next }}"
         shell: bash
 
