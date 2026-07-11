@@ -17,7 +17,8 @@ RUN apt-get update \
     procps \
     ripgrep \
   && rm -rf /var/lib/apt/lists/*
-RUN npm install -g --ignore-scripts @earendil-works/pi-coding-agent
+RUN npm install -g --ignore-scripts @earendil-works/pi-coding-agent playwright
+RUN playwright install-deps && playwright install chromium
 
 WORKDIR /workspace
 ENTRYPOINT ["pi"]
