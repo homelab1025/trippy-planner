@@ -1,4 +1,4 @@
-.PHONY: generate build dev test clean clean-frontend clean-backend
+.PHONY: generate build dev test clean clean-frontend clean-backend coverage-backend
 
 # Full stack targets
 generate: generate-frontend generate-backend
@@ -29,6 +29,9 @@ build-backend:
 
 test-backend:
 	cd backend && ./mvnw test -q
+
+coverage-backend:
+	cd backend && ./mvnw test jacoco:report -q
 
 # Clean targets
 clean-frontend:

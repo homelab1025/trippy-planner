@@ -24,6 +24,7 @@ cd frontend && npm run generate:api # regenerate TypeScript Axios client from op
 ```bash
 cd backend && ./mvnw spring-boot:run -Dspring-boot.run.profiles=local   # start backend at http://localhost:8080
 cd backend && ./mvnw test              # run unit + integration tests
+cd backend && ./mvnw test jacoco:report # run tests + generate JaCoCo HTML coverage report (backend/target/site/jacoco/index.html)
 cd backend && ./mvnw generate-sources  # regenerate Spring interfaces from openapi.yaml
 ```
 
