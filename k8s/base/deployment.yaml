@@ -13,7 +13,7 @@ spec:
     spec:
       containers:
       - name: trippy-planner
-        image: trippy-planner:latest
+        image: ghcr.io/homelab1025/trippy-planner-frontend:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 80

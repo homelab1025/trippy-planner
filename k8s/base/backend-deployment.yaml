@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: trippy-backend
-          image: trippy-backend:latest
+          image: ghcr.io/homelab1025/trippy-planner-backend:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
