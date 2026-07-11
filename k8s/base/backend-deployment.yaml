@@ -19,6 +19,40 @@ spec:
           ports:
             - containerPort: 8080
               name: http
-          envFrom:
-            - secretRef:
-                name: trippy-backend-secret
+          env:
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: trippy-db-password
+                  key: username
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: trippy-db-password
+                  key: password
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:postgresql://$(DB_HOST):$(DB_PORT)/$(DB_NAME)"
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: trippy-db-password
+                  key: host
+            - name: DB_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: trippy-db-password
+                  key: port
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: trippy-db-password
+                  key: name
+            - name: RESEND_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: trippy-db-password
+                  key: resend_api_key
+            - name: APP_BASE_URL
+              value: "https://trippy.lab.wicked"
+            - name: SESSION_EXPIRY_MINUTES
+              value: "43200"
