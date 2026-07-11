@@ -6,6 +6,9 @@ resources:
 - ../../base
 
 images:
-- name: trippy-planner
-  newName: ghcr.io/homelab1025/trippy-planner
+- name: ghcr.io/homelab1025/trippy-planner-frontend
+  newName: ghcr.io/homelab1025/trippy-planner-frontend
+  newTag: latest
+- name: ghcr.io/homelab1025/trippy-planner-backend
+  newName: ghcr.io/homelab1025/trippy-planner-backend
   newTag: latest
