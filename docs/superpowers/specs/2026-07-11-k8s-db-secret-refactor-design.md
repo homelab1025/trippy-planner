@@ -10,8 +10,8 @@
 
 ## Global Constraints
 
-- The secret name is `trippy-db-password`, namespace is `trippy-planner`
-- Secret keys: `username`, `password`, `host`, `name`, `port`, `resend_api_key`
+- The secret name is `trippy-secret`, namespace is `trippy-planner`
+- Secret keys: `db.username`, `db.password`, `db.host`, `db.name`, `db.port`, `resend.api_key`
 - `APP_BASE_URL` and `SESSION_EXPIRY_MINUTES` remain non-secret env vars (unchanged)
 - `docker-compose.yml` is unaffected (local dev uses inline env vars)
 - `application.properties` is unaffected (already reads from env vars)
@@ -23,14 +23,14 @@
 
 ### 1. `k8s/base/backend-deployment.yaml`
 
-Add individual `env` entries under the backend container that map keys from `trippy-db-password` to Spring Boot properties:
+Add individual `env` entries under the backend container that map keys from `trippy-secret` to Spring Boot properties:
 
 | Env var | Source |
 |---|---|
-| `SPRING_DATASOURCE_USERNAME` | `secretKeyRef: trippy-db-password → username` |
-| `SPRING_DATASOURCE_PASSWORD` | `secretKeyRef: trippy-db-password → password` |
-| `SPRING_DATASOURCE_URL` | `secretKeyRef: trippy-db-password → host` + `:port/name` (concatenated in the deployment YAML using env var references or a single concatenated value) |
-| `RESEND_API_KEY` | `secretKeyRef: trippy-db-password → resend_api_key` |
+| `SPRING_DATASOURCE_USERNAME` | `secretKeyRef: trippy-secret → db.username` |
+| `SPRING_DATASOURCE_PASSWORD` | `secretKeyRef: trippy-secret → db.password` |
+| `SPRING_DATASOURCE_URL` | `secretKeyRef: trippy-secret → db.host` + `:db.port/db.name` (concatenated in the deployment YAML using env var references or a single concatenated value) |
+| `RESEND_API_KEY` | `secretKeyRef: trippy-secret → resend.api_key` |
 
 `APP_BASE_URL` and `SESSION_EXPIRY_MINUTES` remain as plain `env` entries (as they are today).
 
@@ -61,13 +61,13 @@ No changes. Local dev continues to use hardcoded values.
 ## Data Flow
 
 ```
-trippy-db-password secret (namespace: trippy-planner)
-  ├── username           ──→ SPRING_DATASOURCE_USERNAME
-  ├── password           ──→ SPRING_DATASOURCE_PASSWORD
-  ├── host               ──┐
-  ├── port               ──┼──→ SPRING_DATASOURCE_URL (concatenated)
-  └── name               ──┘
-  └── resend_api_key     ──→ RESEND_API_KEY
+trippy-secret (namespace: trippy-planner)
+  ├── db.username        ──→ SPRING_DATASOURCE_USERNAME
+  ├── db.password        ──→ SPRING_DATASOURCE_PASSWORD
+  ├── db.host            ──┐
+  ├── db.port            ──┼──→ SPRING_DATASOURCE_URL (concatenated)
+  └── db.name            ──┘
+  └── resend.api_key     ──→ RESEND_API_KEY
 ```
 
 ---

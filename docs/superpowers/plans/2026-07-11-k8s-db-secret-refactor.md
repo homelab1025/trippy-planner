@@ -25,7 +25,7 @@
 - Modify: `k8s/base/backend-deployment.yaml`
 
 **Interfaces:**
-- Consumes: `trippy-db-password` secret keys: `username`, `password`, `host`, `port`, `name`, `resend_api_key`
+- Consumes: `trippy-secret` secret keys: `db.username`, `db.password`, `db.host`, `db.port`, `db.name`, `resend.api_key`
 - Produces: Updated env block with `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`, `SPRING_DATASOURCE_URL`, `RESEND_API_KEY` from secret refs, plus `APP_BASE_URL` and `SESSION_EXPIRY_MINUTES` as plain env vars
 
 - [ ] **Step 1: Replace envFrom with individual env entries**
@@ -58,35 +58,35 @@ spec:
             - name: SPRING_DATASOURCE_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: trippy-db-password
-                  key: username
+                  name: trippy-secret
+                  key: db.username
             - name: SPRING_DATASOURCE_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: trippy-db-password
-                  key: password
+                  name: trippy-secret
+                  key: db.password
             - name: SPRING_DATASOURCE_URL
               value: "jdbc:postgresql://$(DB_HOST):$(DB_PORT)/$(DB_NAME)"
             - name: DB_HOST
               valueFrom:
                 secretKeyRef:
-                  name: trippy-db-password
-                  key: host
+                  name: trippy-secret
+                  key: db.host
             - name: DB_PORT
               valueFrom:
                 secretKeyRef:
-                  name: trippy-db-password
-                  key: port
+                  name: trippy-secret
+                  key: db.port
             - name: DB_NAME
               valueFrom:
                 secretKeyRef:
-                  name: trippy-db-password
-                  key: name
+                  name: trippy-secret
+                  key: db.name
             - name: RESEND_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: trippy-db-password
-                  key: resend_api_key
+                  name: trippy-secret
+                  key: resend.api_key
             - name: APP_BASE_URL
               value: "https://trippy.lab.wicked"
             - name: SESSION_EXPIRY_MINUTES
