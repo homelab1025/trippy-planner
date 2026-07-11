@@ -22,7 +22,7 @@ jobs:
             --user $(id -u):$(id -g) \
             --env HOME=/tmp \
             -v "${{ github.workspace }}:/app" \
-            -w /app \
+            -w /app/frontend \
             node:24-alpine \
             sh -c "npm ci && npx vitest run"
 
@@ -40,9 +40,9 @@ jobs:
             --ipc=host \
             --security-opt seccomp=unconfined \
             -v "${{ github.workspace }}:/app" \
-            -w /app \
+            -w /app/frontend \
             mcr.microsoft.com/playwright:v1.60.0-noble \
-            bash -c "npm ci && npx playwright test"
+            sh -c "npm ci && npx playwright test"
 
   build:
     runs-on: self-hosted
@@ -58,7 +58,7 @@ jobs:
       - name: Set Release Version
         id: set_version
         run: |
-          VERSION=$(node -p "require('./package.json').version")
+          VERSION=$(node -p "require('./frontend/package.json').version")
           echo "version=$VERSION" >> $GITHUB_OUTPUT
         shell: bash
 
@@ -69,10 +69,22 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push Docker image
+      - name: Build and push frontend image
         uses: docker/build-push-action@v7
         with:
-          context: .
+          context: frontend
+          file: frontend/Dockerfile
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.set_version.outputs.version }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${{ steps.set_version.outputs.version }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:latest
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v7
+        with:
+          context: backend
+          file: backend/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ steps.set_version.outputs.version }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:latest
