@@ -1,34 +1,47 @@
-.PHONY: generate build dev test clean clean-frontend clean-backend coverage-backend
+.PHONY: generate build dev test clean e2e-test coverage-frontend clean-frontend clean-backend coverage-backend
 
 # Full stack targets
 generate: generate-frontend generate-backend
 
+build: generate
 build: build-frontend build-backend
 
 dev:
 	docker compose up --build
 
+test: generate
 test: test-frontend test-backend
 
 # Frontend targets
 generate-frontend:
-	cd frontend && npm run generate:api
+	cd frontend && npm ci && npm run generate:api
 
+build-frontend: generate-frontend
 build-frontend:
-	docker build -t trippy-frontend:latest frontend/
+	cd frontend && npm ci && docker build -t trippy-frontend:latest frontend/
 
+test-frontend: generate-frontend
 test-frontend:
-	cd frontend && npx vitest run
+	cd frontend && npm ci && npx vitest run
+
+e2e-test:
+	cd frontend && npm ci && npx playwright test
+
+coverage-frontend: generate-frontend
+coverage-frontend:
+	cd frontend && npm ci && npx vitest run --coverage --coverage.provider=v8
 
 # Backend targets
 generate-backend:
-	cd backend && ./mvnw generate-sources -q
+	cd backend && ./mvnw -B dependency:resolve generate-sources -q
 
+build-backend: generate-backend
 build-backend:
-	docker build -t trippy-backend:latest -f backend/Dockerfile .
+	cd backend && ./mvnw -B dependency:resolve && docker build -t trippy-backend:latest -f backend/Dockerfile ..
 
+test-backend: generate-backend
 test-backend:
-	cd backend && ./mvnw test -q
+	cd backend && ./mvnw -B dependency:resolve test -q
 
 coverage-backend:
 	cd backend && ./mvnw test jacoco:report -q
