@@ -55,26 +55,10 @@ jobs:
         shell: bash
 
       - name: Run unit tests
-        run: |
-          docker run --rm \
-            --user $(id -u):$(id -g) \
-            --env HOME=/tmp \
-            -v "${{ github.workspace }}:/app" \
-            -w /app/frontend \
-            node:24-alpine \
-            sh -c "npm ci && npx vitest run"
+        run: make test-frontend
 
       - name: Run E2E tests
-        run: |
-          docker run --rm \
-            --user $(id -u):$(id -g) \
-            --env HOME=/tmp \
-            --ipc=host \
-            --security-opt seccomp=unconfined \
-            -v "${{ github.workspace }}:/app" \
-            -w /app/frontend \
-            mcr.microsoft.com/playwright:v1.60.0-noble \
-            sh -c "npm ci && npx playwright test"
+        run: make e2e-test
 
       - name: Log in to the Container registry
         uses: docker/login-action@v4
@@ -83,7 +67,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push frontend image
+      - name: Build images
+        run: make build
+
+      - name: Push frontend image
         uses: docker/build-push-action@v7
         with:
           context: frontend
@@ -93,7 +80,7 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${{ steps.versions.outputs.release }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:latest
 
-      - name: Build and push backend image
+      - name: Push backend image
         uses: docker/build-push-action@v7
         with:
           context: backend
