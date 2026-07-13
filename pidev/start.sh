@@ -16,11 +16,11 @@ if ! grep -q "^listen_addresses = '\*'" "$PG_CONF" 2>/dev/null; then
 fi
 
 # ── Start PostgreSQL ────────────────────────────────────────────────
-if pg_isready -q 2>/dev/null; then
+if service postgresql status > /dev/null 2>&1; then
   echo "⏭️  PostgreSQL is already running"
 else
   echo "🐘 Starting PostgreSQL..."
-  pg_ctlcluster 17 main start
+  service postgresql start
   sleep 2
   echo "✅ PostgreSQL started on port 5432"
 fi
@@ -40,12 +40,7 @@ echo "✅ Sources generated"
 # ── Start Backend ───────────────────────────────────────────────────
 echo "🚀 Starting backend on :8080/api..."
 cd /workspace/backend
-SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/trippy \
-SPRING_DATASOURCE_USERNAME=trippy \
-SPRING_DATASOURCE_PASSWORD=trippy \
-RESEND_API_KEY=test \
-APP_BASE_URL=http://localhost:5173 \
-./mvnw spring-boot:run > "$LOGDIR/backend.log" 2>&1 &
+./mvnw spring-boot:run -Dspring-boot.run.profiles=local > "$LOGDIR/backend.log" 2>&1 &
 MAVEN_PID=$!
 # Wait a moment for Java child to spawn, then grab it
 sleep 2
