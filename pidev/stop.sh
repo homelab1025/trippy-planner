@@ -86,16 +86,16 @@ if [[ -n "$BACKEND_PID" ]]; then
 fi
 
 # ── Stop PostgreSQL ────────────────────────────────────────────────
-if pg_isready -q 2>/dev/null; then
+if service postgresql status > /dev/null 2>&1; then
   if [[ "$FORCE" -eq 1 ]]; then
     echo "💀 Stopping PostgreSQL (force)..."
-    pg_ctlcluster 17 main stop || true
-    if pg_isready -q 2>/dev/null; then
+    service postgresql stop || true
+    if service postgresql status > /dev/null 2>&1; then
       pkill -9 -x postgres 2>/dev/null || true
     fi
   else
     echo "🛑 Stopping PostgreSQL..."
-    pg_ctlcluster 17 main stop
+    service postgresql stop
   fi
   echo "✅ PostgreSQL stopped"
 else
