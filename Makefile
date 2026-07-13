@@ -24,7 +24,7 @@ test-frontend: generate-frontend
 test-frontend:
 	cd frontend && npm ci && npx vitest run
 
-test-frontend: generate-frontend
+e2e-test: generate-frontend
 e2e-test:
 	cd frontend && npm ci && npx playwright test
 
