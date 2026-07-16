@@ -202,4 +202,87 @@ describe('buildChartData', () => {
     // index-based: t = 0.5 → temp ≈ 50
     expect(mid?.temp).toBeCloseTo(5, 0);
   });
+
+  it('freezes the interpolation model to weatherAvgSpeed/weatherStartTime, ignoring live avgSpeed/startTime edits', () => {
+    // Regression test: when the user edits ride details (speed, date/time) without
+    // pressing Refresh, weatherPoints (the actual fetched data) don't change, so the
+    // interpolated temp/wind/precip curve shouldn't change either — matching how the
+    // wind/precip rows already behave, since they only ever plot the raw sample points.
+    const pts = [
+      { distance: 0, ele: 100 },
+      { distance: 1000, ele: 100 },
+      { distance: 2000, ele: 100 },
+    ];
+    const route = makeRoute(pts);
+    const weatherPoints = [
+      {
+        point: route.points[0],
+        arrivalTime: START,
+        label: '0',
+        temp: 0, precipProb: 0, precipitation: 0, windSpeed: 0, windDeg: 0,
+      },
+      {
+        point: route.points[2],
+        arrivalTime: new Date(START.getTime() + 3_600_000),
+        label: '2',
+        temp: 100, precipProb: 0, precipitation: 0, windSpeed: 0, windDeg: 0,
+      },
+    ];
+
+    // Fetched with avgSpeed=20/START — this is what's frozen into weatherAvgSpeed/weatherStartTime.
+    const fetched = buildChartData({
+      route, weatherPoints, chartWidth: 1000, avgSpeed: 20, startTime: START,
+      weatherAvgSpeed: 20, weatherStartTime: START,
+    });
+
+    // User bumps avgSpeed to 40 and pushes startTime forward without refreshing —
+    // weatherAvgSpeed/weatherStartTime still reflect the last actual fetch (20, START).
+    const edited = buildChartData({
+      route, weatherPoints, chartWidth: 1000, avgSpeed: 40, startTime: new Date(START.getTime() + 3_600_000),
+      weatherAvgSpeed: 20, weatherStartTime: START,
+    });
+
+    const midFetched = fetched.find(p => Math.abs(p.distance - 1) < 0.01);
+    const midEdited = edited.find(p => Math.abs(p.distance - 1) < 0.01);
+    expect(midEdited?.temp).toBeCloseTo(midFetched?.temp ?? NaN, 6);
+  });
+
+  it('re-interpolates once weatherAvgSpeed/weatherStartTime catch up after a refresh', () => {
+    // Once the user presses Refresh, App.tsx re-fetches weatherPoints AND advances
+    // lastFetchedParams, so weatherAvgSpeed/weatherStartTime move to match avgSpeed/startTime
+    // — at that point the curve is expected to change.
+    const pts = [
+      { distance: 0, ele: 100 },
+      { distance: 1000, ele: 100 },
+      { distance: 2000, ele: 100 },
+    ];
+    const route = makeRoute(pts);
+    const weatherPoints = [
+      {
+        point: route.points[0],
+        arrivalTime: START,
+        label: '0',
+        temp: 0, precipProb: 0, precipitation: 0, windSpeed: 0, windDeg: 0,
+      },
+      {
+        point: route.points[2],
+        arrivalTime: new Date(START.getTime() + 3_600_000),
+        label: '2',
+        temp: 100, precipProb: 0, precipitation: 0, windSpeed: 0, windDeg: 0,
+      },
+    ];
+
+    const before = buildChartData({
+      route, weatherPoints, chartWidth: 1000, avgSpeed: 20, startTime: START,
+      weatherAvgSpeed: 20, weatherStartTime: START,
+    });
+    const after = buildChartData({
+      route, weatherPoints, chartWidth: 1000, avgSpeed: 40, startTime: START,
+      weatherAvgSpeed: 40, weatherStartTime: START,
+    });
+
+    const midBefore = before.find(p => Math.abs(p.distance - 1) < 0.01);
+    const midAfter = after.find(p => Math.abs(p.distance - 1) < 0.01);
+    expect(midAfter?.temp).not.toBeCloseTo(midBefore?.temp ?? NaN, 6);
+  });
 });

@@ -30,12 +30,18 @@ export function buildChartData({
   chartWidth,
   avgSpeed,
   startTime,
+  weatherAvgSpeed = avgSpeed,
+  weatherStartTime = startTime,
 }: {
   route: RouteData;
   weatherPoints: WeatherSample[];
   chartWidth: number;
   avgSpeed: number;
   startTime: Date;
+  // avgSpeed/startTime actually used to fetch weatherPoints — may lag behind
+  // the live avgSpeed/startTime while the user edits ride details pre-refresh.
+  weatherAvgSpeed?: number;
+  weatherStartTime?: Date;
 }): ChartDataPoint[] {
   if (!route.points.length) return [];
 
@@ -76,6 +82,13 @@ export function buildChartData({
     .filter(i => i >= 0)
     .sort((a, b) => a - b);
 
+  // Model each intermediate point's expected arrival time from the avgSpeed/startTime
+  // that were actually in effect when weatherPoints was fetched (not the live,
+  // possibly-not-yet-refreshed values) — otherwise editing ride details would
+  // reshape the interpolated weather curve before the user presses Refresh.
+  const modeledTimeAt = (distanceKm: number) =>
+    weatherStartTime.getTime() + (distanceKm * 1000 / (weatherAvgSpeed * 1000)) * 3_600_000;
+
   for (let i = 0; i < sampleIdxs.length - 1; i++) {
     const lo = sampleIdxs[i], hi = sampleIdxs[i + 1];
     const tLo = downsampled[lo].temp,    tHi = downsampled[hi].temp;
@@ -94,8 +107,9 @@ export function buildChartData({
     const uHi = -wsHi * Math.sin(wdHi * Math.PI / 180);
     const vHi = -wsHi * Math.cos(wdHi * Math.PI / 180);
     for (let j = lo + 1; j < hi; j++) {
+      const modelJ = modeledTimeAt(downsampled[j].distance);
       const t = timeHi !== timeLo
-        ? (downsampled[j].time - timeLo) / (timeHi - timeLo)
+        ? (modelJ - timeLo) / (timeHi - timeLo)
         : (j - lo) / (hi - lo);
       downsampled[j].temp          = tLo  + (tHi  - tLo)  * t;
       downsampled[j].precipProb    = ppLo + (ppHi - ppLo) * t;
@@ -117,15 +131,19 @@ export function useWeatherChartData({
   chartWidth,
   avgSpeed,
   startTime,
+  weatherAvgSpeed,
+  weatherStartTime,
 }: {
   route: RouteData | null;
   weatherPoints: WeatherSample[];
   chartWidth: number;
   avgSpeed: number;
   startTime: Date;
+  weatherAvgSpeed?: number;
+  weatherStartTime?: Date;
 }): ChartDataPoint[] {
   return useMemo(
-    () => route ? buildChartData({ route, weatherPoints, chartWidth, avgSpeed, startTime }) : [],
-    [route, weatherPoints, chartWidth, avgSpeed, startTime],
+    () => route ? buildChartData({ route, weatherPoints, chartWidth, avgSpeed, startTime, weatherAvgSpeed, weatherStartTime }) : [],
+    [route, weatherPoints, chartWidth, avgSpeed, startTime, weatherAvgSpeed, weatherStartTime],
   );
 }
