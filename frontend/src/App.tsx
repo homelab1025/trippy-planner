@@ -450,7 +450,7 @@ function App() {
           )}
 
           {user && (
-            <div className={`collapse collapse-arrow bg-base-100 shadow rounded-t-none rounded-b-box border-x border-b border-base-300 ${activePanel === 'routes' ? 'collapse-open' : ''}`}>
+            <div className={`collapse collapse-arrow bg-base-100 shadow rounded-none border-x border-b border-base-300 ${activePanel === 'routes' ? 'collapse-open' : ''}`}>
               <div
                 className="collapse-title text-sm font-medium cursor-pointer"
                 onClick={() => setActivePanel(p => p === 'routes' ? null : 'routes')}
