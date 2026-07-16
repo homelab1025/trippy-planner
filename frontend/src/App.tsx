@@ -51,7 +51,7 @@ function App() {
   const [dpMaxGap, setDpMaxGap] = useState(DP_MAX_GAP_METERS);
   const [parseMetrics, setParseMetrics] = useState<{ totalMs: number; fileSizeKb: number } | null>(null);
   const [weatherDebug, setWeatherDebugState] = useState(false);
-  const [activePanel, setActivePanel] = useState<'ride' | 'tech' | null>('ride');
+  const [activePanel, setActivePanel] = useState<'ride' | 'routes' | 'tech' | null>('ride');
   const [selectedProvider, setSelectedProvider] = useState<WeatherProvider>(DEFAULT_PROVIDER);
   const [chartWidth, setChartWidth] = useState(800);
   const [lastFetchedParams, setLastFetchedParams] = useState<{
@@ -193,6 +193,19 @@ function App() {
     }
   }, []);
 
+  const loadRouteFromGpxText = useCallback(async (gpxContent: string, speed: number, start: Date) => {
+    setRawGpxContent(gpxContent);
+    const parsedRoute = await parseGPXAsync(gpxContent, dpEpsilon, dpMaxGap);
+    setRoute(parsedRoute);
+    setWeatherLoading(true);
+    try {
+      const success = await updateWeather(parsedRoute, speed, start, selectedProvider);
+      if (success) setLastFetchedParams({ avgSpeed: speed, startTime: start, selectedProvider });
+    } finally {
+      setWeatherLoading(false);
+    }
+  }, [dpEpsilon, dpMaxGap, selectedProvider, updateWeather]);
+
   const handleRefreshWeather = useCallback(async () => {
     if (!route) return;
     setWeatherLoading(true);
@@ -234,15 +247,18 @@ function App() {
       shareApi.getSharedRoute(shareToken)
         .then(res => {
           const data = res.data;
+          const speed = data.avgSpeedKmh as number;
+          const start = new Date(data.startTime as string);
           setIsViewingShared(true);
-          setRawGpxContent(data.gpxContent as string);
-          setAvgSpeed(data.avgSpeedKmh as number);
-          setStartTime(new Date(data.startTime as string));
+          setAvgSpeed(speed);
+          setStartTime(start);
+          loadRouteFromGpxText(data.gpxContent as string, speed, start);
         })
         .catch(() => {
           // Token invalid or route made private — let user upload
         });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally runs once on mount
   }, []);
 
   const onHoverIndex = useCallback((index: number | null) => {
@@ -434,15 +450,22 @@ function App() {
           )}
 
           {user && (
-            <div className="collapse collapse-arrow bg-base-100 shadow rounded-t-none rounded-b-box border-x border-b border-base-300">
-              <div className="collapse-title text-sm font-medium">My routes</div>
+            <div className={`collapse collapse-arrow bg-base-100 shadow rounded-t-none rounded-b-box border-x border-b border-base-300 ${activePanel === 'routes' ? 'collapse-open' : ''}`}>
+              <div
+                className="collapse-title text-sm font-medium cursor-pointer"
+                onClick={() => setActivePanel(p => p === 'routes' ? null : 'routes')}
+              >
+                My routes
+              </div>
               <div className="collapse-content">
                 <MyRoutesPanel
                   onLoadRoute={(gpxContent, avgSpeedKmh, startTime) => {
-                    setRawGpxContent(gpxContent)
+                    const start = new Date(startTime)
                     setAvgSpeed(avgSpeedKmh)
-                    setStartTime(new Date(startTime))
+                    setStartTime(start)
+                    loadRouteFromGpxText(gpxContent, avgSpeedKmh, start)
                   }}
+                  refreshKey={savedRouteId ?? undefined}
                 />
               </div>
             </div>

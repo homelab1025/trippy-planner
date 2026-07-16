@@ -4,17 +4,23 @@ import type { RouteListItem } from '../api'
 
 interface Props {
   onLoadRoute: (gpxContent: string, avgSpeedKmh: number, startTime: string) => void
+  refreshKey?: string
 }
 
-export function MyRoutesPanel({ onLoadRoute }: Props) {
+const NOT_FETCHED = Symbol('not-fetched')
+
+export function MyRoutesPanel({ onLoadRoute, refreshKey }: Props) {
   const [routes, setRoutes] = useState<RouteListItem[]>([])
-  const [loading, setLoading] = useState(true)
+  const [fetchedFor, setFetchedFor] = useState<string | typeof NOT_FETCHED | undefined>(NOT_FETCHED)
+  const loading = fetchedFor !== refreshKey
 
   useEffect(() => {
+    let cancelled = false
     routesApi.listRoutes()
-      .then(res => setRoutes(res.data))
-      .finally(() => setLoading(false))
-  }, [])
+      .then(res => { if (!cancelled) setRoutes(res.data) })
+      .finally(() => { if (!cancelled) setFetchedFor(refreshKey) })
+    return () => { cancelled = true }
+  }, [refreshKey])
 
   async function handleClick(id: string, avgSpeedKmh: number, startTime: string) {
     const res = await routesApi.getRoute(id)
