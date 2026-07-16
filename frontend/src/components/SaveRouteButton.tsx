@@ -40,13 +40,13 @@ export function SaveRouteButton({ isAuthenticated, routeData, onSaved }: Props) 
       <div className="flex flex-col gap-2">
         <input
           type="email"
-          className="input input-bordered input-sm"
+          className="input input-bordered input-sm w-full"
           placeholder="Your email address"
           value={email}
           onChange={e => setEmail(e.target.value)}
         />
         <button
-          className="btn btn-primary btn-sm"
+          className="btn btn-primary btn-sm w-full"
           onClick={handleSendLink}
           disabled={state === 'sending'}
         >
@@ -58,7 +58,7 @@ export function SaveRouteButton({ isAuthenticated, routeData, onSaved }: Props) 
 
   return (
     <button
-      className="btn btn-primary btn-sm"
+      className="btn btn-primary btn-sm w-full"
       onClick={handleSave}
       disabled={state === 'saving'}
     >
