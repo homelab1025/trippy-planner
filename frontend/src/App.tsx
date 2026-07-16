@@ -435,26 +435,36 @@ function App() {
             </div>
           </div>
 
-          {route && rawGpxContent && !isViewingShared && (
-            <SaveRouteButton
-              isAuthenticated={isAuthenticated()}
-              routeData={{
-                name: route.name ?? 'My Route',
-                gpxContent: rawGpxContent,
-                avgSpeedKmh: avgSpeed,
-                startTime: startTime.toISOString(),
-              }}
-              onSaved={(id) => setSavedRouteId(id)}
-            />
-          )}
+          {((route && rawGpxContent && !isViewingShared) || (user && savedRouteId && !isViewingShared)) && (
+            <div className="bg-base-100 shadow rounded-none border-x border-b border-base-300 p-4">
+              <div className="flex gap-2">
+                {route && rawGpxContent && !isViewingShared && (
+                  <div className="flex-1">
+                    <SaveRouteButton
+                      isAuthenticated={isAuthenticated()}
+                      routeData={{
+                        name: route.name ?? 'My Route',
+                        gpxContent: rawGpxContent,
+                        avgSpeedKmh: avgSpeed,
+                        startTime: startTime.toISOString(),
+                      }}
+                      onSaved={(id) => setSavedRouteId(id)}
+                    />
+                  </div>
+                )}
 
-          {user && savedRouteId && !isViewingShared && (
-            <ShareToggle
-              routeId={savedRouteId}
-              isPublic={false}
-              shareToken={null}
-              baseUrl={window.location.origin}
-            />
+                {user && savedRouteId && !isViewingShared && (
+                  <div className="flex-1">
+                    <ShareToggle
+                      routeId={savedRouteId}
+                      isPublic={false}
+                      shareToken={null}
+                      baseUrl={window.location.origin}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
           )}
 
           {user && (

@@ -40,11 +40,11 @@ export function ShareToggle({ routeId, isPublic, shareToken, baseUrl }: Props) {
         </div>
       )}
       {isShared ? (
-        <button className="btn btn-outline btn-xs" onClick={handleUnshare}>
+        <button className="btn btn-outline btn-sm w-full" onClick={handleUnshare}>
           Stop sharing
         </button>
       ) : (
-        <button className="btn btn-outline btn-xs" onClick={handleShare}>
+        <button className="btn btn-outline btn-sm w-full" onClick={handleShare}>
           Share
         </button>
       )}
