@@ -72,7 +72,15 @@ function App() {
     [route]
   );
 
-  const chartData = useWeatherChartData({ route, weatherPoints, chartWidth, avgSpeed, startTime });
+  const chartData = useWeatherChartData({
+    route,
+    weatherPoints,
+    chartWidth,
+    avgSpeed,
+    startTime,
+    weatherAvgSpeed: lastFetchedParams?.avgSpeed,
+    weatherStartTime: lastFetchedParams?.startTime,
+  });
 
   const elevationData = useMemo(
     () => chartData.map(({ distance, elevation, temp }) => ({ distance, elevation, temp })),
