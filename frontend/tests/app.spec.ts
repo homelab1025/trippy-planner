@@ -134,7 +134,7 @@ test('version remains in Tech Details after GPX upload', async ({ page }) => {
 test('uploading a route-only GPX shows a route-specific error message', async ({ page }) => {
   await page.goto('/');
   const dialogPromise = page.waitForEvent('dialog');
-  await page.setInputFiles('input[type="file"]', 'samples/fells_loop.gpx');
+  await page.setInputFiles('input[type="file"]', '../samples/fells_loop.gpx');
   const dialog = await dialogPromise;
   expect(dialog.message()).toContain('This GPX file contains a route, not a recorded track.');
   await dialog.dismiss();
