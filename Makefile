@@ -18,7 +18,7 @@ generate-frontend:
 
 build-frontend: generate-frontend
 build-frontend:
-	cd frontend && npm ci && docker build -t trippy-frontend:latest frontend/
+	cd frontend && npm ci && docker build -t trippy-frontend:latest .
 
 test-frontend: generate-frontend
 test-frontend:
