@@ -47,7 +47,7 @@ generate-backend:
 
 build-backend: generate-backend
 build-backend:
-	cd backend && ./mvnw -B dependency:resolve && docker build -t trippy-backend:latest -f backend/Dockerfile ..
+	cd backend && ./mvnw -B dependency:resolve && docker build -t trippy-backend:latest -f Dockerfile ..
 
 test-backend: generate-backend
 test-backend:
