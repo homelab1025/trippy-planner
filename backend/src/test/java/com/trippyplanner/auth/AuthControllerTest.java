@@ -94,7 +94,7 @@ class AuthControllerTest {
         static UserRepository userRepository;
         static SessionRepository sessionRepository;
         static TokenGenerator tokenGenerator;
-        static ResendEmailService emailService;
+        static EmailService emailService;
 
         @Bean
         UserRepository userRepository() {
@@ -115,8 +115,8 @@ class AuthControllerTest {
         }
 
         @Bean
-        ResendEmailService emailService() {
-            emailService = mock(ResendEmailService.class);
+        EmailService emailService() {
+            emailService = mock(EmailService.class);
             return emailService;
         }
     }

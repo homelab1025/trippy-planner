@@ -26,7 +26,16 @@ test-frontend:
 
 e2e-test: generate-frontend
 e2e-test:
-	cd frontend && npm ci && npx playwright test
+	docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --build --wait backend; \
+	up_status=$$?; \
+	if [ $$up_status -ne 0 ]; then \
+		docker compose -f docker-compose.yml -f docker-compose.e2e.yml down; \
+		exit $$up_status; \
+	fi; \
+	(cd frontend && npm ci && PLAYWRIGHT_HTML_OPEN=never npx playwright test); \
+	status=$$?; \
+	docker compose -f docker-compose.yml -f docker-compose.e2e.yml down; \
+	exit $$status
 
 coverage-frontend: generate-frontend
 coverage-frontend:

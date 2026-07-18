@@ -1,0 +1,4 @@
+services:
+  backend:
+    environment:
+      SPRING_PROFILES_ACTIVE: e2e
