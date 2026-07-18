@@ -15,7 +15,7 @@ public class AuthController implements AuthApi {
     private final UserRepository userRepository;
     private final SessionRepository sessionRepository;
     private final TokenGenerator tokenGenerator;
-    private final ResendEmailService emailService;
+    private final EmailService emailService;
     private final HttpServletRequest request;
     private final long sessionExpiryMinutes;
 
@@ -23,7 +23,7 @@ public class AuthController implements AuthApi {
             UserRepository userRepository,
             SessionRepository sessionRepository,
             TokenGenerator tokenGenerator,
-            ResendEmailService emailService,
+            EmailService emailService,
             HttpServletRequest request,
             @Value("${app.session-expiry-minutes:43200}") long sessionExpiryMinutes) {
         this.userRepository = userRepository;

@@ -25,9 +25,10 @@ async function cleanRoutes(page: Page): Promise<void> {
 test.describe('My Routes panel', () => {
   test.describe.configure({ mode: 'serial' });
   test.beforeEach(async ({ page }) => {
-    // Create a fresh session directly in the DB (bypasses the real magic-link
-    // email flow) and pre-set it so the app thinks the user is logged in
-    const token = createAuthenticatedSession();
+    // Create a fresh session via the real magic-link flow (backend runs the
+    // e2e profile, whose InMemoryEmailService captures the token instead of
+    // emailing it) and pre-set it so the app thinks the user is logged in
+    const token = await createAuthenticatedSession();
     await page.context().addInitScript((sessionToken) => {
       localStorage.setItem('trippy_session_token', sessionToken);
     }, token);
