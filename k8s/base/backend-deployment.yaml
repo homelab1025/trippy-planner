@@ -30,8 +30,6 @@ spec:
                 secretKeyRef:
                   name: trippy-secret
                   key: db.password
-            - name: SPRING_DATASOURCE_URL
-              value: "jdbc:postgresql://$(DB_HOST):$(DB_PORT)/$(DB_NAME)"
             - name: DB_HOST
               valueFrom:
                 secretKeyRef:
@@ -47,6 +45,8 @@ spec:
                 secretKeyRef:
                   name: trippy-secret
                   key: db.name
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:postgresql://$(DB_HOST):$(DB_PORT)/$(DB_NAME)"
             - name: RESEND_API_KEY
               valueFrom:
                 secretKeyRef:
