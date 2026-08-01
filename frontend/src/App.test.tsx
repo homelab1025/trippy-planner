@@ -129,6 +129,13 @@ vi.mock('./components/HoverPane', () => ({
 
 vi.mock('./assets/logo.png', () => ({ default: 'logo.png' }));
 
+// App persists the working route to real localStorage (see routeStorage.ts). Clear it
+// before every test regardless of describe block, so one test's upload doesn't get
+// rehydrated on mount by a later, unrelated test.
+beforeEach(() => {
+  localStorage.clear();
+});
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 async function uploadFile() {
