@@ -273,15 +273,11 @@ function App() {
     } else {
       const stored = loadStoredRoute();
       if (stored) {
-        // Deferred to a microtask so the state updates below don't run
-        // synchronously within the effect body (react-hooks/set-state-in-effect);
-        // mirrors the share-route branch above, which is async for the same reason.
-        Promise.resolve().then(() => {
-          const start = new Date(stored.startTime);
-          setAvgSpeed(stored.avgSpeedKmh);
-          setStartTime(start);
-          loadRouteFromGpxText(stored.gpxContent, stored.avgSpeedKmh, start);
-        });
+        const start = new Date(stored.startTime);
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time mount initialization from localStorage, not a prop-sync pattern
+        setAvgSpeed(stored.avgSpeedKmh);
+        setStartTime(start);
+        loadRouteFromGpxText(stored.gpxContent, stored.avgSpeedKmh, start);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally runs once on mount
