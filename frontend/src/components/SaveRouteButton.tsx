@@ -1,59 +1,28 @@
-import { useState } from 'react'
-import { authApi, routesApi } from '../apiClient'
-import type { CreateRouteRequest } from '../api'
+import { useState } from 'react';
+import { routesApi } from '../apiClient';
+import type { CreateRouteRequest } from '../api';
 
 interface Props {
-  isAuthenticated: boolean
-  routeData: CreateRouteRequest
-  onSaved: (routeId: string) => void
+  isAuthenticated: boolean;
+  routeData: CreateRouteRequest;
+  onSaved: (routeId: string) => void;
+  onRequireAuth: () => void;
 }
 
-type State = 'idle' | 'email-prompt' | 'sending' | 'sent' | 'saving'
+type State = 'idle' | 'saving';
 
-export function SaveRouteButton({ isAuthenticated, routeData, onSaved }: Props) {
-  const [state, setState] = useState<State>('idle')
-  const [email, setEmail] = useState('')
+export function SaveRouteButton({ isAuthenticated, routeData, onSaved, onRequireAuth }: Props) {
+  const [state, setState] = useState<State>('idle');
 
   async function handleSave() {
-    if (isAuthenticated) {
-      setState('saving')
-      const res = await routesApi.createRoute(routeData)
-      onSaved(res.data.id as string)
-      setState('idle')
-    } else {
-      setState('email-prompt')
+    if (!isAuthenticated) {
+      onRequireAuth();
+      return;
     }
-  }
-
-  async function handleSendLink() {
-    setState('sending')
-    await authApi.requestMagicLink({ email })
-    setState('sent')
-  }
-
-  if (state === 'sent') {
-    return <p className="text-sm text-success">Check your email for a sign-in link.</p>
-  }
-
-  if (state === 'email-prompt' || state === 'sending') {
-    return (
-      <div className="flex flex-col gap-2">
-        <input
-          type="email"
-          className="input input-bordered input-sm w-full"
-          placeholder="Your email address"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-        />
-        <button
-          className="btn btn-primary btn-sm w-full"
-          onClick={handleSendLink}
-          disabled={state === 'sending'}
-        >
-          {state === 'sending' ? 'Sending…' : 'Send link'}
-        </button>
-      </div>
-    )
+    setState('saving');
+    const res = await routesApi.createRoute(routeData);
+    onSaved(res.data.id as string);
+    setState('idle');
   }
 
   return (
@@ -64,5 +33,5 @@ export function SaveRouteButton({ isAuthenticated, routeData, onSaved }: Props) 
     >
       {state === 'saving' ? 'Saving…' : 'Save route'}
     </button>
-  )
+  );
 }
