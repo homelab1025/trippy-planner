@@ -8,6 +8,7 @@ import { parseGPXAsync } from './workers/gpxWorkerClient';
 import type { RouteData, RoutePoint } from './utils/gpxParser';
 import { DP_EPSILON_METERS, DP_MAX_GAP_METERS } from './utils/douglasPeucker';
 import { detectClimbs } from './utils/climbDetector';
+import { loadStoredRoute, saveStoredRoute } from './services/routeStorage';
 import { PROVIDERS, DEFAULT_PROVIDER, setWeatherDebug } from './services/weatherProviders';
 import type { WeatherProvider, WeatherRequest } from './services/weatherProviders';
 import { MapComponent } from './components/MapComponent';
@@ -252,7 +253,9 @@ function App() {
     }
 
     const pathParts = window.location.pathname.split('/');
-    if (pathParts[1] === 'share' && pathParts[2]) {
+    const isSharePath = pathParts[1] === 'share' && !!pathParts[2];
+
+    if (isSharePath) {
       const shareToken = pathParts[2];
       shareApi.getSharedRoute(shareToken)
         .then(res => {
@@ -267,9 +270,35 @@ function App() {
         .catch(() => {
           // Token invalid or route made private — let user upload
         });
+    } else {
+      const stored = loadStoredRoute();
+      if (stored) {
+        // Deferred to a microtask so the state updates below don't run
+        // synchronously within the effect body (react-hooks/set-state-in-effect);
+        // mirrors the share-route branch above, which is async for the same reason.
+        Promise.resolve().then(() => {
+          const start = new Date(stored.startTime);
+          setAvgSpeed(stored.avgSpeedKmh);
+          setStartTime(start);
+          loadRouteFromGpxText(stored.gpxContent, stored.avgSpeedKmh, start);
+        });
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally runs once on mount
   }, []);
+
+  // Mirror the working route to localStorage so it survives a full-page reload
+  // (e.g. the one triggered by clicking a magic-link email — see #44).
+  React.useEffect(() => {
+    if (isViewingShared) return;
+    if (!route || !rawGpxContent) return;
+    saveStoredRoute({
+      name: route.name ?? 'My Route',
+      gpxContent: rawGpxContent,
+      avgSpeedKmh: avgSpeed,
+      startTime: startTime.toISOString(),
+    });
+  }, [route, rawGpxContent, avgSpeed, startTime, isViewingShared]);
 
   const onHoverIndex = useCallback((index: number | null) => {
     setHoveredIndex(index);
