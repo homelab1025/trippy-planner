@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { authApi } from '../apiClient';
 
 interface Props {
@@ -11,13 +11,15 @@ type State = 'idle' | 'sending' | 'sent';
 export function SignInPanel({ open, onClose }: Props) {
   const [state, setState] = useState<State>('idle');
   const [email, setEmail] = useState('');
+  const [prevOpen, setPrevOpen] = useState(open);
 
-  useEffect(() => {
+  if (open !== prevOpen) {
+    setPrevOpen(open);
     if (open) {
       setState('idle');
       setEmail('');
     }
-  }, [open]);
+  }
 
   if (!open) return null;
 
