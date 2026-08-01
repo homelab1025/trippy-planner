@@ -12,6 +12,7 @@ import { PROVIDERS, DEFAULT_PROVIDER, setWeatherDebug } from './services/weather
 import type { WeatherProvider, WeatherRequest } from './services/weatherProviders';
 import { MapComponent } from './components/MapComponent';
 import { SaveRouteButton } from './components/SaveRouteButton';
+import { SignInPanel } from './components/SignInPanel';
 import { MyRoutesPanel } from './components/MyRoutesPanel';
 import { ShareToggle } from './components/ShareToggle';
 import { shareApi } from './apiClient';
@@ -64,6 +65,7 @@ function App() {
   const [rawGpxContent, setRawGpxContent] = useState<string | null>(null);
   const [savedRouteId, setSavedRouteId] = useState<string | null>(null);
   const [isViewingShared, setIsViewingShared] = useState(false);
+  const [signInOpen, setSignInOpen] = useState(false);
 
   const buildDate = format(new Date(__BUILD_DATE__), 'd MMM yyyy HH:mm');
 
@@ -292,6 +294,7 @@ function App() {
 
   return (
     <div className="flex flex-col h-screen overflow-y-auto max-w-[1400px] mx-auto p-3 sm:p-6 gap-4 sm:gap-6">
+      <SignInPanel open={signInOpen} onClose={() => setSignInOpen(false)} />
 
       {/* Navbar with logo overlapping its bottom-left edge on lg+; inline on mobile */}
       <div className="relative flex-shrink-0">
@@ -309,6 +312,7 @@ function App() {
                 clearToken()
                 setUser(null)
               }}
+              onSignIn={() => setSignInOpen(true)}
             />
           </div>
         {route && (
@@ -449,6 +453,7 @@ function App() {
                         startTime: startTime.toISOString(),
                       }}
                       onSaved={(id) => setSavedRouteId(id)}
+                      onRequireAuth={() => setSignInOpen(true)}
                     />
                   </div>
                 )}
