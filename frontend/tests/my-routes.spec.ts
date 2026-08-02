@@ -106,7 +106,10 @@ test.describe('My Routes panel', () => {
     await page.getByRole('button', { name: 'Save route' }).click();
     await page.waitForTimeout(500);
 
-    // Reload to clear in-memory route state — nothing should be loaded now
+    // Clear the locally-persisted route, then reload — nothing should be loaded now.
+    // (Without this, the reload would restore the just-saved route from
+    // localStorage instead of leaving a blank slate — see #44.)
+    await page.evaluate(() => localStorage.removeItem('trippy_current_route'));
     await page.reload();
     await page.waitForTimeout(1000);
     await expect(page.locator('.header-stats')).toHaveCount(0);
