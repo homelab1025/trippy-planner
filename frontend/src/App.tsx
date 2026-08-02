@@ -8,7 +8,7 @@ import { parseGPXAsync } from './workers/gpxWorkerClient';
 import type { RouteData, RoutePoint } from './utils/gpxParser';
 import { DP_EPSILON_METERS, DP_MAX_GAP_METERS } from './utils/douglasPeucker';
 import { detectClimbs } from './utils/climbDetector';
-import { loadStoredRoute, saveStoredRoute } from './services/routeStorage';
+import { loadStoredRoute, saveStoredRoute, clearStoredRoute } from './services/routeStorage';
 import { PROVIDERS, DEFAULT_PROVIDER, setWeatherDebug } from './services/weatherProviders';
 import type { WeatherProvider, WeatherRequest } from './services/weatherProviders';
 import { MapComponent } from './components/MapComponent';
@@ -277,7 +277,8 @@ function App() {
         // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time mount initialization from localStorage, not a prop-sync pattern
         setAvgSpeed(stored.avgSpeedKmh);
         setStartTime(start);
-        loadRouteFromGpxText(stored.gpxContent, stored.avgSpeedKmh, start);
+        loadRouteFromGpxText(stored.gpxContent, stored.avgSpeedKmh, start)
+          .catch(() => clearStoredRoute());
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally runs once on mount
