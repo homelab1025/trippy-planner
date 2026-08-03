@@ -53,6 +53,6 @@ spec:
                   name: trippy-secret
                   key: resend.api_key
             - name: APP_BASE_URL
-              value: "https://trippy.lab.wicked"
+              value: "https://trippy.homelab1025.com"
             - name: SESSION_EXPIRY_MINUTES
               value: "43200"
