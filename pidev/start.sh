@@ -8,6 +8,14 @@ PG_CONF="/etc/postgresql/17/main/postgresql.conf"
 mkdir -p "$LOGDIR"
 rm -f "$PIDFILE"
 
+# ── Alias "postgres" to localhost, matching the docker-compose service
+#    name, so application-local.properties resolves the same hostname
+#    under both pidev and `make dev` ───────────────────────────────────
+if ! grep -q "[[:space:]]postgres$" /etc/hosts 2>/dev/null; then
+  echo "127.0.0.1 postgres" >> /etc/hosts
+  echo "✅ Aliased 'postgres' to 127.0.0.1 in /etc/hosts"
+fi
+
 # ── Ensure PostgreSQL listens on all interfaces ─────────────────────
 if ! grep -q "^listen_addresses = '\*'" "$PG_CONF" 2>/dev/null; then
   sed -i "s/^#listen_addresses = .*/listen_addresses = '*'/" "$PG_CONF"
