@@ -11,6 +11,19 @@ fi
 echo "🛑 Shutting down Trippy Planner..."
 echo ""
 
+# ── Helper: recursively collect a PID and all its descendants ───────
+# pgrep has no recursive-descent flag on either BSD or GNU/Linux (`-r`
+# means `--runstates` on GNU pgrep, not recursion), so walk the tree
+# by hand.
+collect_tree() {
+  local pid="$1"
+  echo "$pid"
+  local child
+  for child in $(pgrep -P "$pid" 2>/dev/null); do
+    collect_tree "$child"
+  done
+}
+
 # ── Helper: stop a PID tree gracefully or forcefully ────────────────
 stop_tree() {
   local name="$1"
@@ -23,10 +36,7 @@ stop_tree() {
 
   # Gather the entire process tree
   local tree
-  tree=$(pgrep -P "$pid" -r 2>/dev/null || true)
-  if [[ -n "$tree" ]]; then
-    tree="$pid $tree"
-  fi
+  tree=$(collect_tree "$pid")
 
   if [[ "$FORCE" -eq 1 ]]; then
     echo "💀 Killing $name (PID $pid)..."
