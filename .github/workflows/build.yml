@@ -39,10 +39,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Set Release Version
-        id: set_version
+      - name: Set frontend version
+        id: frontend_version
         run: |
           VERSION=$(node -p "require('./frontend/package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Set backend version
+        id: backend_version
+        working-directory: backend
+        run: |
+          VERSION=$(./mvnw -q help:evaluate -Dexpression=project.version -DforceStdout)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
         shell: bash
 
@@ -63,7 +71,7 @@ jobs:
           file: frontend/Dockerfile
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${{ steps.set_version.outputs.version }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${{ steps.frontend_version.outputs.version }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:latest
 
       - name: Push backend image
@@ -73,5 +81,5 @@ jobs:
           file: backend/Dockerfile
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ steps.set_version.outputs.version }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ steps.backend_version.outputs.version }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:latest
