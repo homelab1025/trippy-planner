@@ -1,0 +1,77 @@
+name: 'Release component image'
+description: 'Bump a component version, run docker build+push, and commit the release + next-SNAPSHOT versions'
+
+inputs:
+  component:
+    required: true
+    description: 'frontend or backend'
+  release_version:
+    required: true
+  next_version:
+    required: true
+  bump_release_cmd:
+    required: true
+    description: 'Shell command (run from repo root) that sets the version file to release_version'
+  bump_next_cmd:
+    required: true
+    description: 'Shell command (run from repo root) that sets the version file to next_version'
+  version_file_paths:
+    required: true
+    description: 'Space-separated paths to git add after each bump'
+  dockerfile:
+    required: true
+  docker_context:
+    required: true
+  image_suffix:
+    required: true
+  registry:
+    required: true
+  image_name:
+    required: true
+  github_token:
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Bump to release version
+      shell: bash
+      run: ${{ inputs.bump_release_cmd }}
+
+    - name: Log in to the Container registry
+      uses: docker/login-action@v4
+      with:
+        registry: ${{ inputs.registry }}
+        username: ${{ github.actor }}
+        password: ${{ inputs.github_token }}
+
+    - name: Build and push image
+      uses: docker/build-push-action@v7
+      with:
+        context: ${{ inputs.docker_context }}
+        file: ${{ inputs.dockerfile }}
+        push: true
+        tags: |
+          ${{ inputs.registry }}/${{ inputs.image_name }}-${{ inputs.image_suffix }}:${{ inputs.release_version }}
+          ${{ inputs.registry }}/${{ inputs.image_name }}-${{ inputs.image_suffix }}:latest
+
+    - name: Commit release version and tag
+      shell: bash
+      run: |
+        git add ${{ inputs.version_file_paths }}
+        git commit -m "chore(${{ inputs.component }}): release v${{ inputs.release_version }}"
+        git tag -a "${{ inputs.component }}-v${{ inputs.release_version }}" -m "Release ${{ inputs.component }} v${{ inputs.release_version }}"
+
+    - name: Bump to next SNAPSHOT
+      shell: bash
+      run: ${{ inputs.bump_next_cmd }}
+
+    - name: Commit next development version
+      shell: bash
+      run: |
+        git add ${{ inputs.version_file_paths }}
+        git commit -m "chore(${{ inputs.component }}): prepare for next development iteration ${{ inputs.next_version }}"
+
+    - name: Push commits and tag
+      shell: bash
+      run: git push origin HEAD "${{ inputs.component }}-v${{ inputs.release_version }}"
