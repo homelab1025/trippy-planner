@@ -18,13 +18,17 @@ A route weather planner for cyclists and hikers. Upload a GPX file, set your sta
 - a wind arrow row and a precipitation bar row are rendered below the chart, aligned to the same distance axis
 - when hovering over the chart, a side pane shows the time (clock or elapsed), distance, elevation, temperature, wind speed, and precipitation probability + amount at that point
 
+## Versioning
+
+Frontend and backend are versioned and released independently — each has its own semantic version (`frontend/package.json`, `backend/pom.xml`) and follows the standard SNAPSHOT convention: the version on `master` always carries a `-SNAPSHOT` suffix between releases. There's no shared "app version"; releasing a backend fix doesn't bump or re-release the frontend, and vice versa.
+
+A release is triggered manually via the `Release Frontend` or `Release Backend` GitHub Actions workflow (`workflow_dispatch`, with a `bump_type` input of `major`/`minor`/`patch`). Each strips the `-SNAPSHOT` suffix, runs that component's tests, builds and pushes its Docker image tagged with both the release version and `latest`, tags the commit (`frontend-vX.Y.Z` / `backend-vX.Y.Z`), then bumps to the next `-SNAPSHOT` version for continued development.
+
 ## TODO
 
 - **Deduplicate Open-Meteo requests for nearby points.** Each weather sample point fires a separate API call. Open-Meteo returns the full hourly forecast for a location, so two sample points that are geographically close could share the same response. Implement a cache keyed on a rounded lat/lng grid (e.g. 0.1° resolution) and reuse the cached response instead of making a duplicate request.
 
-- **Debounce weather refetch on input changes.** Changing `avgSpeed` or `startTime` immediately triggers 11 parallel API calls per keystroke. Add a ~500ms debounce to the `useEffect` in `App.tsx`.
-
-- **Cancel in-flight weather requests when inputs change.** Stale responses can race and overwrite newer results. Pass an `AbortSignal` through 
+- **Cancel in-flight weather requests when refreshing the race parameters.** Stale responses can race and overwrite newer results. Pass an `AbortSignal` through 
  `weatherService.ts` and abort the previous batch whenever a new fetch starts.
 
 
