@@ -67,7 +67,6 @@ jobs:
           component: frontend
           release_version: ${{ steps.versions.outputs.release }}
           next_version: ${{ steps.versions.outputs.next }}
-          bump_release_cmd: "true"
           bump_next_cmd: cd frontend && npm version ${{ steps.versions.outputs.next }} --no-git-tag-version --allow-same-version
           version_file_paths: frontend/package.json frontend/package-lock.json
           dockerfile: frontend/Dockerfile

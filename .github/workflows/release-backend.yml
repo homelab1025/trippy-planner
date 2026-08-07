@@ -68,7 +68,6 @@ jobs:
           component: backend
           release_version: ${{ steps.versions.outputs.release }}
           next_version: ${{ steps.versions.outputs.next }}
-          bump_release_cmd: "true"
           bump_next_cmd: cd backend && ./mvnw -q versions:set -DnewVersion=${{ steps.versions.outputs.next }} -DgenerateBackupPoms=false
           version_file_paths: backend/pom.xml
           dockerfile: backend/Dockerfile
