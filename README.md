@@ -8,8 +8,9 @@ A route weather planner for cyclists and hikers. Upload a GPX file, set your sta
 - **Interactive map** — the full route is drawn on a map; hovering over the timeline moves a crosshair on the map to the corresponding position along the route
 - **Route stats** — distance and elevation gain are shown after loading a file; a Tech Details panel shows the original and decimated point counts
 - **Configurable ride parameters** — set your average speed (km/h) and planned start date/time to calculate when you'll reach each point
-- **Real weather data** — uses the Open-Meteo free API (no API key required); samples 11 evenly-spaced points along the route and fetches hourly forecasts for each, based on your calculated arrival time
+- **Real weather data** — uses the Open-Meteo free API (no API key required); samples the route roughly every 5 km (at least 11 points, so short routes are still covered) and fetches hourly forecasts for each point, based on your calculated arrival time
 - **7-day forecast window** — the date picker is capped at today + 7 days, matching Open-Meteo's forecast horizon
+- **Accounts and route sharing** — sign in with a passwordless magic-link email to save routes to your account; saved routes can be reloaded from the "My routes" panel, and any saved route can be made publicly viewable via a shareable `/share/:token` link that works without the viewer signing in
 
 ### Timeline
 

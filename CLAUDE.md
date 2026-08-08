@@ -40,17 +40,19 @@ make test       # run all tests
 
 The repo is a monorepo with two sub-projects:
 
-- **Frontend** (`frontend/`) — Vite/React/TypeScript SPA. All application state lives in `frontend/src/App.tsx` — no global state library. The three main concerns are:
+- **Frontend** (`frontend/`) — Vite/React/TypeScript SPA. All application state lives in `frontend/src/App.tsx` — no global state library. The main concerns are:
 
-  1. **GPX parsing** (`frontend/src/utils/gpxParser.ts`) — wraps the `gpxparser` library, returns `RouteData` with cumulative distance per point in meters.
+  1. **GPX parsing** (`frontend/src/utils/gpxParser.ts`) — parses the raw XML with `fast-xml-parser` (not the `gpxparser` npm package, which was removed because it depends on `window.DOMParser` and can't run in a Web Worker), returning `RouteData` with cumulative distance per point in meters. Parsing runs off the main thread via `frontend/src/workers/gpxWorker.ts` (invoked through `gpxWorkerClient.ts`), then the route is decimated with Douglas-Peucker (`utils/douglasPeucker.ts`).
 
-  2. **Weather fetching** (`frontend/src/services/weatherService.ts`) — calls Open-Meteo's free API (no key required). Samples 11 evenly-spaced points along the route, calculates each point's arrival time from `avgSpeed` + `startTime`, then fetches hourly forecasts. Falls back to a synthetic mock when the API returns no match for the hour. Open-Meteo only provides a 7-day forecast window, so the date picker is capped at today + 7 days.
+  2. **Weather fetching** (`frontend/src/services/weatherProviders/`) — a small provider abstraction (`types.ts`, `index.ts`) with an Open-Meteo implementation (`openMeteo.ts`, no key required) and a not-yet-available self-hosted provider stub (`selfHosted.ts`) selectable from the Tech Details panel. Samples points roughly every 5 km along the route (minimum 11 points on short routes), calculates each point's arrival time from `avgSpeed` + `startTime`, then fetches hourly forecasts. A failed or out-of-range lookup now returns `null` per point (no synthetic mock fallback) and the UI shows an "unavailable" message instead. Open-Meteo only provides a 7-day forecast window, so the date picker is capped at today + 7 days.
 
-  3. **Display** — `frontend/src/components/MapComponent.tsx` renders the route polyline and a hover crosshair via `react-leaflet`; `frontend/src/components/ElevationChart.tsx` renders an elevation + temperature overlay chart via `recharts`, with `WindArrowRow.tsx` and `PrecipBarRow.tsx` below it on the same distance axis.
+  3. **Display** — `frontend/src/components/MapComponent.tsx` renders the route polyline and a hover crosshair via `react-leaflet`; `frontend/src/components/ElevationChart.tsx` renders an elevation + temperature overlay chart via `recharts` (with detected climbs from `utils/climbDetector.ts` overlaid), with `WindArrowRow.tsx` and `PrecipBarRow.tsx` below it on the same distance axis.
+
+  4. **Accounts, saved routes, and sharing** — `auth.ts` stores the session token in `localStorage`; `apiClient.ts` wraps the generated auth/routes/share API clients. `SignInPanel.tsx` drives the magic-link sign-in flow, `SaveRouteButton.tsx` and `MyRoutesPanel.tsx` handle saving/reloading routes, and `ShareToggle.tsx` manages public share links. `routeStorage.ts` mirrors the current working route to `localStorage` so it survives a full page reload.
 
   `frontend/src/App.tsx` owns the `route`, `avgSpeed`, `startTime`, and `weatherPoints` state. A `useEffect` re-runs weather fetching whenever any of those change.
 
-- **Backend** (`backend/`) — Java Spring Boot service (JVM, fat JAR). Generates controller interfaces and model DTOs from `openapi.yaml` at build time. Implements REST endpoints for auth, route persistence, and public sharing.
+- **Backend** (`backend/`) — Java Spring Boot service (JVM, fat JAR). Generates controller interfaces and model DTOs from `openapi.yaml` at build time. Implements REST endpoints for auth (`AuthController`), route persistence (`RoutesController`), and public sharing (`ShareController`).
 
 - **API contract** (`openapi.yaml`) — single source of truth. Both frontend and backend generate code from it at build time via `make generate`.
 
@@ -59,8 +61,7 @@ The repo is a monorepo with two sub-projects:
 ## Key constraints
 
 - Functionality described in the "Features" chapter of the README.md file must always be kept. If they need to be changed due to changes that the developer asks for, then explain to him what would change and ask whether to continue
-- Leaflet requires its CSS imported inside the component file and a manual icon fix (default marker images break with Vite's asset hashing — see `frontend/src/components/MapComponent.tsx:11-17`).
-- `gpxparser` types the cumulative distance field as `any` — cast is necessary at `frontend/src/utils/gpxParser.ts:31`.
+- Leaflet requires its CSS imported inside the component file (`frontend/src/components/MapComponent.tsx`). Route/hover markers use `react-leaflet`'s `CircleMarker` (vector-drawn), not the default `Marker` icon, so there's no default-marker-image/Vite-asset-hashing fix needed here.
 - Playwright tests run against the live dev server on port 5173. The `webServer` config in `frontend/playwright.config.ts` starts it automatically but reuses an existing server if one is already running.
 - Generated code (`frontend/src/api/`, `backend/target/`) is gitignored and must be regenerated from `openapi.yaml` before building.
 
