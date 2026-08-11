@@ -64,6 +64,7 @@ function App() {
 
   const [user, setUser] = useState<{ id: number; email: string } | null>(null);
   const [rawGpxContent, setRawGpxContent] = useState<string | null>(null);
+  const [routeName, setRouteName] = useState('');
   const [savedRouteId, setSavedRouteId] = useState<string | null>(null);
   const [isViewingShared, setIsViewingShared] = useState(false);
   const [signInOpen, setSignInOpen] = useState(false);
@@ -144,6 +145,8 @@ function App() {
       setParseMetrics({ totalMs: measure.duration, fileSizeKb });
       setRawGpxContent(text);
       setRoute(parsedRoute);
+      setRouteName(parsedRoute.name);
+      setSavedRouteId(null);
       setWeatherLoading(true);
       const success = await updateWeather(parsedRoute, avgSpeed, startTime, selectedProvider);
       if (success) setLastFetchedParams({ avgSpeed, startTime, selectedProvider });
@@ -265,6 +268,7 @@ function App() {
           setIsViewingShared(true);
           setAvgSpeed(speed);
           setStartTime(start);
+          setRouteName(data.name as string);
           loadRouteFromGpxText(data.gpxContent as string, speed, start);
         })
         .catch(() => {
@@ -277,6 +281,8 @@ function App() {
         // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time mount initialization from localStorage, not a prop-sync pattern
         setAvgSpeed(stored.avgSpeedKmh);
         setStartTime(start);
+        setRouteName(stored.name);
+        setSavedRouteId(stored.id ?? null);
         loadRouteFromGpxText(stored.gpxContent, stored.avgSpeedKmh, start)
           .catch(() => clearStoredRoute());
       }
@@ -290,12 +296,13 @@ function App() {
     if (isViewingShared) return;
     if (!route || !rawGpxContent) return;
     saveStoredRoute({
-      name: route.name ?? 'My Route',
+      name: routeName,
       gpxContent: rawGpxContent,
       avgSpeedKmh: avgSpeed,
       startTime: startTime.toISOString(),
+      id: savedRouteId ?? undefined,
     });
-  }, [route, rawGpxContent, avgSpeed, startTime, isViewingShared]);
+  }, [route, rawGpxContent, avgSpeed, startTime, isViewingShared, routeName, savedRouteId]);
 
   const onHoverIndex = useCallback((index: number | null) => {
     setHoveredIndex(index);
@@ -343,7 +350,7 @@ function App() {
           </div>
         {route && (
           <div className="header-stats hidden md:flex flex-1 text-center text-sm opacity-90 px-4">
-            {route.name}: {(route.totalDistance / 1000).toFixed(1)} km · {Math.round(route.totalElevationGain)} m of character-building
+            {routeName}: {(route.totalDistance / 1000).toFixed(1)} km · {Math.round(route.totalElevationGain)} m of character-building
           </div>
         )}
         {isViewingShared && (
@@ -467,25 +474,25 @@ function App() {
 
           {((route && rawGpxContent && !isViewingShared) || (user && savedRouteId && !isViewingShared)) && (
             <div className="bg-base-100 shadow rounded-none border-x border-b border-base-300 p-4">
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2">
                 {route && rawGpxContent && !isViewingShared && (
-                  <div className="flex-1">
-                    <SaveRouteButton
-                      isAuthenticated={isAuthenticated()}
-                      routeData={{
-                        name: route.name ?? 'My Route',
-                        gpxContent: rawGpxContent,
-                        avgSpeedKmh: avgSpeed,
-                        startTime: startTime.toISOString(),
-                      }}
-                      onSaved={(id) => setSavedRouteId(id)}
-                      onRequireAuth={() => setSignInOpen(true)}
-                    />
-                  </div>
+                  <SaveRouteButton
+                    isAuthenticated={isAuthenticated()}
+                    name={routeName}
+                    onNameChange={setRouteName}
+                    routeData={{
+                      gpxContent: rawGpxContent,
+                      avgSpeedKmh: avgSpeed,
+                      startTime: startTime.toISOString(),
+                    }}
+                    savedRouteId={savedRouteId}
+                    onSaved={(id) => setSavedRouteId(id)}
+                    onRequireAuth={() => setSignInOpen(true)}
+                  />
                 )}
 
                 {user && savedRouteId && !isViewingShared && (
-                  <div className="flex-1">
+                  <div>
                     <ShareToggle
                       routeId={savedRouteId}
                       isPublic={false}
@@ -506,12 +513,14 @@ function App() {
               >
                 My routes
               </div>
-              <div className="collapse-content">
+              <div className="collapse-content overflow-hidden">
                 <MyRoutesPanel
-                  onLoadRoute={(gpxContent, avgSpeedKmh, startTime) => {
+                  onLoadRoute={(gpxContent, avgSpeedKmh, startTime, id, name) => {
                     const start = new Date(startTime)
                     setAvgSpeed(avgSpeedKmh)
                     setStartTime(start)
+                    setRouteName(name)
+                    setSavedRouteId(id)
                     loadRouteFromGpxText(gpxContent, avgSpeedKmh, start)
                   }}
                   refreshKey={savedRouteId ?? undefined}
