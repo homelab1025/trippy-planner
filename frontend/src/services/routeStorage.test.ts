@@ -22,6 +22,11 @@ describe('routeStorage', () => {
     expect(loadStoredRoute()).toEqual(sampleRoute);
   });
 
+  it('round-trips the saved route id when present', () => {
+    saveStoredRoute({ ...sampleRoute, id: 'route-123' });
+    expect(loadStoredRoute()).toEqual({ ...sampleRoute, id: 'route-123' });
+  });
+
   it('returns null and clears the key when the stored value is corrupted JSON', () => {
     localStorage.setItem('trippy_current_route', 'not-json{');
     expect(loadStoredRoute()).toBeNull();

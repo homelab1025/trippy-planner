@@ -115,10 +115,11 @@ test.describe('My Routes panel', () => {
     await expect(page.locator('.header-stats')).toHaveCount(0);
     await expect(page.getByText('Upload a GPX file to see your route')).toBeVisible();
 
-    // Open My Routes and click the saved route
+    // Open My Routes and click the saved route (not its "Duplicate" action button,
+    // whose accessible name also contains the route name — .first() picks the load button)
     await page.getByText('My routes').click();
     await page.waitForTimeout(500);
-    await page.getByRole('button', { name: /Sample Ride/ }).click();
+    await page.getByRole('button', { name: /Sample Ride/ }).first().click();
     await page.waitForTimeout(1000);
 
     // The route must actually load onto the map/chart, not just stay a list entry

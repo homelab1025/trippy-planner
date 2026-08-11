@@ -45,7 +45,12 @@ vi.mock('./auth', () => ({
 
 vi.mock('./apiClient', () => ({
   authApi: { getMe: vi.fn() },
-  routesApi: {},
+  routesApi: {
+    createRoute: vi.fn(),
+    updateRoute: vi.fn(),
+    listRoutes: vi.fn(),
+    getRoute: vi.fn(),
+  },
   shareApi: { getSharedRoute: vi.fn() },
 }));
 
@@ -385,5 +390,86 @@ describe('public route view', () => {
     await waitFor(() => {
       expect(screen.getByText(/viewing a shared route/i)).toBeInTheDocument()
     })
+  })
+})
+
+describe('save / update lifecycle', () => {
+  beforeEach(() => {
+    window.history.replaceState({}, '', '/')
+    vi.clearAllMocks()
+    vi.mocked(parseGPXAsync).mockResolvedValue(mockRoute)
+    vi.mocked(DEFAULT_PROVIDER.fetchWeather).mockResolvedValue(new Map([[0, mockWeather]]))
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    cleanup()
+  })
+
+  async function renderAuthenticated() {
+    const { isAuthenticated } = await import('./auth')
+    const { authApi, routesApi } = await import('./apiClient')
+    vi.mocked(isAuthenticated).mockReturnValue(true)
+    vi.mocked(authApi.getMe).mockResolvedValue({ data: { id: 1, email: 'a@b.com' } })
+    vi.mocked(routesApi.listRoutes).mockResolvedValue({ data: [] })
+    return routesApi
+  }
+
+  it('a freshly uploaded route offers no "Save as new" option even after a previous route was saved', async () => {
+    const routesApi = await renderAuthenticated()
+    vi.mocked(routesApi.createRoute).mockResolvedValue({ data: { id: 'saved-1' } })
+
+    render(<App />)
+    await uploadFile()
+    await waitFor(() => screen.getByRole('button', { name: /save route/i }))
+
+    fireEvent.click(screen.getByRole('button', { name: /save route/i }))
+    await waitFor(() => expect(screen.getByRole('button', { name: /save as new/i })).toBeInTheDocument())
+
+    // Uploading a different GPX file starts a brand new, unsaved route
+    vi.mocked(parseGPXAsync).mockResolvedValue({ ...mockRoute, name: 'Second Route' })
+    await uploadFile()
+
+    await waitFor(() => expect(screen.getByRole('button', { name: /save route/i })).toBeInTheDocument())
+    expect(screen.queryByRole('button', { name: /save as new/i })).not.toBeInTheDocument()
+  })
+
+  it('re-saving an already-saved route updates it instead of creating a duplicate', async () => {
+    const routesApi = await renderAuthenticated()
+    vi.mocked(routesApi.createRoute).mockResolvedValue({ data: { id: 'saved-1' } })
+    vi.mocked(routesApi.updateRoute).mockResolvedValue({ data: { id: 'saved-1' } })
+
+    render(<App />)
+    await uploadFile()
+    await waitFor(() => screen.getByRole('button', { name: /save route/i }))
+    fireEvent.click(screen.getByRole('button', { name: /save route/i }))
+    await waitFor(() => expect(routesApi.createRoute).toHaveBeenCalledTimes(1))
+
+    fireEvent.click(await screen.findByRole('button', { name: /^save$/i }))
+
+    await waitFor(() => expect(routesApi.updateRoute).toHaveBeenCalledWith('saved-1', expect.any(Object)))
+    expect(routesApi.createRoute).toHaveBeenCalledTimes(1)
+  })
+
+  it('loading a route from My Routes tracks its id so Save updates it, and shows its name', async () => {
+    const routesApi = await renderAuthenticated()
+    vi.mocked(routesApi.listRoutes).mockResolvedValue({
+      data: [{ id: 'route-9', name: 'Alpine Loop', avgSpeedKmh: 18, isPublic: false,
+        startTime: '2026-06-17T08:00:00Z', createdAt: '2026-06-17T08:00:00Z' }],
+    })
+    vi.mocked(routesApi.getRoute).mockResolvedValue({
+      data: { id: 'route-9', name: 'Alpine Loop', gpxContent: '<gpx/>', avgSpeedKmh: 18,
+        startTime: '2026-06-17T08:00:00Z', isPublic: false, createdAt: '2026-06-17T08:00:00Z' },
+    })
+    vi.mocked(routesApi.updateRoute).mockResolvedValue({ data: { id: 'route-9' } })
+
+    render(<App />)
+    await waitFor(() => screen.getByText('Alpine Loop'))
+    fireEvent.click(screen.getByText('Alpine Loop'))
+
+    fireEvent.click(await screen.findByRole('button', { name: /^save$/i }))
+
+    await waitFor(() => expect(routesApi.updateRoute).toHaveBeenCalledWith('route-9', expect.objectContaining({ name: 'Alpine Loop' })))
+    expect(routesApi.createRoute).not.toHaveBeenCalled()
   })
 })

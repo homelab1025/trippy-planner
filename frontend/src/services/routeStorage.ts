@@ -5,6 +5,7 @@ export interface StoredRoute {
   gpxContent: string;
   avgSpeedKmh: number;
   startTime: string;
+  id?: string;
 }
 
 export function loadStoredRoute(): StoredRoute | null {
