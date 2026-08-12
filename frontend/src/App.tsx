@@ -66,6 +66,7 @@ function App() {
   const [rawGpxContent, setRawGpxContent] = useState<string | null>(null);
   const [routeName, setRouteName] = useState('');
   const [savedRouteId, setSavedRouteId] = useState<string | null>(null);
+  const [routesRefreshToken, setRoutesRefreshToken] = useState(0);
   const [isViewingShared, setIsViewingShared] = useState(false);
   const [signInOpen, setSignInOpen] = useState(false);
 
@@ -486,7 +487,7 @@ function App() {
                       startTime: startTime.toISOString(),
                     }}
                     savedRouteId={savedRouteId}
-                    onSaved={(id) => setSavedRouteId(id)}
+                    onSaved={(id) => { setSavedRouteId(id); setRoutesRefreshToken(t => t + 1) }}
                     onRequireAuth={() => setSignInOpen(true)}
                   />
                 )}
@@ -523,7 +524,7 @@ function App() {
                     setSavedRouteId(id)
                     loadRouteFromGpxText(gpxContent, avgSpeedKmh, start)
                   }}
-                  refreshKey={savedRouteId ?? undefined}
+                  refreshKey={savedRouteId ? `${savedRouteId}:${routesRefreshToken}` : undefined}
                 />
               </div>
             </div>

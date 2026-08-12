@@ -472,4 +472,29 @@ describe('save / update lifecycle', () => {
     await waitFor(() => expect(routesApi.updateRoute).toHaveBeenCalledWith('route-9', expect.objectContaining({ name: 'Alpine Loop' })))
     expect(routesApi.createRoute).not.toHaveBeenCalled()
   })
+
+  it('saving a renamed route refreshes the My Routes list', async () => {
+    const routesApi = await renderAuthenticated()
+    vi.mocked(routesApi.createRoute).mockResolvedValue({ data: { id: 'saved-1' } })
+    vi.mocked(routesApi.updateRoute).mockResolvedValue({ data: { id: 'saved-1' } })
+    const listItem = { id: 'saved-1', avgSpeedKmh: 20, isPublic: false, startTime: '2026-06-17T08:00:00Z', createdAt: '2026-06-17T08:00:00Z' }
+    vi.mocked(routesApi.listRoutes)
+      .mockResolvedValueOnce({ data: [] }) // before the route is ever saved
+      .mockResolvedValueOnce({ data: [{ ...listItem, name: 'Test Route' }] }) // right after create
+      .mockResolvedValueOnce({ data: [{ ...listItem, name: 'Renamed Route' }] }) // right after the rename is saved
+
+    render(<App />)
+    await uploadFile()
+    await waitFor(() => screen.getByRole('button', { name: /save route/i }))
+    fireEvent.click(screen.getByRole('button', { name: /save route/i }))
+    await waitFor(() => expect(routesApi.createRoute).toHaveBeenCalledTimes(1))
+    await screen.findByText('Test Route') // My Routes list picked up the create
+
+    fireEvent.change(screen.getByLabelText(/route name/i), { target: { value: 'Renamed Route' } })
+    fireEvent.click(await screen.findByRole('button', { name: /^save$/i }))
+
+    await waitFor(() => expect(routesApi.updateRoute).toHaveBeenCalledWith('saved-1', expect.objectContaining({ name: 'Renamed Route' })))
+    await screen.findByText('Renamed Route') // My Routes list picked up the rename
+    expect(screen.queryByText('Test Route')).not.toBeInTheDocument()
+  })
 })
