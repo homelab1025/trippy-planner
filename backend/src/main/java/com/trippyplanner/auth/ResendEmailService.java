@@ -8,30 +8,30 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
 @Service
-@Profile("!e2e")
+@Profile({"!e2e & !local"})
 public class ResendEmailService implements EmailService {
     private final String apiKey;
-    private final String baseUrl;
+    private final MagicLinkUrlBuilder magicLinkUrlBuilder;
     private final RestClient restClient;
 
     @Autowired
     public ResendEmailService(
             @Value("${resend.api-key}") String apiKey,
-            @Value("${app.base-url}") String baseUrl) {
+            MagicLinkUrlBuilder magicLinkUrlBuilder) {
         this.apiKey = apiKey;
-        this.baseUrl = baseUrl;
+        this.magicLinkUrlBuilder = magicLinkUrlBuilder;
         this.restClient = RestClient.builder().build();
     }
 
-    public ResendEmailService(String apiKey, String baseUrl, RestClient restClient) {
+    public ResendEmailService(String apiKey, MagicLinkUrlBuilder magicLinkUrlBuilder, RestClient restClient) {
         this.apiKey = apiKey;
-        this.baseUrl = baseUrl;
+        this.magicLinkUrlBuilder = magicLinkUrlBuilder;
         this.restClient = restClient;
     }
 
     @Override
     public void sendMagicLink(String email, String token) {
-        String link = baseUrl + "/auth?token=" + token;
+        String link = magicLinkUrlBuilder.build(token);
         String body = """
                 {"from":"trippy@homelab1025.com","to":"%s","subject":"Your Trippy Planner sign-in link","text":"Click to sign in: %s\\n\\nThis link is valid for 30 days."}
                 """.formatted(email, link);

@@ -14,7 +14,8 @@ class ResendEmailServiceTest {
     @Test
     void createsServiceWithRestClient() {
         RestClient restClient = mock(RestClient.class);
-        var service = new ResendEmailService("re_test_key", "http://localhost:5173", restClient);
+        var magicLinkUrlBuilder = new MagicLinkUrlBuilder("http://localhost:5173");
+        var service = new ResendEmailService("re_test_key", magicLinkUrlBuilder, restClient);
         assertThat(service).isNotNull();
     }
 }
