@@ -50,7 +50,10 @@ describe('MyRoutesPanel', () => {
   })
 
   it('duplicates a route with a "(copy)" suffix without loading it, and refreshes the list', async () => {
-    mocks.listRoutes.mockResolvedValue({ data: sampleItems })
+    const duplicatedItem = { ...sampleItems[0], id: 'uuid-2', name: 'Alpine Loop (copy)' }
+    mocks.listRoutes
+      .mockResolvedValueOnce({ data: sampleItems }) // initial mount
+      .mockResolvedValueOnce({ data: [...sampleItems, duplicatedItem] }) // after duplicate
     mocks.getRoute.mockResolvedValue({ data: { ...sampleItems[0], gpxContent: '<gpx/>' } })
     mocks.createRoute.mockResolvedValue({ data: { id: 'uuid-2' } })
 
@@ -69,9 +72,7 @@ describe('MyRoutesPanel', () => {
       })
     })
     expect(onLoadRoute).not.toHaveBeenCalled()
-    await waitFor(() => {
-      expect(mocks.listRoutes).toHaveBeenCalledTimes(2)
-    })
+    await screen.findByText('Alpine Loop (copy)') // the list now shows the duplicate
   })
 
   it('shows the full name as a tooltip on the truncated route name', async () => {
