@@ -636,11 +636,11 @@ function App() {
               </label>
 
               <div className="divider my-0" />
-              <div className="text-sm font-semibold">v{__APP_VERSION__}</div>
+              <div className="text-sm font-semibold">Frontend v{__APP_VERSION__}</div>
               <div className="text-xs text-base-content/50">{buildDate}</div>
               {backendVersion && (
                 <>
-                  <div className="text-sm font-semibold">v{backendVersion.version}</div>
+                  <div className="text-sm font-semibold">Backend v{backendVersion.version}</div>
                   <div className="text-xs text-base-content/50">
                     {format(new Date(backendVersion.buildTime), 'd MMM yyyy HH:mm')}
                   </div>
