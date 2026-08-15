@@ -52,6 +52,7 @@ vi.mock('./apiClient', () => ({
     getRoute: vi.fn(),
   },
   shareApi: { getSharedRoute: vi.fn() },
+  versionApi: { getVersion: vi.fn(() => Promise.resolve({ data: undefined })) },
 }));
 
 vi.mock('./services/weatherProviders', () => {
@@ -496,5 +497,44 @@ describe('save / update lifecycle', () => {
     await waitFor(() => expect(routesApi.updateRoute).toHaveBeenCalledWith('saved-1', expect.objectContaining({ name: 'Renamed Route' })))
     await screen.findByText('Renamed Route') // My Routes list picked up the rename
     expect(screen.queryByText('Test Route')).not.toBeInTheDocument()
+  })
+})
+
+describe('backend version display', () => {
+  beforeEach(() => {
+    window.history.replaceState({}, '', '/')
+  })
+
+  afterEach(() => {
+    cleanup()
+  })
+
+  it('shows the backend version and build time under the frontend version', async () => {
+    const { versionApi } = await import('./apiClient')
+    vi.mocked(versionApi.getVersion).mockResolvedValue({
+      data: { version: '2.2.0', buildTime: '2026-08-15T12:00:00Z' },
+    })
+
+    render(<App />)
+    fireEvent.click(screen.getByText('Tech Details'))
+
+    await waitFor(() => {
+      expect(screen.getByText('v2.2.0')).toBeInTheDocument()
+    })
+  })
+
+  it('shows nothing for the backend version when the fetch fails', async () => {
+    const { versionApi } = await import('./apiClient')
+    vi.mocked(versionApi.getVersion).mockRejectedValue(new Error('network error'))
+
+    render(<App />)
+    fireEvent.click(screen.getByText('Tech Details'))
+
+    await waitFor(() => {
+      expect(versionApi.getVersion).toHaveBeenCalled()
+    })
+    // Only the frontend's own version line should render — the backend
+    // one is conditional on a successful fetch, with no fallback text.
+    expect(screen.queryAllByText(/^v\d+\.\d+\.\d+/)).toHaveLength(1)
   })
 })
