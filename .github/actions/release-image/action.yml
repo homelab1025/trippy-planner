@@ -67,4 +67,4 @@ runs:
 
     - name: Push commits and tag
       shell: bash
-      run: git push origin HEAD "${{ inputs.component }}-v${{ inputs.release_version }}"
+      run: git push --atomic origin HEAD "${{ inputs.component }}-v${{ inputs.release_version }}"
