@@ -63,6 +63,17 @@ class SecurityFilterTest {
     }
 
     @Test
+    void allowsVersionWithoutAuth() throws Exception {
+        var req = new MockHttpServletRequest("GET", "/api/version");
+        var res = new MockHttpServletResponse();
+        var chain = new MockFilterChain();
+
+        filter.doFilter(req, res, chain);
+
+        assertThat(chain.getRequest()).isNotNull();
+    }
+
+    @Test
     void allowsActuatorHealthFromLocalhost() throws Exception {
         var req = new MockHttpServletRequest("GET", "/api/actuator/health");
         req.addHeader("Host", "localhost:8080");
