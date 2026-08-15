@@ -17,6 +17,7 @@ import { SignInPanel } from './components/SignInPanel';
 import { MyRoutesPanel } from './components/MyRoutesPanel';
 import { ShareToggle } from './components/ShareToggle';
 import { shareApi } from './apiClient';
+import { versionApi } from './apiClient';
 import { AuthHeader } from './components/AuthHeader';
 import { ElevationChart } from './components/ElevationChart';
 import { HoverPane } from './components/HoverPane';
@@ -63,6 +64,7 @@ function App() {
   } | null>(null);
 
   const [user, setUser] = useState<{ id: number; email: string } | null>(null);
+  const [backendVersion, setBackendVersion] = useState<{ version: string; buildTime: string } | null>(null);
   const [rawGpxContent, setRawGpxContent] = useState<string | null>(null);
   const [routeName, setRouteName] = useState('');
   const [savedRouteId, setSavedRouteId] = useState<string | null>(null);
@@ -255,6 +257,10 @@ function App() {
           setUser(null);
         });
     }
+
+    versionApi.getVersion()
+      .then(res => setBackendVersion(res.data))
+      .catch(() => setBackendVersion(null));
 
     const pathParts = window.location.pathname.split('/');
     const isSharePath = pathParts[1] === 'share' && !!pathParts[2];
@@ -632,6 +638,14 @@ function App() {
               <div className="divider my-0" />
               <div className="text-sm font-semibold">v{__APP_VERSION__}</div>
               <div className="text-xs text-base-content/50">{buildDate}</div>
+              {backendVersion && (
+                <>
+                  <div className="text-sm font-semibold">v{backendVersion.version}</div>
+                  <div className="text-xs text-base-content/50">
+                    {format(new Date(backendVersion.buildTime), 'd MMM yyyy HH:mm')}
+                  </div>
+                </>
+              )}
 
             </div>
           </div>
