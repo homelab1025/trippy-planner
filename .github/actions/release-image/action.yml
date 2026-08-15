@@ -68,3 +68,20 @@ runs:
     - name: Push commits and tag
       shell: bash
       run: git push --atomic origin HEAD "${{ inputs.component }}-v${{ inputs.release_version }}"
+
+    - name: Create GitHub Release
+      shell: bash
+      run: |
+        COMPONENT="${{ inputs.component }}"
+        COMPONENT_TITLE="$(echo "$COMPONENT" | awk '{print toupper(substr($0,1,1)) substr($0,2)}')"
+        TAG="${COMPONENT}-v${{ inputs.release_version }}"
+        # Auto-detected previous-release notes span all components' releases by
+        # creation date, so resolve the last release for this component explicitly.
+        PREV_TAG="$(gh release list --limit 100 --json tagName -q '.[].tagName' | grep "^${COMPONENT}-v" | head -1 || true)"
+        if [[ -n "$PREV_TAG" ]]; then
+          gh release create "$TAG" --title "${COMPONENT_TITLE} v${{ inputs.release_version }}" --generate-notes --notes-start-tag "$PREV_TAG"
+        else
+          gh release create "$TAG" --title "${COMPONENT_TITLE} v${{ inputs.release_version }}" --generate-notes
+        fi
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
