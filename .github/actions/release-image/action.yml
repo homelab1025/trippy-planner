@@ -48,10 +48,21 @@ runs:
           ${{ inputs.registry }}/${{ inputs.image_name }}-${{ inputs.image_suffix }}:${{ inputs.release_version }}
           ${{ inputs.registry }}/${{ inputs.image_name }}-${{ inputs.image_suffix }}:latest
 
+    - name: Pin prod kustomization to release version
+      shell: bash
+      run: |
+        IMAGE="${{ inputs.registry }}/${{ inputs.image_name }}-${{ inputs.image_suffix }}"
+        awk -v img="$IMAGE" -v ver="${{ inputs.release_version }}" '
+          $0 ~ ("name: " img "$") { inblock=1 }
+          inblock && /newTag:/ { sub(/newTag:.*/, "newTag: \"" ver "\""); inblock=0 }
+          { print }
+        ' k8s/overlays/prod/kustomization.yaml > k8s/overlays/prod/kustomization.yaml.tmp
+        mv k8s/overlays/prod/kustomization.yaml.tmp k8s/overlays/prod/kustomization.yaml
+
     - name: Commit release version and tag
       shell: bash
       run: |
-        git add ${{ inputs.version_file_paths }}
+        git add ${{ inputs.version_file_paths }} k8s/overlays/prod/kustomization.yaml
         git commit -m "chore(${{ inputs.component }}): release v${{ inputs.release_version }}"
         git tag -a "${{ inputs.component }}-v${{ inputs.release_version }}" -m "Release ${{ inputs.component }} v${{ inputs.release_version }}"
 
