@@ -98,6 +98,16 @@ components:
         shareToken:
           type: string
 
+    VersionInfo:
+      type: object
+      required: [version, buildTime]
+      properties:
+        version:
+          type: string
+        buildTime:
+          type: string
+          format: date-time
+
 paths:
   /auth/magic-link:
     post:
@@ -283,3 +293,16 @@ paths:
                 $ref: '#/components/schemas/Route'
         '404':
           description: Token not found or route no longer public
+
+  /version:
+    get:
+      summary: Get backend build version
+      tags: [version]
+      operationId: getVersion
+      responses:
+        '200':
+          description: Backend version info (no auth required)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionInfo'

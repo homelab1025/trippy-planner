@@ -18,7 +18,9 @@ public class SecurityFilter implements Filter {
         "/auth/magic-link",
         "/api/share/",
         // Safe outside e2e profile: MagicLinkTokenTestController is @Profile("e2e"), so this path is unmapped and returns 404 unless e2e is active
-        "/test/magic-link-token"
+        "/test/magic-link-token",
+        // Shown in the Tech Details panel to signed-out visitors too
+        "/version"
     );
 
     // Docker's own healthcheck hits this via "localhost"; trippy.lab.wicked is the
