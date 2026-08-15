@@ -6,11 +6,12 @@ vi.mock('./auth', () => ({
 }))
 
 describe('apiClient', () => {
-  it('exports authApi, routesApi, and shareApi', async () => {
-    const { authApi, routesApi, shareApi } = await import('./apiClient')
+  it('exports authApi, routesApi, shareApi, and versionApi', async () => {
+    const { authApi, routesApi, shareApi, versionApi } = await import('./apiClient')
     expect(authApi).toBeDefined()
     expect(routesApi).toBeDefined()
     expect(shareApi).toBeDefined()
+    expect(versionApi).toBeDefined()
   })
 
   it('attaches Bearer token to requests', async () => {
