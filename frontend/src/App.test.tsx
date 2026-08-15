@@ -519,7 +519,7 @@ describe('backend version display', () => {
     fireEvent.click(screen.getByText('Tech Details'))
 
     await waitFor(() => {
-      expect(screen.getByText('v2.2.0')).toBeInTheDocument()
+      expect(screen.getByText('Backend v2.2.0')).toBeInTheDocument()
     })
   })
 
@@ -535,6 +535,7 @@ describe('backend version display', () => {
     })
     // Only the frontend's own version line should render — the backend
     // one is conditional on a successful fetch, with no fallback text.
-    expect(screen.queryAllByText(/^v\d+\.\d+\.\d+/)).toHaveLength(1)
+    expect(screen.queryByText(/^Frontend v/)).toBeInTheDocument()
+    expect(screen.queryByText(/^Backend v/)).not.toBeInTheDocument()
   })
 })
