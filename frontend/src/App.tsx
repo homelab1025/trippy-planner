@@ -530,7 +530,15 @@ function App() {
                     setSavedRouteId(id)
                     loadRouteFromGpxText(gpxContent, avgSpeedKmh, start)
                   }}
-                  onDeleted={() => {}}
+                  onDeleted={(id) => {
+                    if (id === savedRouteId) {
+                      setRoute(null)
+                      setRawGpxContent(null)
+                      setRouteName('')
+                      setSavedRouteId(null)
+                      clearStoredRoute()
+                    }
+                  }}
                   refreshKey={savedRouteId ? `${savedRouteId}:${routesRefreshToken}` : undefined}
                 />
               </div>
