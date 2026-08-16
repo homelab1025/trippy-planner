@@ -157,4 +157,50 @@ test.describe('My Routes panel', () => {
 
     await context?.close();
   });
+
+  test('deleting the currently loaded route clears the main view', async ({ page }) => {
+    await cleanRoutes(page);
+
+    await page.setInputFiles('input[type="file"]', 'public/sample-route.gpx');
+    await page.waitForTimeout(1000);
+    await expect(page.locator('.header-stats')).toContainText('Sample Ride');
+    await page.getByRole('button', { name: 'Save route' }).click();
+    await page.waitForTimeout(500);
+
+    await page.getByText('My routes').click();
+    await page.waitForTimeout(500);
+
+    await page.getByRole('button', { name: /Delete Sample Ride/i }).click();
+    await expect(page.getByText(/Delete 'Sample Ride' on the/)).toBeVisible();
+    await page.getByRole('button', { name: /^OK$/ }).click();
+    await page.waitForTimeout(500);
+
+    await expect(page.locator('.header-stats')).toHaveCount(0);
+    await expect(page.getByText('Upload a GPX file to see your route')).toBeVisible();
+    await expect(page.getByText('No saved routes yet.')).toBeVisible();
+  });
+
+  test('cancelling the delete dialog keeps the route', async ({ page }) => {
+    await cleanRoutes(page);
+
+    await page.setInputFiles('input[type="file"]', 'public/sample-route.gpx');
+    await page.waitForTimeout(1000);
+    await expect(page.locator('.header-stats')).toContainText('Sample Ride');
+    await page.getByRole('button', { name: 'Save route' }).click();
+    await page.waitForTimeout(500);
+
+    await page.getByText('My routes').click();
+    await page.waitForTimeout(500);
+
+    await page.getByRole('button', { name: /Delete Sample Ride/i }).click();
+    await expect(page.getByText(/Delete 'Sample Ride' on the/)).toBeVisible();
+    await page.getByRole('button', { name: /Cancel/i }).click();
+
+    const myRoutesPanel = page.locator('text=My routes').locator('..').locator('..');
+    const items = await myRoutesPanel.locator('li').all();
+    expect(items).toHaveLength(1);
+    expect(await items[0].textContent()).toContain('Sample Ride');
+    // The still-loaded route in the main view is untouched.
+    await expect(page.locator('.header-stats')).toContainText('Sample Ride');
+  });
 });
