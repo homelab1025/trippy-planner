@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
+# PostgreSQL is owned by the container lifecycle (started in entrypoint.sh);
+# this script only stops the backend + frontend it started via start.sh.
+
 PIDFILE="/workspace/.dev-pids"
 FORCE=0
 
@@ -8,7 +11,7 @@ if [[ "${1:-}" == "--force" ]]; then
   FORCE=1
 fi
 
-echo "🛑 Shutting down Trippy Planner..."
+echo "🛑 Shutting down Trippy Planner (backend + frontend)..."
 echo ""
 
 # ── Helper: recursively collect a PID and all its descendants ───────
@@ -93,23 +96,6 @@ fi
 # ── Stop Backend ───────────────────────────────────────────────────
 if [[ -n "$BACKEND_PID" ]]; then
   stop_tree "Backend" "$BACKEND_PID"
-fi
-
-# ── Stop PostgreSQL ────────────────────────────────────────────────
-if service postgresql status > /dev/null 2>&1; then
-  if [[ "$FORCE" -eq 1 ]]; then
-    echo "💀 Stopping PostgreSQL (force)..."
-    service postgresql stop || true
-    if service postgresql status > /dev/null 2>&1; then
-      pkill -9 -x postgres 2>/dev/null || true
-    fi
-  else
-    echo "🛑 Stopping PostgreSQL..."
-    service postgresql stop
-  fi
-  echo "✅ PostgreSQL stopped"
-else
-  echo "⏭️  PostgreSQL not running"
 fi
 
 # ── Cleanup ─────────────────────────────────────────────────────────

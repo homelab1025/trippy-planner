@@ -1,8 +1,7 @@
-docker run --rm -it --security-opt seccomp=unconfined \
-  -p 8080:8080 \
-  -p 5173:5173 \
-  -p 5432:5432 \
-  -v "$PWD:/workspace" \
-  -v ~/.pi/agent:/root/.pi/agent \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  pi-sandbox
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Thin wrapper kept for backwards compatibility — the pidev container's
+# build+run logic now lives alongside its Dockerfile, mirroring
+# claude-dev/run.sh.
+exec "$(dirname "$0")/pidev/run.sh" "$@"
