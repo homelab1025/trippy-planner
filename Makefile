@@ -26,9 +26,10 @@ test-frontend:
 
 e2e-test: generate-frontend
 e2e-test:
+	export POSTGRES_PORT=$$(node -e "const s=require('net').createServer();s.listen(0,()=>{console.log(s.address().port);s.close()})"); \
 	export BACKEND_PORT=$$(node -e "const s=require('net').createServer();s.listen(0,()=>{console.log(s.address().port);s.close()})"); \
 	export FRONTEND_PORT=$$(node -e "const s=require('net').createServer();s.listen(0,()=>{console.log(s.address().port);s.close()})"); \
-	echo "e2e ports: backend=$$BACKEND_PORT frontend=$$FRONTEND_PORT"; \
+	echo "e2e ports: postgres=$$POSTGRES_PORT backend=$$BACKEND_PORT frontend=$$FRONTEND_PORT"; \
 	docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --build --wait backend; \
 	up_status=$$?; \
 	if [ $$up_status -ne 0 ]; then \

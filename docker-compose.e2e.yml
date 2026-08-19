@@ -1,10 +1,5 @@
 services:
-  postgres:
-    ports: []
-
   backend:
     environment:
       SPRING_PROFILES_ACTIVE: e2e
       APP_BASE_URL: http://localhost:${FRONTEND_PORT}
-    ports:
-      - "${BACKEND_PORT}:8080"
