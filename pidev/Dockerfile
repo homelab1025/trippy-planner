@@ -22,5 +22,11 @@ RUN playwright install-deps && playwright install chromium
 
 RUN pi install git:github.com/obra/superpowers
 
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 WORKDIR /workspace
-ENTRYPOINT ["pi"]
+EXPOSE 5173 8080 5432
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["pi"]

@@ -3,41 +3,12 @@ set -euo pipefail
 
 PIDFILE="/workspace/.dev-pids"
 LOGDIR="/workspace/logs"
-PG_CONF="/etc/postgresql/17/main/postgresql.conf"
 
 mkdir -p "$LOGDIR"
 rm -f "$PIDFILE"
 
-# ── Alias "postgres" to localhost, matching the docker-compose service
-#    name, so application-local.properties resolves the same hostname
-#    under both pidev and `make dev` ───────────────────────────────────
-if ! grep -q "[[:space:]]postgres$" /etc/hosts 2>/dev/null; then
-  echo "127.0.0.1 postgres" >> /etc/hosts
-  echo "✅ Aliased 'postgres' to 127.0.0.1 in /etc/hosts"
-fi
-
-# ── Ensure PostgreSQL listens on all interfaces ─────────────────────
-if ! grep -q "^listen_addresses = '\*'" "$PG_CONF" 2>/dev/null; then
-  sed -i "s/^#listen_addresses = .*/listen_addresses = '*'/" "$PG_CONF"
-  sed -i "s/^listen_addresses = .*/listen_addresses = '*'/" "$PG_CONF"
-  echo "✅ Updated PostgreSQL to listen on all interfaces"
-fi
-
-# ── Start PostgreSQL ────────────────────────────────────────────────
-if service postgresql status > /dev/null 2>&1; then
-  echo "⏭️  PostgreSQL is already running"
-else
-  echo "🐘 Starting PostgreSQL..."
-  service postgresql start
-  sleep 2
-  echo "✅ PostgreSQL started on port 5432"
-fi
-
-# ── Ensure database & user exist ────────────────────────────────────
-su - postgres -c "psql -tc \"SELECT 1 FROM pg_roles WHERE rolname='trippy'\"" | grep -q 1 || \
-  su - postgres -c "psql -c \"CREATE USER trippy WITH PASSWORD 'trippy';\""
-su - postgres -c "psql -tc \"SELECT 1 FROM pg_database WHERE datname='trippy'\"" | grep -q 1 || \
-  su - postgres -c "psql -c \"CREATE DATABASE trippy OWNER trippy;\""
+# PostgreSQL is started by entrypoint.sh at container boot; this script
+# only owns the backend + frontend.
 
 # ── Generate sources ────────────────────────────────────────────────
 echo "🔧 Generating sources..."
@@ -59,7 +30,7 @@ echo "   PID: $BACKEND_PID"
 # Wait for backend to be ready
 echo "⏳ Waiting for backend..."
 for i in $(seq 1 30); do
-  if curl -sf http://localhost:8080/api/actuator/health > /dev/null 2>&1 || curl -s http://localhost:8080/api/actuator/health > /dev/null 2>&1; then
+  if curl -sf http://localhost:8080/api/actuator/health > /dev/null 2>&1; then
     echo "✅ Backend is up"
     break
   fi
@@ -84,7 +55,7 @@ echo "  🌍  Trippy Planner is running!"
 echo "═══════════════════════════════════════════"
 echo "  Frontend:  http://localhost:5173"
 echo "  Backend:   http://localhost:8080/api"
-echo "  Database:  localhost:5432  (user: trippy)"
+echo "  Database:  localhost:5432  (user: trippy, started at container boot)"
 echo "═══════════════════════════════════════════"
 echo ""
 echo "  Stop:  ./stop.sh"
