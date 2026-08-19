@@ -1,5 +1,5 @@
 const TEST_EMAIL = 'e2e-my-routes@trippy-planner.test';
-const BACKEND_URL = 'http://localhost:8080';
+const BACKEND_URL = process.env.PLAYWRIGHT_BACKEND_URL ?? 'http://localhost:8080';
 
 export async function createAuthenticatedSession(email: string = TEST_EMAIL): Promise<string> {
   const magicLinkRes = await fetch(`${BACKEND_URL}/api/auth/magic-link`, {

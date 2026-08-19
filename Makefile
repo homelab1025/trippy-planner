@@ -26,13 +26,20 @@ test-frontend:
 
 e2e-test: generate-frontend
 e2e-test:
+	export BACKEND_PORT=$$(node -e "const s=require('net').createServer();s.listen(0,()=>{console.log(s.address().port);s.close()})"); \
+	export FRONTEND_PORT=$$(node -e "const s=require('net').createServer();s.listen(0,()=>{console.log(s.address().port);s.close()})"); \
+	echo "e2e ports: backend=$$BACKEND_PORT frontend=$$FRONTEND_PORT"; \
 	docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --build --wait backend; \
 	up_status=$$?; \
 	if [ $$up_status -ne 0 ]; then \
 		docker compose -f docker-compose.yml -f docker-compose.e2e.yml down; \
 		exit $$up_status; \
 	fi; \
-	(cd frontend && npm ci && PLAYWRIGHT_HTML_OPEN=never npx playwright test); \
+	(cd frontend && npm ci && PLAYWRIGHT_HTML_OPEN=never \
+		PLAYWRIGHT_BACKEND_URL=http://localhost:$$BACKEND_PORT \
+		PLAYWRIGHT_FRONTEND_PORT=$$FRONTEND_PORT \
+		VITE_API_PROXY_TARGET=http://localhost:$$BACKEND_PORT \
+		npx playwright test); \
 	status=$$?; \
 	docker compose -f docker-compose.yml -f docker-compose.e2e.yml down; \
 	exit $$status
