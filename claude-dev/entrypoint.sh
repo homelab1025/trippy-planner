@@ -40,5 +40,15 @@ su - postgres -c "psql -tc \"SELECT 1 FROM pg_roles WHERE rolname='trippy'\"" | 
 su - postgres -c "psql -tc \"SELECT 1 FROM pg_database WHERE datname='trippy'\"" | grep -q 1 || \
   su - postgres -c "psql -c \"CREATE DATABASE trippy OWNER trippy;\""
 
+# ── Git identity for commits made inside the container ─────────────
+# The SSH key itself needs no setup here - run.sh bind-mounts it
+# directly at /home/dev/.ssh/id_ed25519 with the right perms already.
+if [[ -n "${GIT_USER_NAME:-}" ]]; then
+  gosu dev git config --global user.name "$GIT_USER_NAME"
+fi
+if [[ -n "${GIT_USER_EMAIL:-}" ]]; then
+  gosu dev git config --global user.email "$GIT_USER_EMAIL"
+fi
+
 echo "🔐 Dropping to non-root user 'dev'..."
 exec gosu dev "$@"

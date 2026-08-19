@@ -17,6 +17,7 @@ RUN apt-get update \
   procps \
   ripgrep \
   gosu \
+  openssh-client \
   && rm -rf /var/lib/apt/lists/*
 
 # node:26-trixie-slim ships a preexisting "node" user/group at 1000:1000,
@@ -38,6 +39,16 @@ RUN set -eux; \
     useradd -m -u "$UID" -g "$GID" -s /bin/bash dev; \
   fi; \
   usermod -s /bin/bash dev
+
+# ~/.ssh must pre-exist with the right owner/perms before run.sh bind-mounts
+# a private key into it at container-start time (the mount target can't be
+# created by the entrypoint - it has to already be there in the image).
+# github.com's host keys are public, not secret, so baking them into
+# known_hosts here is safe and avoids a runtime TOFU prompt/network hop.
+RUN install -d -m 700 -o dev -g dev /home/dev/.ssh \
+  && ssh-keyscan -t rsa,ed25519 github.com >> /home/dev/.ssh/known_hosts \
+  && chown dev:dev /home/dev/.ssh/known_hosts \
+  && chmod 644 /home/dev/.ssh/known_hosts
 
 # No --ignore-scripts here: @anthropic-ai/claude-code's postinstall
 # (install.cjs) is what fetches the platform-specific native binary —
