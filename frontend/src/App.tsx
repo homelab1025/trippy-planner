@@ -347,8 +347,12 @@ function App() {
             <h1 className="text-xl font-bold">Trippy Planner</h1>
             <AuthHeader
               user={user}
-              onSignOut={() => {
-                authApi.deleteSession().catch(() => {})
+              onSignOut={async () => {
+                try {
+                  await authApi.deleteSession()
+                } catch {
+                  // ignore - proceed to clear local session regardless
+                }
                 clearToken()
                 setUser(null)
               }}
