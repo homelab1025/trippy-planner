@@ -25,7 +25,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.RELEASE_PUSH_TOKEN }}
 
       - name: Configure git
         run: |
