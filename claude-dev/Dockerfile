@@ -18,6 +18,18 @@ RUN apt-get update \
   ripgrep \
   gosu \
   openssh-client \
+  gnupg \
+  && rm -rf /var/lib/apt/lists/*
+
+# GitHub CLI isn't in Debian's default repos, so pull it from GitHub's own
+# apt repo (keyring-signed, per https://github.com/cli/cli/blob/trunk/docs/install_linux.md).
+RUN wget -qO- https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+  | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+  && chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+  && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+  > /etc/apt/sources.list.d/github-cli.list \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends gh \
   && rm -rf /var/lib/apt/lists/*
 
 # node:26-trixie-slim ships a preexisting "node" user/group at 1000:1000,
