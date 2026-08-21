@@ -6,15 +6,16 @@ A route weather planner for cyclists and hikers. Upload a GPX file, set your sta
 
 - **GPX route loading** — upload any GPX track file to visualise your route
 - **Interactive map** — the full route is drawn on a map; hovering over the timeline moves a crosshair on the map to the corresponding position along the route
-- **Route stats** — distance and elevation gain are shown after loading a file; a Tech Details panel shows the original and decimated point counts
+- **Route stats** — distance and elevation gain are shown after loading a file; a Tech Details panel shows original/decimated point counts and parse timing, lets you tune the Douglas-Peucker simplification and switch weather provider, and displays the running frontend/backend version and build time
 - **Configurable ride parameters** — set your average speed (km/h) and planned start date/time to calculate when you'll reach each point
 - **Real weather data** — uses the Open-Meteo free API (no API key required); samples the route roughly every 5 km (at least 11 points, so short routes are still covered) and fetches hourly forecasts for each point, based on your calculated arrival time
 - **7-day forecast window** — the date picker is capped at today + 7 days, matching Open-Meteo's forecast horizon
-- **Accounts and route sharing** — sign in with a passwordless magic-link email to save routes to your account; saved routes can be reloaded from the "My routes" panel, and any saved route can be made publicly viewable via a shareable `/share/:token` link that works without the viewer signing in
+- **Accounts and route sharing** — sign in with a passwordless magic-link email to save routes to your account; saved routes can be reloaded or deleted (with a confirmation prompt) from the "My routes" panel, and any saved route can be made publicly viewable via a shareable `/share/:token` link that works without the viewer signing in
 
 ### Timeline
 
 - a combined chart shows the elevation profile overlaid with interpolated temperature across the route
+- detected climbs are overlaid on the elevation profile as colour-coded category badges (Cat 4 to HC), showing length and average grade on hover
 - the X axis shows distance (km)
 - a wind arrow row and a precipitation bar row are rendered below the chart, aligned to the same distance axis
 - when hovering over the chart, a side pane shows the time (clock or elapsed), distance, elevation, temperature, wind speed, and precipitation probability + amount at that point
@@ -35,6 +36,8 @@ A release is triggered manually via the `Release Frontend` or `Release Backend` 
 
 ## Done
 
+- **Delete saved routes.** Added a delete action, with a confirmation dialog, to the "My routes" panel; deleting the currently loaded route clears it from the map and timeline.
+- **Show frontend/backend version in Tech Details.** A public backend `GET /version` endpoint exposes the running version and build time; the Tech Details panel displays both the frontend and backend version alongside their build timestamps.
 - **Investigate wind value interpolation accuracy.** Wind speed and direction shown on the timeline are interpolated between the 11 sample points, but the interpolation may not match actual wind conditions along the route — especially across terrain features. See [this Gemini discussion](https://gemini.google.com/share/20eb3eb2c936) for context.
 - Provide support for multiple weather forecast providers and let the user choose.
 - **Replace hand-rolled UI components with a React component library.** The accordion, buttons, and inputs are currently hand-rolled with custom CSS. Replace with a component library (e.g. [shadcn/ui](https://ui.shadcn.com/) or [Radix UI](https://www.radix-ui.com/)) to gain accessibility, keyboard navigation, and animations for free.
