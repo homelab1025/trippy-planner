@@ -212,10 +212,10 @@ function App() {
     }
   }, []);
 
-  const loadRouteFromGpxText = useCallback(async (gpxContent: string, speed: number, start: Date) => {
+  const loadRouteFromGpxText = useCallback(async (gpxContent: string, speed: number, start: Date, epsilon: number, maxGap: number) => {
     setRawGpxContent(gpxContent);
-    const parsedRoute = await parseGPXAsync(gpxContent, dpEpsilon, dpMaxGap);
-    appliedTechParamsRef.current = { dpEpsilon, dpMaxGap };
+    const parsedRoute = await parseGPXAsync(gpxContent, epsilon, maxGap);
+    appliedTechParamsRef.current = { dpEpsilon: epsilon, dpMaxGap: maxGap };
     setRoute(parsedRoute);
     setWeatherLoading(true);
     try {
@@ -224,7 +224,7 @@ function App() {
     } finally {
       setWeatherLoading(false);
     }
-  }, [dpEpsilon, dpMaxGap, selectedProvider, updateWeather]);
+  }, [selectedProvider, updateWeather]);
 
   const handleRefreshWeather = useCallback(async () => {
     if (!route) return;
@@ -318,7 +318,7 @@ function App() {
           setAvgSpeed(speed);
           setStartTime(start);
           setRouteName(data.name as string);
-          loadRouteFromGpxText(data.gpxContent as string, speed, start);
+          loadRouteFromGpxText(data.gpxContent as string, speed, start, dpEpsilon, dpMaxGap);
         })
         .catch(() => {
           // Token invalid or route made private — let user upload
@@ -327,12 +327,16 @@ function App() {
       const stored = loadStoredRoute();
       if (stored) {
         const start = new Date(stored.startTime);
+        const epsilon = stored.dpEpsilonMeters ?? DP_EPSILON_METERS;
+        const maxGap = stored.dpMaxGapMeters ?? DP_MAX_GAP_METERS;
         // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time mount initialization from localStorage, not a prop-sync pattern
         setAvgSpeed(stored.avgSpeedKmh);
         setStartTime(start);
         setRouteName(stored.name);
         setSavedRouteId(stored.id ?? null);
-        loadRouteFromGpxText(stored.gpxContent, stored.avgSpeedKmh, start)
+        setDpEpsilon(epsilon);
+        setDpMaxGap(maxGap);
+        loadRouteFromGpxText(stored.gpxContent, stored.avgSpeedKmh, start, epsilon, maxGap)
           .catch(() => clearStoredRoute());
       }
     }
@@ -350,8 +354,10 @@ function App() {
       avgSpeedKmh: avgSpeed,
       startTime: startTime.toISOString(),
       id: savedRouteId ?? undefined,
+      dpEpsilonMeters: dpEpsilon,
+      dpMaxGapMeters: dpMaxGap,
     });
-  }, [route, rawGpxContent, avgSpeed, startTime, isViewingShared, routeName, savedRouteId]);
+  }, [route, rawGpxContent, avgSpeed, startTime, isViewingShared, routeName, savedRouteId, dpEpsilon, dpMaxGap]);
 
   const onHoverIndex = useCallback((index: number | null) => {
     setHoveredIndex(index);
@@ -574,7 +580,7 @@ function App() {
                     setStartTime(start)
                     setRouteName(name)
                     setSavedRouteId(id)
-                    loadRouteFromGpxText(gpxContent, avgSpeedKmh, start)
+                    loadRouteFromGpxText(gpxContent, avgSpeedKmh, start, dpEpsilon, dpMaxGap)
                   }}
                   onDeleted={(id) => {
                     if (id === savedRouteId) {

@@ -27,6 +27,11 @@ describe('routeStorage', () => {
     expect(loadStoredRoute()).toEqual({ ...sampleRoute, id: 'route-123' });
   });
 
+  it('round-trips the DP epsilon/max gap params when present', () => {
+    saveStoredRoute({ ...sampleRoute, dpEpsilonMeters: 10, dpMaxGapMeters: 75 });
+    expect(loadStoredRoute()).toEqual({ ...sampleRoute, dpEpsilonMeters: 10, dpMaxGapMeters: 75 });
+  });
+
   it('returns null and clears the key when the stored value is corrupted JSON', () => {
     localStorage.setItem('trippy_current_route', 'not-json{');
     expect(loadStoredRoute()).toBeNull();

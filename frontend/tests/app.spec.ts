@@ -82,6 +82,28 @@ test('editing DP Epsilon after upload re-parses the route and re-fetches weather
   await expect.poll(() => weatherRequestUrls.length).toBeGreaterThan(requestsAfterUpload);
 });
 
+test('DP Epsilon and Max Gap survive a page reload', async ({ page }) => {
+  await page.goto('/');
+  const techPanel = page.locator('.tech-details-card');
+  await techPanel.locator('.collapse-title').click();
+
+  await page.setInputFiles('input[type="file"]', 'public/sample-route.gpx');
+  await expect(page.locator('.header-stats')).toContainText('Sample Ride');
+
+  const epsilonInput = techPanel.getByLabel('DP Epsilon (m)');
+  const maxGapInput = techPanel.getByLabel('Max Gap (m)');
+  await epsilonInput.fill('42');
+  await epsilonInput.blur();
+  await maxGapInput.fill('123');
+  await maxGapInput.blur();
+
+  await page.reload();
+  await expect(page.locator('.header-stats')).toContainText('Sample Ride');
+  await techPanel.locator('.collapse-title').click();
+  await expect(techPanel.getByLabel('DP Epsilon (m)')).toHaveValue('42');
+  await expect(techPanel.getByLabel('Max Gap (m)')).toHaveValue('123');
+});
+
 test('hover over elevation chart shows polished orange marker on map', async ({ page }) => {
   await page.goto('/');
   await page.setInputFiles('input[type="file"]', 'public/sample-route.gpx');

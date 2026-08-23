@@ -6,6 +6,8 @@ export interface StoredRoute {
   avgSpeedKmh: number;
   startTime: string;
   id?: string;
+  dpEpsilonMeters?: number;
+  dpMaxGapMeters?: number;
 }
 
 export function loadStoredRoute(): StoredRoute | null {
