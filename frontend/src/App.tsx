@@ -2,7 +2,7 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { setToken, clearToken, isAuthenticated } from './auth';
 import { authApi } from './apiClient';
 import { format } from 'date-fns';
-import { Upload, Map as MapIcon, CloudRain, RefreshCw } from 'lucide-react';
+import { Upload, Map as MapIcon, CloudRain, RefreshCw, CircleHelp } from 'lucide-react';
 import logo from './assets/logo.png';
 import { parseGPXAsync } from './workers/gpxWorkerClient';
 import type { RouteData, RoutePoint } from './utils/gpxParser';
@@ -601,12 +601,14 @@ function App() {
             <div className="collapse-content flex flex-col gap-3">
 
               <div className="form-control w-full">
-                <label
-                  htmlFor="dp-epsilon"
-                  className="label pb-1"
-                  title="Maximum distance a point can deviate from a straight line before it's kept. Higher values simplify the route more aggressively (fewer points, coarser shape); lower values preserve more detail."
-                >
+                <label htmlFor="dp-epsilon" className="label pb-1">
                   <span className="label-text">DP Epsilon (m)</span>
+                  <span
+                    title="Maximum distance a point can deviate from a straight line before it's kept. Higher values simplify the route more aggressively (fewer points, coarser shape); lower values preserve more detail."
+                    className="text-base-content/50"
+                  >
+                    <CircleHelp size={14} />
+                  </span>
                 </label>
                 <input
                   id="dp-epsilon"
@@ -625,12 +627,14 @@ function App() {
               </div>
 
               <div className="form-control w-full">
-                <label
-                  htmlFor="dp-max-gap"
-                  className="label pb-1"
-                  title="Maximum distance allowed between two consecutive points after simplification. Prevents long straight stretches from becoming too sparse, keeping weather sampling accurate."
-                >
+                <label htmlFor="dp-max-gap" className="label pb-1">
                   <span className="label-text">Max Gap (m)</span>
+                  <span
+                    title="Maximum distance allowed between two consecutive points after simplification. Prevents long straight stretches from becoming too sparse, keeping weather sampling accurate."
+                    className="text-base-content/50"
+                  >
+                    <CircleHelp size={14} />
+                  </span>
                 </label>
                 <input
                   id="dp-max-gap"
