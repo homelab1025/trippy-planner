@@ -358,6 +358,17 @@ describe('App', () => {
     expect(screen.getByLabelText('Max Gap (m)')).not.toBeDisabled();
   });
 
+  it('DP Epsilon and Max Gap labels show explanatory tooltips', async () => {
+    render(<App />);
+    await uploadFile();
+    await waitFor(() => screen.getByTestId('elevation-chart'));
+
+    fireEvent.click(screen.getByText('Tech Details'));
+
+    expect(screen.getByText('DP Epsilon (m)').closest('label')).toHaveAttribute('title', expect.stringContaining('deviate'));
+    expect(screen.getByText('Max Gap (m)').closest('label')).toHaveAttribute('title', expect.stringContaining('consecutive points'));
+  });
+
   it('editing DP Epsilon and blurring re-parses the route and re-fetches weather', async () => {
     render(<App />);
     await uploadFile();
