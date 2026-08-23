@@ -4,6 +4,7 @@ import { render, screen, fireEvent, waitFor, act, cleanup } from '@testing-libra
 import { App } from './App';
 import { DEFAULT_PROVIDER, PROVIDERS } from './services/weatherProviders';
 import { parseGPXAsync } from './workers/gpxWorkerClient';
+import { DP_EPSILON_METERS, DP_MAX_GAP_METERS } from './utils/douglasPeucker';
 // auth is mocked via vi.mock — no direct imports needed
 
 // ── Fixtures ────────────────────────────────────────────────────────────────
@@ -419,6 +420,43 @@ describe('App', () => {
     fireEvent.click(screen.getByText('Tech Details'));
     const epsilonInput = screen.getByLabelText('DP Epsilon (m)');
     await act(async () => { fireEvent.blur(epsilonInput); });
+    await act(async () => { await Promise.resolve(); });
+
+    expect(parseGPXAsync).toHaveBeenCalledTimes(1);
+  });
+
+  it('Reset to defaults button appears after Max Gap and restores both values', async () => {
+    render(<App />);
+    await uploadFile();
+    await waitFor(() => expect(parseGPXAsync).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(screen.getByText('Tech Details'));
+    const epsilonInput = screen.getByLabelText('DP Epsilon (m)') as HTMLInputElement;
+    const maxGapInput = screen.getByLabelText('Max Gap (m)') as HTMLInputElement;
+
+    fireEvent.change(epsilonInput, { target: { value: '10' } });
+    await act(async () => { fireEvent.blur(epsilonInput); });
+    fireEvent.change(maxGapInput, { target: { value: '75' } });
+    await act(async () => { fireEvent.blur(maxGapInput); });
+    await waitFor(() => expect(parseGPXAsync).toHaveBeenCalledTimes(3));
+
+    const resetButton = screen.getByRole('button', { name: /reset to defaults/i });
+    await act(async () => { fireEvent.click(resetButton); });
+
+    await waitFor(() => expect(parseGPXAsync).toHaveBeenCalledTimes(4));
+    expect(parseGPXAsync).toHaveBeenLastCalledWith(expect.any(String), DP_EPSILON_METERS, DP_MAX_GAP_METERS);
+    expect(epsilonInput.value).toBe(String(DP_EPSILON_METERS));
+    expect(maxGapInput.value).toBe(String(DP_MAX_GAP_METERS));
+  });
+
+  it('clicking Reset to defaults when already at defaults does not re-parse', async () => {
+    render(<App />);
+    await uploadFile();
+    await waitFor(() => expect(parseGPXAsync).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(screen.getByText('Tech Details'));
+    const resetButton = screen.getByRole('button', { name: /reset to defaults/i });
+    await act(async () => { fireEvent.click(resetButton); });
     await act(async () => { await Promise.resolve(); });
 
     expect(parseGPXAsync).toHaveBeenCalledTimes(1);

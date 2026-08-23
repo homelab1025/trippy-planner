@@ -2,7 +2,7 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { setToken, clearToken, isAuthenticated } from './auth';
 import { authApi } from './apiClient';
 import { format } from 'date-fns';
-import { Upload, Map as MapIcon, CloudRain, RefreshCw, CircleHelp } from 'lucide-react';
+import { Upload, Map as MapIcon, CloudRain, RefreshCw, CircleHelp, RotateCcw } from 'lucide-react';
 import logo from './assets/logo.png';
 import { parseGPXAsync } from './workers/gpxWorkerClient';
 import type { RouteData, RoutePoint } from './utils/gpxParser';
@@ -242,19 +242,19 @@ function App() {
   const appliedTechParamsRef = React.useRef<{ dpEpsilon: number; dpMaxGap: number } | null>(null);
   const techCommitInFlightRef = React.useRef(false);
 
-  const commitTechParams = useCallback(async () => {
+  const applyTechParams = useCallback(async (epsilon: number, maxGap: number) => {
     if (!route || !rawGpxContent || techCommitInFlightRef.current) return;
     const applied = appliedTechParamsRef.current;
-    if (applied && applied.dpEpsilon === dpEpsilon && applied.dpMaxGap === dpMaxGap) return;
+    if (applied && applied.dpEpsilon === epsilon && applied.dpMaxGap === maxGap) return;
 
     techCommitInFlightRef.current = true;
     try {
       performance.mark('gpx-reparse-start');
-      const parsedRoute = await parseGPXAsync(rawGpxContent, dpEpsilon, dpMaxGap);
+      const parsedRoute = await parseGPXAsync(rawGpxContent, epsilon, maxGap);
       performance.mark('gpx-reparse-end');
       const measure = performance.measure('gpx-reparse', 'gpx-reparse-start', 'gpx-reparse-end');
       setParseMetrics(prev => ({ totalMs: measure.duration, fileSizeKb: prev?.fileSizeKb ?? 0 }));
-      appliedTechParamsRef.current = { dpEpsilon, dpMaxGap };
+      appliedTechParamsRef.current = { dpEpsilon: epsilon, dpMaxGap: maxGap };
       setRoute(parsedRoute);
       setHoveredIndex(null);
       setHoveredPoint(null);
@@ -270,11 +270,21 @@ function App() {
     } finally {
       techCommitInFlightRef.current = false;
     }
-  }, [route, rawGpxContent, dpEpsilon, dpMaxGap, lastFetchedParams, avgSpeed, startTime, selectedProvider, updateWeather]);
+  }, [route, rawGpxContent, lastFetchedParams, avgSpeed, startTime, selectedProvider, updateWeather]);
+
+  const commitTechParams = useCallback(() => {
+    applyTechParams(dpEpsilon, dpMaxGap);
+  }, [applyTechParams, dpEpsilon, dpMaxGap]);
 
   const handleTechParamKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') e.currentTarget.blur();
   };
+
+  const handleResetTechParams = useCallback(() => {
+    setDpEpsilon(DP_EPSILON_METERS);
+    setDpMaxGap(DP_MAX_GAP_METERS);
+    applyTechParams(DP_EPSILON_METERS, DP_MAX_GAP_METERS);
+  }, [applyTechParams]);
 
   React.useEffect(() => {
     setWeatherDebug(weatherDebug);
@@ -658,6 +668,15 @@ function App() {
                   className="input input-bordered input-sm w-full"
                 />
               </div>
+
+              <button
+                type="button"
+                onClick={handleResetTechParams}
+                className="btn btn-sm btn-outline w-full gap-1.5"
+              >
+                <RotateCcw size={13} />
+                Reset to defaults
+              </button>
 
               <div className="stats stats-vertical bg-base-200 shadow w-full">
                 <div className="stat py-2 px-3">
