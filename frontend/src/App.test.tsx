@@ -346,6 +346,61 @@ describe('App', () => {
     ).toBe('mock-provider');
     expect(PROVIDERS[2].fetchWeather).not.toHaveBeenCalled();
   });
+
+  it('DP Epsilon and Max Gap remain editable after a route is loaded', async () => {
+    render(<App />);
+    await uploadFile();
+    await waitFor(() => screen.getByTestId('elevation-chart'));
+
+    fireEvent.click(screen.getByText('Tech Details'));
+
+    expect(screen.getByLabelText('DP Epsilon (m)')).not.toBeDisabled();
+    expect(screen.getByLabelText('Max Gap (m)')).not.toBeDisabled();
+  });
+
+  it('editing DP Epsilon and blurring re-parses the route and re-fetches weather', async () => {
+    render(<App />);
+    await uploadFile();
+    await waitFor(() => expect(parseGPXAsync).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(DEFAULT_PROVIDER.fetchWeather).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(screen.getByText('Tech Details'));
+    const epsilonInput = screen.getByLabelText('DP Epsilon (m)');
+    fireEvent.change(epsilonInput, { target: { value: '10' } });
+    await act(async () => { fireEvent.blur(epsilonInput); });
+
+    await waitFor(() => expect(parseGPXAsync).toHaveBeenCalledTimes(2));
+    expect(parseGPXAsync).toHaveBeenLastCalledWith(expect.any(String), 10, expect.any(Number));
+    await waitFor(() => expect(DEFAULT_PROVIDER.fetchWeather).toHaveBeenCalledTimes(2));
+  });
+
+  it('pressing Enter in Max Gap commits the change like blur', async () => {
+    render(<App />);
+    await uploadFile();
+    await waitFor(() => expect(parseGPXAsync).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(screen.getByText('Tech Details'));
+    const maxGapInput = screen.getByLabelText('Max Gap (m)');
+    maxGapInput.focus();
+    fireEvent.change(maxGapInput, { target: { value: '75' } });
+    await act(async () => { fireEvent.keyDown(maxGapInput, { key: 'Enter' }); });
+
+    await waitFor(() => expect(parseGPXAsync).toHaveBeenCalledTimes(2));
+    expect(parseGPXAsync).toHaveBeenLastCalledWith(expect.any(String), expect.any(Number), 75);
+  });
+
+  it('blurring DP Epsilon without changing its value does not re-parse', async () => {
+    render(<App />);
+    await uploadFile();
+    await waitFor(() => expect(parseGPXAsync).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(screen.getByText('Tech Details'));
+    const epsilonInput = screen.getByLabelText('DP Epsilon (m)');
+    await act(async () => { fireEvent.blur(epsilonInput); });
+    await act(async () => { await Promise.resolve(); });
+
+    expect(parseGPXAsync).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('token landing', () => {

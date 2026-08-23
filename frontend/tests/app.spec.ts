@@ -56,6 +56,32 @@ test('Tech Details shows parse time and file size after GPX upload', async ({ pa
   await expect(techPanel.locator('.stat-value').filter({ hasText: /\d+\.\d+ KB/ })).toBeVisible();
 });
 
+test('editing DP Epsilon after upload re-parses the route and re-fetches weather on blur', async ({ page }) => {
+  const weatherRequestUrls: string[] = [];
+  page.on('request', req => {
+    if (req.url().includes('api.open-meteo.com')) weatherRequestUrls.push(req.url());
+  });
+
+  await page.goto('/');
+  const techPanel = page.locator('.tech-details-card');
+  await techPanel.locator('.collapse-title').click();
+
+  await page.setInputFiles('input[type="file"]', 'public/sample-route.gpx');
+  await expect(page.locator('.header-stats')).toContainText('Sample Ride');
+  await expect.poll(() => weatherRequestUrls.length).toBeGreaterThan(0);
+  const requestsAfterUpload = weatherRequestUrls.length;
+
+  const epsilonInput = techPanel.getByLabel('DP Epsilon (m)');
+  await expect(epsilonInput).toBeEnabled();
+  await epsilonInput.fill('1000');
+  await epsilonInput.blur();
+
+  // Re-parsing produces new route point objects; weatherPoints are matched to
+  // route.points by reference, so a re-fetch is required to keep weather markers
+  // attached (otherwise they'd silently vanish from the chart).
+  await expect.poll(() => weatherRequestUrls.length).toBeGreaterThan(requestsAfterUpload);
+});
+
 test('hover over elevation chart shows polished orange marker on map', async ({ page }) => {
   await page.goto('/');
   await page.setInputFiles('input[type="file"]', 'public/sample-route.gpx');

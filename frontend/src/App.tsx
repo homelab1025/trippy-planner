@@ -146,6 +146,7 @@ function App() {
       performance.mark('gpx-parse-end');
       const measure = performance.measure('gpx-parse', 'gpx-parse-start', 'gpx-parse-end');
       setParseMetrics({ totalMs: measure.duration, fileSizeKb });
+      appliedTechParamsRef.current = { dpEpsilon, dpMaxGap };
       setRawGpxContent(text);
       setRoute(parsedRoute);
       setRouteName(parsedRoute.name);
@@ -213,6 +214,7 @@ function App() {
   const loadRouteFromGpxText = useCallback(async (gpxContent: string, speed: number, start: Date) => {
     setRawGpxContent(gpxContent);
     const parsedRoute = await parseGPXAsync(gpxContent, dpEpsilon, dpMaxGap);
+    appliedTechParamsRef.current = { dpEpsilon, dpMaxGap };
     setRoute(parsedRoute);
     setWeatherLoading(true);
     try {
@@ -233,6 +235,45 @@ function App() {
       setWeatherLoading(false);
     }
   }, [route, avgSpeed, startTime, selectedProvider, updateWeather]);
+
+  // Tracks the DP epsilon/maxGap actually baked into the current `route`, so a blur/Enter
+  // that didn't change either value is a no-op instead of a redundant re-parse.
+  const appliedTechParamsRef = React.useRef<{ dpEpsilon: number; dpMaxGap: number } | null>(null);
+  const techCommitInFlightRef = React.useRef(false);
+
+  const commitTechParams = useCallback(async () => {
+    if (!route || !rawGpxContent || techCommitInFlightRef.current) return;
+    const applied = appliedTechParamsRef.current;
+    if (applied && applied.dpEpsilon === dpEpsilon && applied.dpMaxGap === dpMaxGap) return;
+
+    techCommitInFlightRef.current = true;
+    try {
+      performance.mark('gpx-reparse-start');
+      const parsedRoute = await parseGPXAsync(rawGpxContent, dpEpsilon, dpMaxGap);
+      performance.mark('gpx-reparse-end');
+      const measure = performance.measure('gpx-reparse', 'gpx-reparse-start', 'gpx-reparse-end');
+      setParseMetrics(prev => ({ totalMs: measure.duration, fileSizeKb: prev?.fileSizeKb ?? 0 }));
+      appliedTechParamsRef.current = { dpEpsilon, dpMaxGap };
+      setRoute(parsedRoute);
+      setHoveredIndex(null);
+      setHoveredPoint(null);
+      setHoveredData(null);
+      setWeatherLoading(true);
+      const params = lastFetchedParams ?? { avgSpeed, startTime, selectedProvider };
+      try {
+        const success = await updateWeather(parsedRoute, params.avgSpeed, params.startTime, params.selectedProvider);
+        if (success) setLastFetchedParams(params);
+      } finally {
+        setWeatherLoading(false);
+      }
+    } finally {
+      techCommitInFlightRef.current = false;
+    }
+  }, [route, rawGpxContent, dpEpsilon, dpMaxGap, lastFetchedParams, avgSpeed, startTime, selectedProvider, updateWeather]);
+
+  const handleTechParamKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') e.currentTarget.blur();
+  };
 
   React.useEffect(() => {
     setWeatherDebug(weatherDebug);
@@ -569,11 +610,12 @@ function App() {
                   min="1"
                   step="1"
                   value={dpEpsilon}
-                  disabled={route !== null}
                   onChange={(e) => {
                     const n = Number(e.target.value);
                     if (Number.isFinite(n)) setDpEpsilon(Math.max(1, n));
                   }}
+                  onBlur={commitTechParams}
+                  onKeyDown={handleTechParamKeyDown}
                   className="input input-bordered input-sm w-full"
                 />
               </div>
@@ -588,11 +630,12 @@ function App() {
                   min="1"
                   step="10"
                   value={dpMaxGap}
-                  disabled={route !== null}
                   onChange={(e) => {
                     const n = Number(e.target.value);
                     if (Number.isFinite(n)) setDpMaxGap(Math.max(1, n));
                   }}
+                  onBlur={commitTechParams}
+                  onKeyDown={handleTechParamKeyDown}
                   className="input input-bordered input-sm w-full"
                 />
               </div>
