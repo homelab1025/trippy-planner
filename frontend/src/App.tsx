@@ -53,7 +53,6 @@ function App() {
   const [xAxisMode, setXAxisMode] = useState<'clock' | 'elapsed'>('clock');
   const [dpEpsilon, setDpEpsilon] = useState(DP_EPSILON_METERS);
   const [dpMaxGap, setDpMaxGap] = useState(DP_MAX_GAP_METERS);
-  const [parseMetrics, setParseMetrics] = useState<{ totalMs: number; fileSizeKb: number } | null>(null);
   const [weatherDebug, setWeatherDebugState] = useState(false);
   const [activePanel, setActivePanel] = useState<'ride' | 'routes' | 'tech' | null>('ride');
   const [selectedProvider, setSelectedProvider] = useState<WeatherProvider>(DEFAULT_PROVIDER);
@@ -138,7 +137,6 @@ function App() {
     const file = event.target.files?.[0];
     if (!file) return;
     setLoading(true);
-    setParseMetrics(null);
     try {
       const text = await file.text();
       const fileSizeKb = file.size / 1024;
@@ -146,7 +144,7 @@ function App() {
       const parsedRoute = await parseGPXAsync(text, dpEpsilon, dpMaxGap);
       performance.mark('gpx-parse-end');
       const measure = performance.measure('gpx-parse', 'gpx-parse-start', 'gpx-parse-end');
-      setParseMetrics({ totalMs: measure.duration, fileSizeKb });
+      console.log(`[gpx] parsed in ${measure.duration.toFixed(0)}ms (file: ${fileSizeKb.toFixed(1)}KB)`);
       appliedTechParamsRef.current = { dpEpsilon, dpMaxGap };
       setRawGpxContent(text);
       setRoute(parsedRoute);
@@ -253,7 +251,7 @@ function App() {
       const parsedRoute = await parseGPXAsync(rawGpxContent, epsilon, maxGap);
       performance.mark('gpx-reparse-end');
       const measure = performance.measure('gpx-reparse', 'gpx-reparse-start', 'gpx-reparse-end');
-      setParseMetrics(prev => ({ totalMs: measure.duration, fileSizeKb: prev?.fileSizeKb ?? 0 }));
+      console.log(`[gpx] re-parsed in ${measure.duration.toFixed(0)}ms`);
       appliedTechParamsRef.current = { dpEpsilon: epsilon, dpMaxGap: maxGap };
       setRoute(parsedRoute);
       setHoveredIndex(null);
@@ -686,14 +684,6 @@ function App() {
                 <div className="stat py-2 px-3">
                   <div className="stat-title text-xs">Map Points</div>
                   <div className="stat-value text-base">{route ? route.points.length.toLocaleString() : '—'}</div>
-                </div>
-                <div className="stat py-2 px-3">
-                  <div className="stat-title text-xs">Parse time</div>
-                  <div className="stat-value text-base">{parseMetrics ? `${parseMetrics.totalMs.toFixed(0)} ms` : '—'}</div>
-                </div>
-                <div className="stat py-2 px-3">
-                  <div className="stat-title text-xs">File</div>
-                  <div className="stat-value text-base">{parseMetrics ? `${parseMetrics.fileSizeKb.toFixed(1)} KB` : '—'}</div>
                 </div>
               </div>
 

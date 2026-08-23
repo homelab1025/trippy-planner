@@ -42,7 +42,10 @@ test('no pin markers on map after uploading GPX', async ({ page }) => {
 });
 
 
-test('Tech Details shows parse time and file size after GPX upload', async ({ page }) => {
+test('parse time and file size are logged to the console, not shown in Tech Details', async ({ page }) => {
+  const consoleMessages: string[] = [];
+  page.on('console', msg => consoleMessages.push(msg.text()));
+
   await page.goto('/');
   const techPanel = page.locator('.tech-details-card');
   await techPanel.locator('.collapse-title').click();
@@ -50,10 +53,11 @@ test('Tech Details shows parse time and file size after GPX upload', async ({ pa
   await page.setInputFiles('input[type="file"]', 'public/sample-route.gpx');
   await expect(page.locator('.header-stats')).toContainText('Sample Ride');
 
-  await expect(techPanel.getByText('Parse time')).toBeVisible();
-  await expect(techPanel.getByText('File')).toBeVisible();
-  await expect(techPanel.locator('.stat-value').filter({ hasText: /\d+ ms/ })).toBeVisible();
-  await expect(techPanel.locator('.stat-value').filter({ hasText: /\d+\.\d+ KB/ })).toBeVisible();
+  await expect(techPanel.getByText('Parse time')).toHaveCount(0);
+  await expect(techPanel.getByText('File', { exact: true })).toHaveCount(0);
+  await expect
+    .poll(() => consoleMessages.some(m => /\[gpx\] parsed in \d+ms \(file: [\d.]+KB\)/.test(m)))
+    .toBe(true);
 });
 
 test('editing DP Epsilon after upload re-parses the route and re-fetches weather on blur', async ({ page }) => {
