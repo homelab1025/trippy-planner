@@ -69,6 +69,11 @@ The repo is a monorepo with two sub-projects:
 
 - whenever taking screenshots, they will be placed in frontend/playwright-screenshots/, not anywhere else.
 
+### Tooltips
+
+- Any tooltip added to the frontend UI must use `frontend/src/components/Tooltip.tsx`, not the native HTML `title` attribute — `title`'s show delay and dismiss behavior aren't controllable and are inconsistent across browsers (this is why the DP Epsilon/Max Gap tooltips in Tech Details were migrated off of it).
+- Behavior contract for every tooltip: it opens after a short hover delay (`TOOLTIP_SHOW_DELAY_MS`, currently 500ms) over the trigger, or immediately on click/Enter/Space; it closes only once the pointer leaves both the trigger and the tooltip content itself (not immediately on leaving the trigger alone, so the pointer can move onto the tooltip to read it).
+
 ## Pull Requests
 
 When commit is done at the end, make sure you commit the spec if there is one.

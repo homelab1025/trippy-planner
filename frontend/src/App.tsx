@@ -23,6 +23,7 @@ import { ElevationChart } from './components/ElevationChart';
 import { HoverPane } from './components/HoverPane';
 import { WindArrowRow } from './components/WindArrowRow';
 import { PrecipBarRow } from './components/PrecipBarRow';
+import { Tooltip } from './components/Tooltip';
 import { useWeatherChartData } from './hooks/useWeatherChartData';
 import type { ChartDataPoint, WeatherSample } from './hooks/useWeatherChartData';
 
@@ -603,12 +604,12 @@ function App() {
               <div className="form-control w-full">
                 <label htmlFor="dp-epsilon" className="label pb-1">
                   <span className="label-text">DP Epsilon (m)</span>
-                  <span
-                    title="Maximum distance a point can deviate from a straight line before it's kept. Higher values simplify the route more aggressively (fewer points, coarser shape); lower values preserve more detail."
-                    className="text-base-content/50"
+                  <Tooltip
+                    ariaLabel="DP Epsilon help"
+                    text="Maximum distance a point can deviate from a straight line before it's kept. Higher values simplify the route more aggressively (fewer points, coarser shape); lower values preserve more detail."
                   >
-                    <CircleHelp size={14} />
-                  </span>
+                    <CircleHelp size={14} className="text-base-content/50" />
+                  </Tooltip>
                 </label>
                 <input
                   id="dp-epsilon"
@@ -629,12 +630,12 @@ function App() {
               <div className="form-control w-full">
                 <label htmlFor="dp-max-gap" className="label pb-1">
                   <span className="label-text">Max Gap (m)</span>
-                  <span
-                    title="Maximum distance allowed between two consecutive points after simplification. Prevents long straight stretches from becoming too sparse, keeping weather sampling accurate."
-                    className="text-base-content/50"
+                  <Tooltip
+                    ariaLabel="Max Gap help"
+                    text="Maximum distance allowed between two consecutive points after simplification. Prevents long straight stretches from becoming too sparse, keeping weather sampling accurate."
                   >
-                    <CircleHelp size={14} />
-                  </span>
+                    <CircleHelp size={14} className="text-base-content/50" />
+                  </Tooltip>
                 </label>
                 <input
                   id="dp-max-gap"
