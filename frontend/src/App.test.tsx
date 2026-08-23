@@ -358,15 +358,26 @@ describe('App', () => {
     expect(screen.getByLabelText('Max Gap (m)')).not.toBeDisabled();
   });
 
-  it('DP Epsilon and Max Gap have a help icon with an explanatory tooltip', async () => {
+  it('DP Epsilon help icon opens an explanatory tooltip on click', async () => {
     render(<App />);
     await uploadFile();
     await waitFor(() => screen.getByTestId('elevation-chart'));
 
     fireEvent.click(screen.getByText('Tech Details'));
 
-    expect(screen.getByTitle(/deviate/)).toBeInTheDocument();
-    expect(screen.getByTitle(/consecutive points/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'DP Epsilon help' }));
+    expect(screen.getByRole('tooltip')).toHaveTextContent(/deviate/);
+  });
+
+  it('Max Gap help icon opens an explanatory tooltip on click', async () => {
+    render(<App />);
+    await uploadFile();
+    await waitFor(() => screen.getByTestId('elevation-chart'));
+
+    fireEvent.click(screen.getByText('Tech Details'));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Max Gap help' }));
+    expect(screen.getByRole('tooltip')).toHaveTextContent(/consecutive points/);
   });
 
   it('editing DP Epsilon and blurring re-parses the route and re-fetches weather', async () => {
