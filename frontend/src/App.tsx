@@ -601,7 +601,11 @@ function App() {
             <div className="collapse-content flex flex-col gap-3">
 
               <div className="form-control w-full">
-                <label htmlFor="dp-epsilon" className="label pb-1">
+                <label
+                  htmlFor="dp-epsilon"
+                  className="label pb-1"
+                  title="Maximum distance a point can deviate from a straight line before it's kept. Higher values simplify the route more aggressively (fewer points, coarser shape); lower values preserve more detail."
+                >
                   <span className="label-text">DP Epsilon (m)</span>
                 </label>
                 <input
@@ -621,7 +625,11 @@ function App() {
               </div>
 
               <div className="form-control w-full">
-                <label htmlFor="dp-max-gap" className="label pb-1">
+                <label
+                  htmlFor="dp-max-gap"
+                  className="label pb-1"
+                  title="Maximum distance allowed between two consecutive points after simplification. Prevents long straight stretches from becoming too sparse, keeping weather sampling accurate."
+                >
                   <span className="label-text">Max Gap (m)</span>
                 </label>
                 <input
