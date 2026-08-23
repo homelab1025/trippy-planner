@@ -11,4 +11,4 @@ images:
   newTag: "3.4.0"
 - name: ghcr.io/homelab1025/trippy-planner-backend
   newName: ghcr.io/homelab1025/trippy-planner-backend
-  newTag: "2.6.0"
+  newTag: "2.7.0"
