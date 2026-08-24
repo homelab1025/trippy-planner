@@ -2,6 +2,8 @@ import React from 'react';
 import { CloudRain } from 'lucide-react';
 import type { ChartDataPoint } from '../hooks/useWeatherChartData';
 import { CHART_MARGIN_LEFT, CHART_YAXIS_LEFT_WIDTH } from './chartConstants';
+import { useNewUiTheme } from '../hooks/useNewUiTheme';
+import { getChartPalette } from '../theme/chartColors';
 
 interface PrecipBarRowProps {
   samplePoints: ChartDataPoint[];
@@ -17,6 +19,7 @@ const BAR_BOTTOM_Y = 36;
 const BAR_GAP = 2;
 
 const PrecipBarRow: React.FC<PrecipBarRowProps> = ({ samplePoints, distanceRange, chartWidth, hoveredDistance }) => {
+  const palette = getChartPalette(useNewUiTheme());
   if (!samplePoints.length || chartWidth < 1) return null;
 
   const [dMin, dMax] = distanceRange;
@@ -30,7 +33,7 @@ const PrecipBarRow: React.FC<PrecipBarRowProps> = ({ samplePoints, distanceRange
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
       <div style={{
         position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)',
-        color: '#94a3b8', pointerEvents: 'none',
+        color: palette.accentMuted, pointerEvents: 'none',
       }}>
         <CloudRain size={14} />
       </div>
@@ -51,7 +54,7 @@ const PrecipBarRow: React.FC<PrecipBarRowProps> = ({ samplePoints, distanceRange
               y={BAR_BOTTOM_Y - barHeight}
               width={barWidth}
               height={barHeight}
-              fill="#3b82f6"
+              fill={palette.precipBar}
               opacity={opacity}
               rx={2}
             />
@@ -61,7 +64,7 @@ const PrecipBarRow: React.FC<PrecipBarRowProps> = ({ samplePoints, distanceRange
           <line
             x1={xOf(hoveredDistance)} y1={0}
             x2={xOf(hoveredDistance)} y2={40}
-            stroke="#aaa" strokeWidth={1} strokeDasharray="3 3"
+            stroke={palette.crosshair} strokeWidth={1} strokeDasharray="3 3"
           />
         )}
       </svg>
