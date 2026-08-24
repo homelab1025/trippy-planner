@@ -693,14 +693,14 @@ it('uses the alpine palette route and marker colors when ?ui=new', () => {
     />
   );
   expect(container.querySelector('[data-testid="polyline"]')).toHaveAttribute('data-color', '#256a4e');
-  const markers = screen.getAllByTestId('circle-marker');
+  const markers = container.querySelectorAll('[data-testid="circle-marker"]');
   expect(markers[0]).toHaveAttribute('data-fill-color', '#ea9a4e'); // hover marker (outer)
   expect(markers[2]).toHaveAttribute('data-fill-color', '#ba1a1a'); // debug pin
   window.history.pushState({}, '', '/');
 });
 ```
 
-(`Tooltip` from `react-leaflet` is also used for debug pins — it isn't mocked yet, since no prior test rendered `debugPins`; add `Tooltip: ({ children }: { children: React.ReactNode }) => <>{children}</>` to the mock so this test doesn't throw on the unmocked export.)
+(`Tooltip` from `react-leaflet` is also used for debug pins — it isn't mocked yet, since no prior test rendered `debugPins`; add `Tooltip: ({ children }: { children: React.ReactNode }) => <>{children}</>` to the mock so this test doesn't throw on the unmocked export. Query markers via `container.querySelectorAll`, not `screen.getAllByTestId` — this file has no `afterEach(cleanup)`, so unmounted DOM from earlier tests in the same file lingers in `document.body` and would shift indices in a global query.)
 
 - [ ] **Step 3: Run test to verify it fails**
 

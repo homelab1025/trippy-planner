@@ -3,6 +3,8 @@ import { MapContainer, TileLayer, Polyline, CircleMarker, Tooltip, useMap } from
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { RouteData } from '../utils/gpxParser';
+import { useNewUiTheme } from '../hooks/useNewUiTheme';
+import { getChartPalette } from '../theme/chartColors';
 
 function FitBounds({ route }: { route: RouteData }) {
   const map = useMap();
@@ -26,6 +28,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ route, hoveredPoint, debugP
     [route]
   );
   const center = positions[0];
+  const palette = getChartPalette(useNewUiTheme());
 
   return (
     <MapContainer
@@ -38,18 +41,18 @@ const MapComponent: React.FC<MapComponentProps> = ({ route, hoveredPoint, debugP
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       <FitBounds route={route} />
-      <Polyline positions={positions} color="#2d5a27" weight={5} opacity={0.7} />
+      <Polyline positions={positions} color={palette.routeLine} weight={5} opacity={0.7} />
 
       {hoveredPoint && (<>
         <CircleMarker
           center={[hoveredPoint.lat, hoveredPoint.lng]}
           radius={24}
-          pathOptions={{ fillColor: '#FF6B00', fillOpacity: 0.12, stroke: false }}
+          pathOptions={{ fillColor: palette.hoverMarker, fillOpacity: 0.12, stroke: false }}
         />
         <CircleMarker
           center={[hoveredPoint.lat, hoveredPoint.lng]}
           radius={10}
-          pathOptions={{ fillColor: '#FF6B00', fillOpacity: 1, stroke: true, color: 'white', weight: 2.5 }}
+          pathOptions={{ fillColor: palette.hoverMarker, fillOpacity: 1, stroke: true, color: 'white', weight: 2.5 }}
         />
       </>)}
 
@@ -58,7 +61,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ route, hoveredPoint, debugP
           key={pin.label}
           center={[pin.lat, pin.lng]}
           radius={10}
-          pathOptions={{ fillColor: '#e53e3e', fillOpacity: 1, stroke: true, color: 'white', weight: 2 }}
+          pathOptions={{ fillColor: palette.debugPin, fillOpacity: 1, stroke: true, color: 'white', weight: 2 }}
         >
           <Tooltip permanent direction="top">{pin.label}</Tooltip>
         </CircleMarker>
