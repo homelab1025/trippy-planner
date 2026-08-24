@@ -20,7 +20,9 @@ vi.mock('recharts', () => ({
   Area: ({ dataKey }: { dataKey: string }) => <div data-testid={`area-${dataKey}`} />,
   Line: ({ dataKey }: { dataKey: string }) => <div data-testid={`line-${dataKey}`} />,
   ReferenceLine: ({ x }: { x: number }) => <div data-testid="reference-line" data-x={x} />,
-  ReferenceDot: ({ x, y }: { x: number; y: number }) => <div data-testid="reference-dot" data-x={x} data-y={y} />,
+  ReferenceDot: ({ x, y, fill }: { x: number; y: number; fill?: string }) => (
+    <div data-testid="reference-dot" data-x={x} data-y={y} data-fill={fill} />
+  ),
   XAxis: () => null,
   YAxis: () => null,
   CartesianGrid: () => null,
@@ -122,5 +124,14 @@ describe('ElevationChart', () => {
     ];
     render(<ElevationChart {...defaultProps} data={dataWithTemp} />);
     expect(screen.getByTestId('line-temp')).toBeInTheDocument();
+  });
+
+  it('uses the alpine palette elevation colors when ?ui=new', () => {
+    window.history.pushState({}, '', '/?ui=new');
+    const { container } = render(<ElevationChart {...defaultProps} hoveredIndex={1} />);
+    const stop = container.querySelector('#colorEle stop');
+    expect(stop).toHaveAttribute('stop-color', '#256a4e');
+    expect(screen.getByTestId('reference-dot')).toHaveAttribute('data-fill', '#256a4e');
+    window.history.pushState({}, '', '/');
   });
 });
