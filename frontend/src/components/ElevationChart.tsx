@@ -5,6 +5,8 @@ import {
 import type { Climb } from '../utils/climbDetector';
 import { ClimbOverlay, type ClimbRange } from './ClimbOverlay';
 import { CHART_MARGIN_LEFT, CHART_YAXIS_LEFT_WIDTH } from './chartConstants';
+import { useNewUiTheme } from '../hooks/useNewUiTheme';
+import { getChartPalette } from '../theme/chartColors';
 
 export interface ElevationPoint {
   distance: number;
@@ -33,6 +35,7 @@ const ElevationChart: React.FC<ElevationChartProps> = ({
   );
 
   const hasTemp = data.some(d => d.temp != null);
+  const palette = getChartPalette(useNewUiTheme());
 
   return (
     <div style={{ flex: 1, minWidth: 0, height: '100%', position: 'relative' }}>
@@ -49,11 +52,11 @@ const ElevationChart: React.FC<ElevationChartProps> = ({
         >
           <defs>
             <linearGradient id="colorEle" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#2d5a27" stopOpacity={0.3} />
-              <stop offset="95%" stopColor="#2d5a27" stopOpacity={0} />
+              <stop offset="5%" stopColor={palette.elevationGradient} stopOpacity={0.3} />
+              <stop offset="95%" stopColor={palette.elevationGradient} stopOpacity={0} />
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={palette.gridStroke} />
           <XAxis
             dataKey="distance"
             type="number"
@@ -62,7 +65,7 @@ const ElevationChart: React.FC<ElevationChartProps> = ({
             fontSize={11}
             tickLine={false}
             axisLine={false}
-            stroke="#888"
+            stroke={palette.axisStroke}
           />
           <YAxis
             yAxisId="elevation"
@@ -71,7 +74,7 @@ const ElevationChart: React.FC<ElevationChartProps> = ({
             axisLine={false}
             tickLine={false}
             fontSize={10}
-            stroke="#888"
+            stroke={palette.axisStroke}
             tickFormatter={(v) => `${Math.round(v)}m`}
           />
           {hasTemp && (
@@ -82,7 +85,7 @@ const ElevationChart: React.FC<ElevationChartProps> = ({
               axisLine={false}
               tickLine={false}
               fontSize={10}
-              stroke="#ff7300"
+              stroke={palette.tempStroke}
               tickFormatter={(v) => `${Math.round(v)}°C`}
             />
           )}
@@ -90,7 +93,7 @@ const ElevationChart: React.FC<ElevationChartProps> = ({
             yAxisId="elevation"
             type="monotone"
             dataKey="elevation"
-            stroke="#2d5a27"
+            stroke={palette.elevationStroke}
             fillOpacity={1}
             fill="url(#colorEle)"
             name="Elevation"
@@ -103,7 +106,7 @@ const ElevationChart: React.FC<ElevationChartProps> = ({
               yAxisId="temp"
               type="monotone"
               dataKey="temp"
-              stroke="#ff7300"
+              stroke={palette.tempStroke}
               dot={false}
               name="Temperature"
               isAnimationActive={false}
@@ -115,7 +118,7 @@ const ElevationChart: React.FC<ElevationChartProps> = ({
               <ReferenceLine
                 x={data[hoveredIndex].distance}
                 yAxisId="elevation"
-                stroke="#aaa"
+                stroke={palette.hoverLine}
                 strokeWidth={1}
                 strokeDasharray="3 3"
               />
@@ -124,7 +127,7 @@ const ElevationChart: React.FC<ElevationChartProps> = ({
                 y={data[hoveredIndex].elevation}
                 yAxisId="elevation"
                 r={4}
-                fill="#2d5a27"
+                fill={palette.hoverDot}
                 stroke="white"
                 strokeWidth={2}
               />

@@ -1,19 +1,13 @@
 import React, { useState } from 'react';
 import { useXAxisScale, useYAxisScale, usePlotArea } from 'recharts';
 import type { Climb } from '../utils/climbDetector';
+import { useNewUiTheme } from '../hooks/useNewUiTheme';
+import { getChartPalette } from '../theme/chartColors';
 
 export interface ClimbRange extends Climb {
   x1: number;  // km
   x2: number;  // km
 }
-
-const CATEGORY_COLORS: Record<Climb['category'], string> = {
-  Cat4: '#F5C518',
-  Cat3: '#F5A623',
-  Cat2: '#E8601C',
-  Cat1: '#D0021B',
-  HC:   '#7B0099',
-};
 
 const CATEGORY_FILL_OPACITY: Record<Climb['category'], number> = {
   Cat4: 0.30,
@@ -43,6 +37,7 @@ interface ClimbOverlayProps {
 
 const ClimbOverlay: React.FC<ClimbOverlayProps> = ({ climbRanges, data }) => {
   const [hoveredClimbIdx, setHoveredClimbIdx] = useState<number | null>(null);
+  const palette = getChartPalette(useNewUiTheme());
 
   const xScale = useXAxisScale();
   const yScale = useYAxisScale('elevation');
@@ -78,8 +73,8 @@ const ClimbOverlay: React.FC<ClimbOverlayProps> = ({ climbRanges, data }) => {
         </clipPath>
         {climbRanges.map((cr, i) => (
           <linearGradient key={`grad-${i}`} id={`climb-grad-${i}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={CATEGORY_COLORS[cr.category]} stopOpacity={CATEGORY_FILL_OPACITY[cr.category]} />
-            <stop offset="100%" stopColor={CATEGORY_COLORS[cr.category]} stopOpacity={0} />
+            <stop offset="0%" stopColor={palette.climbCategory[cr.category]} stopOpacity={CATEGORY_FILL_OPACITY[cr.category]} />
+            <stop offset="100%" stopColor={palette.climbCategory[cr.category]} stopOpacity={0} />
           </linearGradient>
         ))}
       </defs>
@@ -110,7 +105,7 @@ const ClimbOverlay: React.FC<ClimbOverlayProps> = ({ climbRanges, data }) => {
           <polyline
             key={`stroke-${i}`}
             points={spanPoints.map(p => `${p.x},${p.y}`).join(' ')}
-            stroke={CATEGORY_COLORS[cr.category]}
+            stroke={palette.climbCategory[cr.category]}
             strokeWidth={2.5}
             fill="none"
           />
@@ -123,7 +118,7 @@ const ClimbOverlay: React.FC<ClimbOverlayProps> = ({ climbRanges, data }) => {
         , elevPoints[0]);
         const peakPx = peakPt.x;
         const peakPy = peakPt.y;
-        const color = CATEGORY_COLORS[cr.category];
+        const color = palette.climbCategory[cr.category];
         const label = CATEGORY_LABELS[cr.category];
         const badgeWidth = label.length <= 2 ? 28 : 42;
         const badgeHeight = 16;
@@ -186,7 +181,7 @@ const ClimbOverlay: React.FC<ClimbOverlayProps> = ({ climbRanges, data }) => {
                   fill="white"
                   style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.18))' }}
                 />
-                <text x={popupX + 8} y={popupY + 18} fontSize={11} fill="#444">
+                <text x={popupX + 8} y={popupY + 18} fontSize={11} fill={palette.popupText}>
                   {lengthKm} km · {grade}%
                 </text>
               </g>
