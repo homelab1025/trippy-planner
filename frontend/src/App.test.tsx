@@ -463,6 +463,28 @@ describe('App', () => {
   });
 });
 
+describe('new UI theme', () => {
+  afterEach(() => {
+    window.history.pushState({}, '', '/');
+    document.documentElement.removeAttribute('data-theme');
+    cleanup();
+  });
+
+  it('sets data-theme to alpine and drops the max-width wrapper when ?ui=new', async () => {
+    window.history.pushState({}, '', '/?ui=new');
+    render(<App />);
+    await waitFor(() => expect(document.documentElement.dataset.theme).toBe('alpine'));
+    expect(document.querySelector('.max-w-\\[1400px\\]')).not.toBeInTheDocument();
+  });
+
+  it('sets data-theme to emerald and keeps the max-width wrapper without the param', async () => {
+    window.history.pushState({}, '', '/');
+    render(<App />);
+    await waitFor(() => expect(document.documentElement.dataset.theme).toBe('emerald'));
+    expect(document.querySelector('.max-w-\\[1400px\\]')).toBeInTheDocument();
+  });
+});
+
 describe('token landing', () => {
   beforeEach(() => {
     window.history.replaceState({}, '', '/')
