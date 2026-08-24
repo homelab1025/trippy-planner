@@ -9,3 +9,11 @@
   border-radius: 4px;
   z-index: 1;
 }
+
+[data-theme='alpine'] {
+  font-family: 'Hanken Grotesk', ui-sans-serif, system-ui, sans-serif;
+}
+
+[data-theme='alpine'] .shadow {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
