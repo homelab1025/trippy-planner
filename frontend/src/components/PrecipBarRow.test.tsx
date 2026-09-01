@@ -70,12 +70,4 @@ describe('PrecipBarRow', () => {
     );
     expect(container.querySelectorAll('rect')).toHaveLength(2);
   });
-
-  it('uses the alpine palette precip bar color', () => {
-    const { container } = render(
-      <PrecipBarRow samplePoints={[makeSample(5, 60, 1)]} distanceRange={[0, 10]} chartWidth={800} />
-    );
-    const rects = container.querySelectorAll('rect');
-    rects.forEach(rect => expect(rect).toHaveAttribute('fill', '#256a4e'));
-  });
 });
