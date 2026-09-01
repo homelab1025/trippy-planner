@@ -3,8 +3,7 @@ import { MapContainer, TileLayer, Polyline, CircleMarker, Tooltip, useMap } from
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { RouteData } from '../utils/gpxParser';
-import { useNewUiTheme } from '../hooks/useNewUiTheme';
-import { getChartPalette } from '../theme/chartColors';
+import { chartPalette } from '../theme/chartColors';
 
 function FitBounds({ route }: { route: RouteData }) {
   const map = useMap();
@@ -28,7 +27,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ route, hoveredPoint, debugP
     [route]
   );
   const center = positions[0];
-  const palette = getChartPalette(useNewUiTheme());
+  const palette = chartPalette;
 
   return (
     <MapContainer

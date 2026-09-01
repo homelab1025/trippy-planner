@@ -126,12 +126,10 @@ describe('ElevationChart', () => {
     expect(screen.getByTestId('line-temp')).toBeInTheDocument();
   });
 
-  it('uses the alpine palette elevation colors when ?ui=new', () => {
-    window.history.pushState({}, '', '/?ui=new');
+  it('uses the alpine palette elevation colors', () => {
     const { container } = render(<ElevationChart {...defaultProps} hoveredIndex={1} />);
     const stop = container.querySelector('#colorEle stop');
     expect(stop).toHaveAttribute('stop-color', '#256a4e');
     expect(screen.getByTestId('reference-dot')).toHaveAttribute('data-fill', '#256a4e');
-    window.history.pushState({}, '', '/');
   });
 });

@@ -2,8 +2,7 @@ import React from 'react';
 import { CloudRain } from 'lucide-react';
 import type { ChartDataPoint } from '../hooks/useWeatherChartData';
 import { CHART_MARGIN_LEFT, CHART_YAXIS_LEFT_WIDTH } from './chartConstants';
-import { useNewUiTheme } from '../hooks/useNewUiTheme';
-import { getChartPalette } from '../theme/chartColors';
+import { chartPalette } from '../theme/chartColors';
 
 interface PrecipBarRowProps {
   samplePoints: ChartDataPoint[];
@@ -19,7 +18,7 @@ const BAR_BOTTOM_Y = 36;
 const BAR_GAP = 2;
 
 const PrecipBarRow: React.FC<PrecipBarRowProps> = ({ samplePoints, distanceRange, chartWidth, hoveredDistance }) => {
-  const palette = getChartPalette(useNewUiTheme());
+  const palette = chartPalette;
   if (!samplePoints.length || chartWidth < 1) return null;
 
   const [dMin, dMax] = distanceRange;

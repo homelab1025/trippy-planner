@@ -2,8 +2,7 @@ import React from 'react';
 import { Wind } from 'lucide-react';
 import type { ChartDataPoint } from '../hooks/useWeatherChartData';
 import { CHART_MARGIN_LEFT, CHART_YAXIS_LEFT_WIDTH } from './chartConstants';
-import { useNewUiTheme } from '../hooks/useNewUiTheme';
-import { getChartPalette } from '../theme/chartColors';
+import { chartPalette } from '../theme/chartColors';
 
 interface WindArrowRowProps {
   samplePoints: ChartDataPoint[];
@@ -16,7 +15,7 @@ const PLOT_LEFT = CHART_MARGIN_LEFT + CHART_YAXIS_LEFT_WIDTH;
 const PLOT_RIGHT_OFFSET = 55;
 
 const WindArrowRow: React.FC<WindArrowRowProps> = ({ samplePoints, distanceRange, chartWidth, hoveredDistance }) => {
-  const palette = getChartPalette(useNewUiTheme());
+  const palette = chartPalette;
   if (!samplePoints.length || chartWidth < 1) return null;
 
   const [dMin, dMax] = distanceRange;

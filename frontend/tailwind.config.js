@@ -5,7 +5,6 @@ export default {
   plugins: [daisyui],
   daisyui: {
     themes: [
-      'emerald',
       {
         alpine: {
           primary: '#256a4e',
