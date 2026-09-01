@@ -115,7 +115,7 @@ test('hover over elevation chart shows polished orange marker on map', async ({ 
   await expect(page.locator('.leaflet-overlay-pane svg path')).toBeVisible();
   const elevationRow = page.locator('.elevation-row');
   await elevationRow.hover({ position: { x: 200, y: 50 } });
-  await expect(page.locator('.leaflet-overlay-pane svg path[fill="#FF6B00"]')).toHaveCount(2);
+  await expect(page.locator('.leaflet-overlay-pane svg path[fill="#ea9a4e"]')).toHaveCount(2);
 });
 
 test('uploading a non-GPX file shows alert and leaves app in empty state', async ({ page }) => {

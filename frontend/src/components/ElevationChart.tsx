@@ -5,8 +5,7 @@ import {
 import type { Climb } from '../utils/climbDetector';
 import { ClimbOverlay, type ClimbRange } from './ClimbOverlay';
 import { CHART_MARGIN_LEFT, CHART_YAXIS_LEFT_WIDTH } from './chartConstants';
-import { useNewUiTheme } from '../hooks/useNewUiTheme';
-import { getChartPalette } from '../theme/chartColors';
+import { chartPalette } from '../theme/chartColors';
 
 export interface ElevationPoint {
   distance: number;
@@ -35,7 +34,7 @@ const ElevationChart: React.FC<ElevationChartProps> = ({
   );
 
   const hasTemp = data.some(d => d.temp != null);
-  const palette = getChartPalette(useNewUiTheme());
+  const palette = chartPalette;
 
   return (
     <div style={{ flex: 1, minWidth: 0, height: '100%', position: 'relative' }}>

@@ -24,7 +24,6 @@ import { HoverPane } from './components/HoverPane';
 import { WindArrowRow } from './components/WindArrowRow';
 import { PrecipBarRow } from './components/PrecipBarRow';
 import { Tooltip } from './components/Tooltip';
-import { useNewUiTheme } from './hooks/useNewUiTheme';
 import { useWeatherChartData } from './hooks/useWeatherChartData';
 import type { ChartDataPoint, WeatherSample } from './hooks/useWeatherChartData';
 
@@ -72,12 +71,6 @@ function App() {
   const [routesRefreshToken, setRoutesRefreshToken] = useState(0);
   const [isViewingShared, setIsViewingShared] = useState(false);
   const [signInOpen, setSignInOpen] = useState(false);
-
-  const isNewUi = useNewUiTheme();
-
-  React.useEffect(() => {
-    document.documentElement.dataset.theme = isNewUi ? 'alpine' : 'emerald';
-  }, [isNewUi]);
 
   const buildDate = format(new Date(__BUILD_DATE__), 'd MMM yyyy HH:mm');
 
@@ -396,7 +389,7 @@ function App() {
   }, [route, chartData]);
 
   return (
-    <div className={`flex flex-col h-screen overflow-y-auto ${isNewUi ? 'w-full' : 'max-w-[1400px] mx-auto'} p-3 sm:p-6 gap-4 sm:gap-6`}>
+    <div className="flex flex-col h-screen overflow-y-auto w-full p-3 sm:p-6 gap-4 sm:gap-6">
       <SignInPanel open={signInOpen} onClose={() => setSignInOpen(false)} />
 
       {/* Navbar with logo overlapping its bottom-left edge on lg+; inline on mobile */}

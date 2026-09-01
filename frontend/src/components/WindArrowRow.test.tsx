@@ -66,13 +66,11 @@ describe('WindArrowRow', () => {
     expect(baseline?.getAttribute('stroke-dasharray')).toBeTruthy();
   });
 
-  it('uses the alpine palette wind accent color when ?ui=new', () => {
-    window.history.pushState({}, '', '/?ui=new');
+  it('uses the alpine palette wind accent color', () => {
     const { container } = render(
       <WindArrowRow samplePoints={[makeSample(5, 10, 90)]} distanceRange={[0, 10]} chartWidth={800} />
     );
     const arrowLine = container.querySelector('g[data-arrow] line');
     expect(arrowLine).toHaveAttribute('stroke', '#48663f');
-    window.history.pushState({}, '', '/');
   });
 });

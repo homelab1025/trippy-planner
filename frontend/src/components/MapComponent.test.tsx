@@ -56,8 +56,7 @@ describe('MapComponent', () => {
     expect(screen.queryAllByTestId('circle-marker')).toHaveLength(2);
   });
 
-  it('uses the alpine palette route and marker colors when ?ui=new', () => {
-    window.history.pushState({}, '', '/?ui=new');
+  it('uses the alpine palette route and marker colors', () => {
     const { container } = render(
       <MapComponent
         route={mockRoute}
@@ -69,6 +68,5 @@ describe('MapComponent', () => {
     const markers = container.querySelectorAll('[data-testid="circle-marker"]');
     expect(markers[0]).toHaveAttribute('data-fill-color', '#ea9a4e'); // hover marker (outer)
     expect(markers[2]).toHaveAttribute('data-fill-color', '#ba1a1a'); // debug pin
-    window.history.pushState({}, '', '/');
   });
 });

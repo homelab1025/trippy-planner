@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { useXAxisScale, useYAxisScale, usePlotArea } from 'recharts';
 import type { Climb } from '../utils/climbDetector';
-import { useNewUiTheme } from '../hooks/useNewUiTheme';
-import { getChartPalette } from '../theme/chartColors';
+import { chartPalette } from '../theme/chartColors';
 
 export interface ClimbRange extends Climb {
   x1: number;  // km
@@ -37,7 +36,7 @@ interface ClimbOverlayProps {
 
 const ClimbOverlay: React.FC<ClimbOverlayProps> = ({ climbRanges, data }) => {
   const [hoveredClimbIdx, setHoveredClimbIdx] = useState<number | null>(null);
-  const palette = getChartPalette(useNewUiTheme());
+  const palette = chartPalette;
 
   const xScale = useXAxisScale();
   const yScale = useYAxisScale('elevation');
