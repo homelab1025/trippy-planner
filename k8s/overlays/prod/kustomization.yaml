@@ -8,7 +8,7 @@ resources:
 images:
 - name: ghcr.io/homelab1025/trippy-planner-frontend
   newName: ghcr.io/homelab1025/trippy-planner-frontend
-  newTag: "3.7.0"
+  newTag: "3.8.0"
 - name: ghcr.io/homelab1025/trippy-planner-backend
   newName: ghcr.io/homelab1025/trippy-planner-backend
   newTag: "2.8.0"
