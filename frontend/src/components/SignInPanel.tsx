@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type SubmitEvent } from 'react';
 import { authApi } from '../apiClient';
 
 interface Props {
@@ -23,7 +23,8 @@ export function SignInPanel({ open, onClose }: Props) {
 
   if (!open) return null;
 
-  async function handleSendLink() {
+  async function handleSendLink(e: SubmitEvent) {
+    e.preventDefault();
     setState('sending');
     await authApi.requestMagicLink({ email });
     setState('sent');
@@ -43,22 +44,23 @@ export function SignInPanel({ open, onClose }: Props) {
         {state === 'sent' ? (
           <p className="text-sm text-success">Check your email for a sign-in link.</p>
         ) : (
-          <div className="flex flex-col gap-2">
+          <form className="flex flex-col gap-2" onSubmit={handleSendLink}>
             <input
               type="email"
               className="input input-bordered input-sm w-full"
               placeholder="Your email address"
               value={email}
               onChange={e => setEmail(e.target.value)}
+              required
             />
             <button
+              type="submit"
               className="btn btn-primary btn-sm w-full"
-              onClick={handleSendLink}
               disabled={state === 'sending'}
             >
               {state === 'sending' ? 'Sending…' : 'Send link'}
             </button>
-          </div>
+          </form>
         )}
       </div>
       <div className="modal-backdrop" onClick={onClose} />
