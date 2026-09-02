@@ -14,7 +14,7 @@ export function AuthHeader({ user, onSignOut, onSignIn }: Props) {
   }
   return (
     <div className="flex items-center gap-3 text-sm">
-      <span className="text-base-content/70">{user.email}</span>
+      <span className="text-primary-content">{user.email}</span>
       <button className="btn btn-ghost btn-xs" onClick={onSignOut}>
         Sign out
       </button>
