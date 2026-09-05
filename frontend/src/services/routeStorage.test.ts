@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { loadStoredRoute, saveStoredRoute, clearStoredRoute } from './routeStorage';
+import type { StoredRoute } from './routeStorage';
 
 const sampleRoute = {
   name: 'My Ride',
@@ -51,5 +52,15 @@ describe('routeStorage', () => {
     };
     expect(() => saveStoredRoute(sampleRoute)).not.toThrow();
     localStorage.setItem = original;
+  });
+
+  it('StoredRoute type includes checkpointsJson', () => {
+    const withCheckpoints: StoredRoute = { ...sampleRoute, checkpointsJson: '[]' };
+    expect(withCheckpoints.checkpointsJson).toBe('[]');
+  });
+
+  it('round-trips checkpointsJson when present', () => {
+    saveStoredRoute({ ...sampleRoute, checkpointsJson: '[{"id":"end","distanceM":1000}]' });
+    expect(loadStoredRoute()).toEqual({ ...sampleRoute, checkpointsJson: '[{"id":"end","distanceM":1000}]' });
   });
 });

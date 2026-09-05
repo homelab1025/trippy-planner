@@ -8,6 +8,7 @@ export interface StoredRoute {
   id?: string;
   dpEpsilonMeters?: number;
   dpMaxGapMeters?: number;
+  checkpointsJson?: string;
 }
 
 export function loadStoredRoute(): StoredRoute | null {
