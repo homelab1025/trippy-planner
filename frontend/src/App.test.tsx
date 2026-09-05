@@ -30,6 +30,8 @@ const mockWeather = {
 
 // capturedHoverCb is populated by the ElevationChart stub below.
 let capturedHoverCb: ((index: number | null) => void) | null = null;
+// capturedOnCheckpointsChange is populated by the CheckpointTrackRow stub below.
+let capturedOnCheckpointsChange: ((next: unknown[]) => void) | null = null;
 
 // ── Mocks ───────────────────────────────────────────────────────────────────
 
@@ -121,6 +123,13 @@ vi.mock('./components/PrecipBarRow', () => ({
   ),
 }));
 
+vi.mock('./components/CheckpointTrackRow', () => ({
+  CheckpointTrackRow: ({ onChange }: { onChange: (next: unknown[]) => void }) => {
+    capturedOnCheckpointsChange = onChange;
+    return <div data-testid="checkpoint-track-row" />;
+  },
+}));
+
 vi.mock('./components/HoverPane', () => ({
   HoverPane: ({ hoveredData }: {
     hoveredData: { temp?: number } | null;
@@ -170,6 +179,7 @@ describe('App', () => {
       new Map([[0, { ...mockWeather, temp: 99 }]])
     );
     capturedHoverCb = null;
+    capturedOnCheckpointsChange = null;
     vi.spyOn(window, 'alert').mockImplementation(() => {});
   });
 
@@ -198,6 +208,29 @@ describe('App', () => {
       expect(screen.getByTestId('wind-chart')).toBeInTheDocument();
       expect(screen.getByTestId('precip-chart')).toBeInTheDocument();
     });
+  });
+
+  it('editing checkpoints marks the ride dirty and shows the Refresh button', async () => {
+    render(<App />);
+    await uploadFile();
+    await waitFor(() => screen.getByTestId('checkpoint-track-row'));
+    expect(screen.queryByText('Refresh')).not.toBeInTheDocument();
+
+    await act(async () => {
+      capturedOnCheckpointsChange?.([
+        { id: 'end', distanceM: 1000, arrivalTime: new Date('2026-01-01T09:00:00Z'), pinned: true },
+      ]);
+    });
+
+    expect(screen.getByText('Refresh')).toBeInTheDocument();
+  });
+
+  it('shows a Checkpoints panel listing each checkpoint\'s time after a route loads', async () => {
+    render(<App />);
+    await uploadFile();
+    await waitFor(() => screen.getByTestId('checkpoint-track-row'));
+    fireEvent.click(screen.getByText('Checkpoints'));
+    expect(screen.getByText(/finish/i)).toBeInTheDocument();
   });
 
   it('changing avg speed re-fetches weather and updates charts', async () => {
