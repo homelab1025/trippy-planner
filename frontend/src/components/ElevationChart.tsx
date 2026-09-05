@@ -22,11 +22,10 @@ interface ElevationChartProps {
   onResize: (width: number) => void;
   hoveredIndex: number | null;
   checkpoints: Checkpoint[];
-  startTime: Date;
 }
 
 const ElevationChart: React.FC<ElevationChartProps> = ({
-  data, climbs, onHoverIndex, onResize, hoveredIndex, checkpoints, startTime,
+  data, climbs, onHoverIndex, onResize, hoveredIndex, checkpoints,
 }) => {
   const climbRanges = useMemo((): ClimbRange[] =>
     climbs.map(climb => ({
@@ -116,7 +115,7 @@ const ElevationChart: React.FC<ElevationChartProps> = ({
             />
           )}
           <ClimbOverlay climbRanges={climbRanges} data={data} />
-          <CheckpointOverlay checkpoints={checkpoints} startTime={startTime} data={data} />
+          <CheckpointOverlay checkpoints={checkpoints} data={data} />
           {hoveredIndex !== null && data[hoveredIndex] != null && (
             <>
               <ReferenceLine

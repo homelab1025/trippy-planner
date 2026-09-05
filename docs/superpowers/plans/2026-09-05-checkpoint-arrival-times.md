@@ -504,7 +504,7 @@ git commit -m "feat(frontend): add checkpoint-based arrival time engine"
 
 **Interfaces:**
 - Consumes: `Checkpoint` (Task 4).
-- Produces: `<CheckpointOverlay checkpoints={...} startTime={...} data={...} />`, a chart-internal component rendered by `ElevationChart` — no other file needs to import it directly.
+- Produces: `<CheckpointOverlay checkpoints={...} data={...} />`, a chart-internal component rendered by `ElevationChart` — no other file needs to import it directly.
 
 - [ ] **Step 1: Add palette colors (test first)**
 
@@ -554,11 +554,13 @@ interface ElevDataPoint {
 
 interface CheckpointOverlayProps {
   checkpoints: Checkpoint[];
-  startTime: Date;
   data: ElevDataPoint[];
 }
 
-const CheckpointOverlay: React.FC<CheckpointOverlayProps> = ({ checkpoints, startTime, data }) => {
+// Note: this component only needs each checkpoint's distance to place a marker —
+// the synthesized start point is always distanceKm 0, so no arrival-time value is
+// ever read here. Do not add a startTime prop "for symmetry"; it would be unused.
+const CheckpointOverlay: React.FC<CheckpointOverlayProps> = ({ checkpoints, data }) => {
   const palette = chartPalette;
   const xScale = useXAxisScale();
   const yScale = useYAxisScale('elevation');
@@ -625,7 +627,7 @@ vi.mock('./CheckpointOverlay', () => ({
 }));
 ```
 
-Add `checkpoints: []` and `startTime: new Date('2026-06-03T08:00:00Z')` to `defaultProps`, and a new test:
+Add `checkpoints: []` to `defaultProps`, and a new test:
 
 ```typescript
   it('renders CheckpointOverlay', () => {
@@ -634,23 +636,24 @@ Add `checkpoints: []` and `startTime: new Date('2026-06-03T08:00:00Z')` to `defa
   });
 ```
 
-Run `npx vitest run src/components/ElevationChart.test.tsx` — expect FAIL (`CheckpointOverlay` not rendered, and `ElevationChartProps` doesn't accept `checkpoints`/`startTime` yet).
+Run `npx vitest run src/components/ElevationChart.test.tsx` — expect FAIL (`CheckpointOverlay` not rendered, and `ElevationChartProps` doesn't accept `checkpoints` yet).
 
 Implement in `ElevationChart.tsx`: add to `ElevationChartProps`:
 
 ```typescript
   checkpoints: Checkpoint[];
-  startTime: Date;
 ```
 
-(import `Checkpoint` from `../utils/speedProfile`, import `CheckpointOverlay` from `./CheckpointOverlay`), destructure the two new props, and render it next to `<ClimbOverlay>`:
+(import `Checkpoint` from `../utils/speedProfile`, import `CheckpointOverlay` from `./CheckpointOverlay`), destructure the new prop, and render it next to `<ClimbOverlay>`:
 
 ```tsx
           <ClimbOverlay climbRanges={climbRanges} data={data} />
-          <CheckpointOverlay checkpoints={checkpoints} startTime={startTime} data={data} />
+          <CheckpointOverlay checkpoints={checkpoints} data={data} />
 ```
 
-Run tests again — expect PASS (including all pre-existing `ElevationChart` tests, since `checkpoints`/`startTime` are additive props with fixed values in `defaultProps`).
+Do not add a `startTime` prop to `ElevationChart` for this — `CheckpointOverlay` doesn't use it (see the note on its props above), and nothing else in `ElevationChart` needs it either.
+
+Run tests again — expect PASS (including all pre-existing `ElevationChart` tests, since `checkpoints` is an additive prop with a fixed value in `defaultProps`).
 
 - [ ] **Step 4: Commit**
 
@@ -2078,7 +2081,7 @@ import { buildSequence, impliedSpeedKmh } from './utils/speedProfile';
 
 (`buildSequence`/`impliedSpeedKmh` come from the shared `speedProfile.ts` utility from Task 4, not from `CheckpointTrackRow` — that component's own internal sequence helper is private to its rendering needs, per Task 7's note.)
 
-Pass `checkpoints`/`startTime` to `<ElevationChart>` (Task 5 added these props):
+Pass `checkpoints` to `<ElevationChart>` (Task 5 added this prop — `startTime` is deliberately not one of `ElevationChart`'s props; `CheckpointOverlay` never needed it):
 
 ```tsx
                     <ElevationChart
@@ -2088,7 +2091,6 @@ Pass `checkpoints`/`startTime` to `<ElevationChart>` (Task 5 added these props):
                       onResize={setChartWidth}
                       hoveredIndex={hoveredIndex}
                       checkpoints={checkpoints}
-                      startTime={startTime}
                     />
 ```
 
