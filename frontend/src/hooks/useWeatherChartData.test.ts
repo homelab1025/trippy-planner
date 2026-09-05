@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { buildChartData } from './useWeatherChartData';
 import type { RouteData, RoutePoint } from '../utils/gpxParser';
+import { defaultCheckpoints } from '../utils/speedProfile';
 
 const makeRoute = (pts: { distance: number; ele: number }[]): RouteData => ({
   name: 'Test',
@@ -11,7 +12,7 @@ const makeRoute = (pts: { distance: number; ele: number }[]): RouteData => ({
 });
 
 const START = new Date('2026-06-03T08:00:00Z');
-const BASE = { chartWidth: 100, avgSpeed: 20, startTime: START };
+const BASE = { chartWidth: 100, checkpoints: defaultCheckpoints(0, 20, START), startTime: START };
 
 describe('buildChartData', () => {
   it('returns empty array for empty route', () => {
@@ -20,7 +21,7 @@ describe('buildChartData', () => {
 
   it('maps elevation and distance correctly for a single point', () => {
     const route = makeRoute([{ distance: 0, ele: 123.7 }]);
-    const result = buildChartData({ route, weatherPoints: [], ...BASE });
+    const result = buildChartData({ route, weatherPoints: [], chartWidth: 100, startTime: START, checkpoints: defaultCheckpoints(route.totalDistance, 20, START) });
     expect(result).toHaveLength(1);
     expect(result[0].elevation).toBe(124); // Math.round
     expect(result[0].distance).toBe(0);
@@ -36,7 +37,7 @@ describe('buildChartData', () => {
       label: '25',
       temp: 18, precipProb: 40, precipitation: 0.2, windSpeed: 15, windDeg: 180,
     }];
-    const result = buildChartData({ route, weatherPoints, chartWidth: 10, avgSpeed: 20, startTime: START });
+    const result = buildChartData({ route, weatherPoints, chartWidth: 10, checkpoints: defaultCheckpoints(route.totalDistance, 20, START), startTime: START });
     const sample = result.find(p => p.isSample);
     expect(sample).toBeDefined();
     expect(sample?.temp).toBe(18);
@@ -57,7 +58,7 @@ describe('buildChartData', () => {
       temp, precipProb: 0, precipitation: 0, windSpeed, windDeg: 0,
     });
     const weatherPoints = [makeWP(0, 10, 5), makeWP(2, 20, 15)];
-    const result = buildChartData({ route, weatherPoints, chartWidth: 1000, avgSpeed: 20, startTime: START });
+    const result = buildChartData({ route, weatherPoints, chartWidth: 1000, checkpoints: defaultCheckpoints(route.totalDistance, 20, START), startTime: START });
     const mid = result.find(p => Math.abs(p.distance - 1) < 0.01);
     expect(mid?.temp).toBeCloseTo(15, 0);
     expect(mid?.windSpeed).toBeCloseTo(10, 0);
@@ -80,7 +81,7 @@ describe('buildChartData', () => {
       route,
       weatherPoints: [makeWP(0, 0, 0), makeWP(2, 100, 2)],
       chartWidth: 1000,
-      avgSpeed: 20,
+      checkpoints: defaultCheckpoints(route.totalDistance, 20, START),
       startTime: START,
     });
     const mid = result.find(p => Math.abs(p.distance - 1) < 0.01);
@@ -105,7 +106,7 @@ describe('buildChartData', () => {
       route,
       weatherPoints: [makeWP(0, 0), makeWP(2, 90)],
       chartWidth: 1000,
-      avgSpeed: 20,
+      checkpoints: defaultCheckpoints(route.totalDistance, 20, START),
       startTime: START,
     });
     const mid = result.find(p => Math.abs(p.distance - 1) < 0.01);
@@ -130,7 +131,7 @@ describe('buildChartData', () => {
       route,
       weatherPoints: [makeWP(0, 350), makeWP(2, 10)],
       chartWidth: 1000,
-      avgSpeed: 20,
+      checkpoints: defaultCheckpoints(route.totalDistance, 20, START),
       startTime: START,
     });
     const mid = result.find(p => Math.abs(p.distance - 1) < 0.01);
@@ -158,7 +159,7 @@ describe('buildChartData', () => {
       route,
       weatherPoints: [makeWP(0, 315, 30), makeWP(2, 45, 30)],
       chartWidth: 1000,
-      avgSpeed: 20,
+      checkpoints: defaultCheckpoints(route.totalDistance, 20, START),
       startTime: START,
     });
     const mid = result.find(p => Math.abs(p.distance - 1) < 0.01);
@@ -167,8 +168,10 @@ describe('buildChartData', () => {
   });
 
   it('uses time-based interpolation factor, not index-based', () => {
-    // Route: 3 pts at 0m, 1000m, 2000m. avgSpeed=20 km/h gives model time at pt[1]:
-    //   START + (1000 / 20000) * 3_600_000 = START + 180_000ms (3 min)
+    // Route: 3 pts at 0m, 1000m, 2000m. A single end checkpoint at 20km/h gives
+    // computeArrivalTime(1000, ...) = START + (1000 / 20000) * 3_600_000 = START + 180_000ms (3 min)
+    // — the same number the old avgSpeed formula gave, since one end-only checkpoint
+    // reproduces constant-speed timing exactly (Task 4's regression test).
     // Sample times: sample0=START, sample2=START+1h
     //   → t at pt[1] = 3min / 1h = 0.05, far from 0.5 (index midpoint)
     const pts = [
@@ -194,7 +197,7 @@ describe('buildChartData', () => {
         },
       ],
       chartWidth: 1000,
-      avgSpeed: 20,
+      checkpoints: defaultCheckpoints(route.totalDistance, 20, START),
       startTime: START,
     });
     const mid = result.find(p => Math.abs(p.distance - 1) < 0.01);
@@ -229,17 +232,17 @@ describe('buildChartData', () => {
       },
     ];
 
-    // Fetched with avgSpeed=20/START — this is what's frozen into weatherAvgSpeed/weatherStartTime.
+    // Fetched with checkpoints=20km/h/START — this is what's frozen into weatherCheckpoints/weatherStartTime.
     const fetched = buildChartData({
-      route, weatherPoints, chartWidth: 1000, avgSpeed: 20, startTime: START,
-      weatherAvgSpeed: 20, weatherStartTime: START,
+      route, weatherPoints, chartWidth: 1000, checkpoints: defaultCheckpoints(route.totalDistance, 20, START), startTime: START,
+      weatherCheckpoints: defaultCheckpoints(route.totalDistance, 20, START), weatherStartTime: START,
     });
 
     // User bumps avgSpeed to 40 and pushes startTime forward without refreshing —
-    // weatherAvgSpeed/weatherStartTime still reflect the last actual fetch (20, START).
+    // weatherCheckpoints/weatherStartTime still reflect the last actual fetch (20, START).
     const edited = buildChartData({
-      route, weatherPoints, chartWidth: 1000, avgSpeed: 40, startTime: new Date(START.getTime() + 3_600_000),
-      weatherAvgSpeed: 20, weatherStartTime: START,
+      route, weatherPoints, chartWidth: 1000, checkpoints: defaultCheckpoints(route.totalDistance, 40, START), startTime: new Date(START.getTime() + 3_600_000),
+      weatherCheckpoints: defaultCheckpoints(route.totalDistance, 20, START), weatherStartTime: START,
     });
 
     const midFetched = fetched.find(p => Math.abs(p.distance - 1) < 0.01);
@@ -249,7 +252,7 @@ describe('buildChartData', () => {
 
   it('re-interpolates once weatherAvgSpeed/weatherStartTime catch up after a refresh', () => {
     // Once the user presses Refresh, App.tsx re-fetches weatherPoints AND advances
-    // lastFetchedParams, so weatherAvgSpeed/weatherStartTime move to match avgSpeed/startTime
+    // lastFetchedParams, so weatherCheckpoints/weatherStartTime move to match checkpoints/startTime
     // — at that point the curve is expected to change.
     const pts = [
       { distance: 0, ele: 100 },
@@ -273,12 +276,12 @@ describe('buildChartData', () => {
     ];
 
     const before = buildChartData({
-      route, weatherPoints, chartWidth: 1000, avgSpeed: 20, startTime: START,
-      weatherAvgSpeed: 20, weatherStartTime: START,
+      route, weatherPoints, chartWidth: 1000, checkpoints: defaultCheckpoints(route.totalDistance, 20, START), startTime: START,
+      weatherCheckpoints: defaultCheckpoints(route.totalDistance, 20, START), weatherStartTime: START,
     });
     const after = buildChartData({
-      route, weatherPoints, chartWidth: 1000, avgSpeed: 40, startTime: START,
-      weatherAvgSpeed: 40, weatherStartTime: START,
+      route, weatherPoints, chartWidth: 1000, checkpoints: defaultCheckpoints(route.totalDistance, 40, START), startTime: START,
+      weatherCheckpoints: defaultCheckpoints(route.totalDistance, 40, START), weatherStartTime: START,
     });
 
     const midBefore = before.find(p => Math.abs(p.distance - 1) < 0.01);
