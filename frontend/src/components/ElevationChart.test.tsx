@@ -49,7 +49,6 @@ const defaultProps = {
   onResize: vi.fn(),
   hoveredIndex: null as number | null,
   checkpoints: [],
-  startTime: new Date('2026-06-03T08:00:00Z'),
 };
 
 describe('ElevationChart', () => {

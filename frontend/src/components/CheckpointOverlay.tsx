@@ -10,15 +10,10 @@ interface ElevDataPoint {
 
 interface CheckpointOverlayProps {
   checkpoints: Checkpoint[];
-  startTime: Date;
   data: ElevDataPoint[];
 }
 
-const CheckpointOverlay: React.FC<CheckpointOverlayProps> = ({ checkpoints, startTime, data }) => {
-  // startTime is accepted for interface symmetry with future overlay work (see
-  // ElevationChart's CheckpointOverlay usage); this purely-decorative overlay
-  // doesn't compute arrival-time labels yet, so it isn't read here.
-  void startTime;
+const CheckpointOverlay: React.FC<CheckpointOverlayProps> = ({ checkpoints, data }) => {
   const palette = chartPalette;
   const xScale = useXAxisScale();
   const yScale = useYAxisScale('elevation');
