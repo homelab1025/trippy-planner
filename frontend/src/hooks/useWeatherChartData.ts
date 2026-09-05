@@ -2,6 +2,8 @@ import { useMemo } from 'react';
 import type { RouteData, RoutePoint } from '../utils/gpxParser';
 import type { WeatherData } from '../services/weatherProviders';
 import { lttbWithPinnedPoints } from '../utils/lttb';
+import type { Checkpoint } from '../utils/speedProfile';
+import { computeArrivalTime } from '../utils/speedProfile';
 
 export interface ChartDataPoint {
   distance: number;       // km
@@ -28,20 +30,20 @@ export function buildChartData({
   route,
   weatherPoints,
   chartWidth,
-  avgSpeed,
   startTime,
-  weatherAvgSpeed = avgSpeed,
+  checkpoints,
   weatherStartTime = startTime,
+  weatherCheckpoints = checkpoints,
 }: {
   route: RouteData;
   weatherPoints: WeatherSample[];
   chartWidth: number;
-  avgSpeed: number;
   startTime: Date;
-  // avgSpeed/startTime actually used to fetch weatherPoints — may lag behind
-  // the live avgSpeed/startTime while the user edits ride details pre-refresh.
-  weatherAvgSpeed?: number;
+  checkpoints: Checkpoint[];
+  // checkpoints/startTime actually used to fetch weatherPoints — may lag behind
+  // the live checkpoints/startTime while the user edits ride details pre-refresh.
   weatherStartTime?: Date;
+  weatherCheckpoints?: Checkpoint[];
 }): ChartDataPoint[] {
   if (!route.points.length) return [];
 
@@ -53,7 +55,7 @@ export function buildChartData({
     precipitation: undefined,
     windSpeed: undefined,
     windDeg: undefined,
-    time: startTime.getTime() + (pt.distance / (avgSpeed * 1000)) * 3_600_000,
+    time: computeArrivalTime(pt.distance, startTime, checkpoints).getTime(),
     isSample: false,
   }));
 
@@ -82,12 +84,12 @@ export function buildChartData({
     .filter(i => i >= 0)
     .sort((a, b) => a - b);
 
-  // Model each intermediate point's expected arrival time from the avgSpeed/startTime
+  // Model each intermediate point's expected arrival time from the checkpoints/startTime
   // that were actually in effect when weatherPoints was fetched (not the live,
   // possibly-not-yet-refreshed values) — otherwise editing ride details would
   // reshape the interpolated weather curve before the user presses Refresh.
   const modeledTimeAt = (distanceKm: number) =>
-    weatherStartTime.getTime() + (distanceKm * 1000 / (weatherAvgSpeed * 1000)) * 3_600_000;
+    computeArrivalTime(distanceKm * 1000, weatherStartTime, weatherCheckpoints).getTime();
 
   for (let i = 0; i < sampleIdxs.length - 1; i++) {
     const lo = sampleIdxs[i], hi = sampleIdxs[i + 1];
@@ -129,21 +131,21 @@ export function useWeatherChartData({
   route,
   weatherPoints,
   chartWidth,
-  avgSpeed,
   startTime,
-  weatherAvgSpeed,
+  checkpoints,
   weatherStartTime,
+  weatherCheckpoints,
 }: {
   route: RouteData | null;
   weatherPoints: WeatherSample[];
   chartWidth: number;
-  avgSpeed: number;
   startTime: Date;
-  weatherAvgSpeed?: number;
+  checkpoints: Checkpoint[];
   weatherStartTime?: Date;
+  weatherCheckpoints?: Checkpoint[];
 }): ChartDataPoint[] {
   return useMemo(
-    () => route ? buildChartData({ route, weatherPoints, chartWidth, avgSpeed, startTime, weatherAvgSpeed, weatherStartTime }) : [],
-    [route, weatherPoints, chartWidth, avgSpeed, startTime, weatherAvgSpeed, weatherStartTime],
+    () => route ? buildChartData({ route, weatherPoints, chartWidth, startTime, checkpoints, weatherStartTime, weatherCheckpoints }) : [],
+    [route, weatherPoints, chartWidth, startTime, checkpoints, weatherStartTime, weatherCheckpoints],
   );
 }
