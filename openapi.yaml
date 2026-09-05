@@ -63,6 +63,8 @@ components:
           properties:
             gpxContent:
               type: string
+            checkpointsJson:
+              type: string
 
     CreateRouteRequest:
       type: object
@@ -78,6 +80,8 @@ components:
         startTime:
           type: string
           format: date-time
+        checkpointsJson:
+          type: string
 
     UpdateRouteRequest:
       type: object
@@ -90,6 +94,8 @@ components:
         startTime:
           type: string
           format: date-time
+        checkpointsJson:
+          type: string
 
     ShareResponse:
       type: object
