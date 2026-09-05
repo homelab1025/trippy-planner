@@ -131,8 +131,14 @@ export function CheckpointTrackRow({ checkpoints, startTime, distanceRange, char
 
   function cascadeShift() {
     if (!cascade) return;
+    // Shifting is itself an explicit, user-directed time assignment, so the shifted
+    // checkpoints must be pinned — same as a direct edit in menuChangeTime. Without
+    // this, App's effectiveCheckpoints memo would immediately recompute the new time
+    // away for any still-unpinned downstream checkpoint (typically the 'end' one).
     onChange(cascade.pendingCheckpoints.map(c =>
-      cascade.downstreamIds.includes(c.id) ? { ...c, arrivalTime: new Date(c.arrivalTime.getTime() + cascade.deltaMs) } : c
+      cascade.downstreamIds.includes(c.id)
+        ? { ...c, arrivalTime: new Date(c.arrivalTime.getTime() + cascade.deltaMs), pinned: true }
+        : c
     ));
     setCascade(null);
   }

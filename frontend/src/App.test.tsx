@@ -233,6 +233,43 @@ describe('App', () => {
     expect(screen.getByText(/finish/i)).toBeInTheDocument();
   });
 
+  it('falls back to the default end checkpoint when a stored route carries a corrupt checkpointsJson', async () => {
+    window.history.replaceState({}, '', '/');
+    localStorage.setItem('trippy_current_route', JSON.stringify({
+      name: 'Test Route',
+      gpxContent: '<gpx/>',
+      avgSpeedKmh: 20,
+      startTime: '2026-06-17T08:00:00.000Z',
+      checkpointsJson: 'not-json-at-all',
+    }));
+
+    render(<App />);
+    await waitFor(() => screen.getByTestId('checkpoint-track-row'));
+    fireEvent.click(screen.getByText('Checkpoints'));
+
+    // The route-end checkpoint must exist at the route's full distance (1.0 km) — a
+    // corrupt payload must not degrade into "no end checkpoint at all".
+    expect(screen.getByText(/Finish · 1\.0 km/)).toBeInTheDocument();
+  });
+
+  it('mirrors auto-tracked checkpoint times to localStorage after an avg speed change', async () => {
+    render(<App />);
+    await uploadFile();
+    await waitFor(() => screen.getByTestId('checkpoint-track-row'));
+
+    // 1000 m at 10 km/h = 6 min. The unpinned 'end' checkpoint tracks Average Speed,
+    // so the persisted copy must match the persisted avgSpeed — not the pre-change time.
+    fireEvent.change(screen.getByLabelText('Average Speed (km/h)'), { target: { value: '10' } });
+
+    await waitFor(() => {
+      const stored = JSON.parse(localStorage.getItem('trippy_current_route')!);
+      expect(stored.avgSpeedKmh).toBe(10);
+      const cps = JSON.parse(stored.checkpointsJson);
+      expect(cps).toHaveLength(1);
+      expect(Date.parse(cps[0].arrivalTime) - Date.parse(stored.startTime)).toBe(6 * 60_000);
+    });
+  });
+
   it('changing avg speed re-fetches weather and updates charts', async () => {
     render(<App />);
     await uploadFile();

@@ -270,6 +270,9 @@ describe('CheckpointTrackRow — change time + cascade', () => {
     const next: Checkpoint[] = onChange.mock.calls[onChange.mock.calls.length - 1][0];
     const shiftedEnd = next.find(cp => cp.id === 'end')!;
     expect(shiftedEnd.arrivalTime.getTime()).toBe(START.getTime() + 80 * 60_000); // 09:00 + 20min
+    // The shifted time is an explicit user choice — it must be pinned, otherwise App's
+    // effectiveCheckpoints memo recomputes it straight back from Average Speed.
+    expect(shiftedEnd.pinned).toBe(true);
   });
 
   it('choosing Keep times leaves downstream checkpoints untouched', () => {
