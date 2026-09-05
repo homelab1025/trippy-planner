@@ -42,6 +42,23 @@ export function impliedSpeedKmh(a: SequencePoint, b: SequencePoint): number | nu
   return (b.distanceM - a.distanceM) / 1000 / hours;
 }
 
+// Revives a persisted checkpoints payload (localStorage mirror, saved route, share link).
+// Returns `undefined` — never `[]` — for anything unusable, so callers' `?? defaultCheckpoints(...)`
+// fallback actually engages. An empty array would silently satisfy `??` and leave the route with
+// no 'end' checkpoint at all, breaking the invariant that one always exists at the route's end.
+export function parseCheckpointsJson(json: string): Checkpoint[] | undefined {
+  try {
+    const raw = JSON.parse(json) as { id: string; distanceM: number; arrivalTime: string; pinned: boolean }[];
+    if (!Array.isArray(raw) || raw.length === 0) return undefined;
+    const revived = raw
+      .map(cp => ({ ...cp, arrivalTime: new Date(cp.arrivalTime) }))
+      .filter(cp => !Number.isNaN(cp.arrivalTime.getTime()));
+    return revived.length > 0 ? revived : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export function defaultCheckpoints(totalDistanceM: number, avgSpeedKmh: number, startTime: Date): Checkpoint[] {
   const hours = totalDistanceM / 1000 / avgSpeedKmh;
   return [{

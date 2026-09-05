@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildSequence, computeArrivalTime, impliedSpeedKmh, defaultCheckpoints } from './speedProfile';
+import { buildSequence, computeArrivalTime, impliedSpeedKmh, defaultCheckpoints, parseCheckpointsJson } from './speedProfile';
 import type { Checkpoint } from './speedProfile';
 
 const START = new Date('2026-06-03T08:00:00Z');
@@ -72,5 +72,48 @@ describe('impliedSpeedKmh', () => {
     expect(impliedSpeedKmh(a, b)).toBeNull();
     const c = { distanceM: 10_000, arrivalTime: new Date(START.getTime() - 1000) };
     expect(impliedSpeedKmh(a, c)).toBeNull();
+  });
+});
+
+describe('parseCheckpointsJson', () => {
+  // Every call site feeds the result into `cps ?? defaultCheckpoints(...)`, so anything
+  // unusable must come back as `undefined` — an empty array satisfies `??` and would
+  // leave the route with no end checkpoint at all.
+  it('returns undefined for malformed JSON', () => {
+    expect(parseCheckpointsJson('not-json-at-all')).toBeUndefined();
+  });
+
+  it('returns undefined for valid JSON that is not an array', () => {
+    expect(parseCheckpointsJson('null')).toBeUndefined();
+    expect(parseCheckpointsJson('{}')).toBeUndefined();
+    expect(parseCheckpointsJson('"end"')).toBeUndefined();
+  });
+
+  it('returns undefined for an empty array', () => {
+    expect(parseCheckpointsJson('[]')).toBeUndefined();
+  });
+
+  it('returns undefined when the only entry has an unparseable arrivalTime', () => {
+    const json = JSON.stringify([{ id: 'end', distanceM: 1000, arrivalTime: 'yesterday-ish', pinned: false }]);
+    expect(parseCheckpointsJson(json)).toBeUndefined();
+  });
+
+  it('drops entries with an unparseable arrivalTime but keeps the valid ones', () => {
+    const json = JSON.stringify([
+      { id: 'wp-1', distanceM: 500, arrivalTime: 'yesterday-ish', pinned: true },
+      { id: 'end', distanceM: 1000, arrivalTime: '2026-06-17T09:00:00.000Z', pinned: false },
+    ]);
+    const result = parseCheckpointsJson(json)!;
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('end');
+  });
+
+  it('revives a well-formed checkpoint with arrivalTime as a real Date', () => {
+    const json = JSON.stringify([{ id: 'end', distanceM: 1000, arrivalTime: '2026-06-17T09:00:00.000Z', pinned: true }]);
+    const result = parseCheckpointsJson(json)!;
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({ id: 'end', distanceM: 1000, pinned: true });
+    expect(result[0].arrivalTime).toBeInstanceOf(Date);
+    expect(result[0].arrivalTime.getTime()).toBe(Date.parse('2026-06-17T09:00:00.000Z'));
   });
 });

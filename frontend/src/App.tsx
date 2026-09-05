@@ -28,7 +28,7 @@ import { Tooltip } from './components/Tooltip';
 import { useWeatherChartData } from './hooks/useWeatherChartData';
 import type { ChartDataPoint, WeatherSample } from './hooks/useWeatherChartData';
 import type { Checkpoint } from './utils/speedProfile';
-import { computeArrivalTime, defaultCheckpoints, buildSequence, impliedSpeedKmh } from './utils/speedProfile';
+import { computeArrivalTime, defaultCheckpoints, buildSequence, impliedSpeedKmh, parseCheckpointsJson } from './utils/speedProfile';
 
 const getLocalDateString = (date: Date): string => {
   const year = date.getFullYear();
@@ -42,15 +42,6 @@ const getLocalTimeString = (date: Date): string => {
   const minutes = String(date.getMinutes()).padStart(2, '0');
   return `${hours}:${minutes}`;
 };
-
-function parseCheckpointsJson(json: string): Checkpoint[] {
-  try {
-    const raw = JSON.parse(json) as { id: string; distanceM: number; arrivalTime: string; pinned: boolean }[];
-    return raw.map(cp => ({ ...cp, arrivalTime: new Date(cp.arrivalTime) }));
-  } catch {
-    return [];
-  }
-}
 
 function App() {
   const [route, setRoute] = useState<RouteData | null>(null);
@@ -395,9 +386,12 @@ function App() {
       id: savedRouteId ?? undefined,
       dpEpsilonMeters: dpEpsilon,
       dpMaxGapMeters: dpMaxGap,
-      checkpointsJson: JSON.stringify(checkpoints),
+      // Persist the *effective* checkpoints: unpinned entries' raw arrivalTime goes
+      // stale as soon as Average Speed / Start Time changes, so storing the raw array
+      // would restore times inconsistent with the avgSpeed/startTime stored beside them.
+      checkpointsJson: JSON.stringify(effectiveCheckpoints),
     });
-  }, [route, rawGpxContent, avgSpeed, startTime, isViewingShared, routeName, savedRouteId, dpEpsilon, dpMaxGap, checkpoints]);
+  }, [route, rawGpxContent, avgSpeed, startTime, isViewingShared, routeName, savedRouteId, dpEpsilon, dpMaxGap, effectiveCheckpoints]);
 
   const onHoverIndex = useCallback((index: number | null) => {
     setHoveredIndex(index);
@@ -610,7 +604,7 @@ function App() {
                       gpxContent: rawGpxContent,
                       avgSpeedKmh: avgSpeed,
                       startTime: startTime.toISOString(),
-                      checkpointsJson: JSON.stringify(checkpoints),
+                      checkpointsJson: JSON.stringify(effectiveCheckpoints),
                     }}
                     savedRouteId={savedRouteId}
                     onSaved={(id) => { setSavedRouteId(id); setRoutesRefreshToken(t => t + 1) }}
