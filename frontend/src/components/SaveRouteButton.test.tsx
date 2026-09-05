@@ -16,6 +16,7 @@ const routeData = {
   gpxContent: '<gpx/>',
   avgSpeedKmh: 20,
   startTime: new Date().toISOString(),
+  checkpointsJson: '[{"id":"end","distanceM":1000}]',
 };
 
 describe('SaveRouteButton', () => {
@@ -125,6 +126,7 @@ describe('SaveRouteButton', () => {
         name: 'My Ride',
         avgSpeedKmh: routeData.avgSpeedKmh,
         startTime: routeData.startTime,
+        checkpointsJson: routeData.checkpointsJson,
       });
       expect(mocks.createRoute).not.toHaveBeenCalled();
       expect(onSaved).toHaveBeenCalledWith('existing-id');

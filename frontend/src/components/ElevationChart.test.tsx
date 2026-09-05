@@ -33,6 +33,10 @@ vi.mock('./ClimbOverlay', () => ({
   ClimbOverlay: () => <div data-testid="climb-overlay" />,
 }));
 
+vi.mock('./CheckpointOverlay', () => ({
+  CheckpointOverlay: () => <div data-testid="checkpoint-overlay" />,
+}));
+
 const sampleData: ElevationPoint[] = [
   { distance: 0, elevation: 100 },
   { distance: 1, elevation: 200 },
@@ -44,6 +48,7 @@ const defaultProps = {
   onHoverIndex: vi.fn(),
   onResize: vi.fn(),
   hoveredIndex: null as number | null,
+  checkpoints: [],
 };
 
 describe('ElevationChart', () => {
@@ -63,6 +68,11 @@ describe('ElevationChart', () => {
   it('renders ClimbOverlay', () => {
     render(<ElevationChart {...defaultProps} />);
     expect(screen.getByTestId('climb-overlay')).toBeInTheDocument();
+  });
+
+  it('renders CheckpointOverlay', () => {
+    render(<ElevationChart {...defaultProps} />);
+    expect(screen.getByTestId('checkpoint-overlay')).toBeInTheDocument();
   });
 
   it('renders reference line and dot at hovered point distance when hoveredIndex is set', () => {

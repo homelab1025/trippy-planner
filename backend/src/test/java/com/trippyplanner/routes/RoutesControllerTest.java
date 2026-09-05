@@ -65,6 +65,23 @@ class RoutesControllerTest {
     }
 
     @Test
+    void createRoutePassesThroughCheckpointsJson() throws Exception {
+        UUID id = UUID.randomUUID();
+        Route created = sampleRoute(id);
+        created.setCheckpointsJson("[{\"id\":\"end\",\"distanceM\":1000}]");
+        when(MocksConfig.routeRepository.save(eq(1L), any())).thenReturn(created);
+
+        mvc.perform(post("/routes")
+                .requestAttr("userId", 1L)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"My Route\",\"gpxContent\":\"<gpx/>\",\"avgSpeedKmh\":20,"
+                    + "\"startTime\":\"2026-01-01T08:00:00Z\","
+                    + "\"checkpointsJson\":\"[{\\\"id\\\":\\\"end\\\",\\\"distanceM\\\":1000}]\"}"))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.checkpointsJson").value("[{\"id\":\"end\",\"distanceM\":1000}]"));
+    }
+
+    @Test
     void getRouteReturns403WhenNotOwner() throws Exception {
         UUID id = UUID.randomUUID();
         when(MocksConfig.routeRepository.findById(id)).thenReturn(Optional.of(sampleRoute(id)));

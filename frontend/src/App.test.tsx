@@ -30,6 +30,8 @@ const mockWeather = {
 
 // capturedHoverCb is populated by the ElevationChart stub below.
 let capturedHoverCb: ((index: number | null) => void) | null = null;
+// capturedOnCheckpointsChange is populated by the CheckpointTrackRow stub below.
+let capturedOnCheckpointsChange: ((next: unknown[]) => void) | null = null;
 
 // ── Mocks ───────────────────────────────────────────────────────────────────
 
@@ -121,6 +123,13 @@ vi.mock('./components/PrecipBarRow', () => ({
   ),
 }));
 
+vi.mock('./components/CheckpointTrackRow', () => ({
+  CheckpointTrackRow: ({ onChange }: { onChange: (next: unknown[]) => void }) => {
+    capturedOnCheckpointsChange = onChange;
+    return <div data-testid="checkpoint-track-row" />;
+  },
+}));
+
 vi.mock('./components/HoverPane', () => ({
   HoverPane: ({ hoveredData }: {
     hoveredData: { temp?: number } | null;
@@ -170,6 +179,7 @@ describe('App', () => {
       new Map([[0, { ...mockWeather, temp: 99 }]])
     );
     capturedHoverCb = null;
+    capturedOnCheckpointsChange = null;
     vi.spyOn(window, 'alert').mockImplementation(() => {});
   });
 
@@ -197,6 +207,66 @@ describe('App', () => {
       expect(screen.getByTestId('elevation-chart')).toBeInTheDocument();
       expect(screen.getByTestId('wind-chart')).toBeInTheDocument();
       expect(screen.getByTestId('precip-chart')).toBeInTheDocument();
+    });
+  });
+
+  it('editing checkpoints marks the ride dirty and shows the Refresh button', async () => {
+    render(<App />);
+    await uploadFile();
+    await waitFor(() => screen.getByTestId('checkpoint-track-row'));
+    expect(screen.queryByText('Refresh')).not.toBeInTheDocument();
+
+    await act(async () => {
+      capturedOnCheckpointsChange?.([
+        { id: 'end', distanceM: 1000, arrivalTime: new Date('2026-01-01T09:00:00Z'), pinned: true },
+      ]);
+    });
+
+    expect(screen.getByText('Refresh')).toBeInTheDocument();
+  });
+
+  it('shows a Checkpoints panel listing each checkpoint\'s time after a route loads', async () => {
+    render(<App />);
+    await uploadFile();
+    await waitFor(() => screen.getByTestId('checkpoint-track-row'));
+    fireEvent.click(screen.getByText('Checkpoints'));
+    expect(screen.getByText(/finish/i)).toBeInTheDocument();
+  });
+
+  it('falls back to the default end checkpoint when a stored route carries a corrupt checkpointsJson', async () => {
+    window.history.replaceState({}, '', '/');
+    localStorage.setItem('trippy_current_route', JSON.stringify({
+      name: 'Test Route',
+      gpxContent: '<gpx/>',
+      avgSpeedKmh: 20,
+      startTime: '2026-06-17T08:00:00.000Z',
+      checkpointsJson: 'not-json-at-all',
+    }));
+
+    render(<App />);
+    await waitFor(() => screen.getByTestId('checkpoint-track-row'));
+    fireEvent.click(screen.getByText('Checkpoints'));
+
+    // The route-end checkpoint must exist at the route's full distance (1.0 km) — a
+    // corrupt payload must not degrade into "no end checkpoint at all".
+    expect(screen.getByText(/Finish · 1\.0 km/)).toBeInTheDocument();
+  });
+
+  it('mirrors auto-tracked checkpoint times to localStorage after an avg speed change', async () => {
+    render(<App />);
+    await uploadFile();
+    await waitFor(() => screen.getByTestId('checkpoint-track-row'));
+
+    // 1000 m at 10 km/h = 6 min. The unpinned 'end' checkpoint tracks Average Speed,
+    // so the persisted copy must match the persisted avgSpeed — not the pre-change time.
+    fireEvent.change(screen.getByLabelText('Average Speed (km/h)'), { target: { value: '10' } });
+
+    await waitFor(() => {
+      const stored = JSON.parse(localStorage.getItem('trippy_current_route')!);
+      expect(stored.avgSpeedKmh).toBe(10);
+      const cps = JSON.parse(stored.checkpointsJson);
+      expect(cps).toHaveLength(1);
+      expect(Date.parse(cps[0].arrivalTime) - Date.parse(stored.startTime)).toBe(6 * 60_000);
     });
   });
 

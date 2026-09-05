@@ -6,7 +6,7 @@ import type { RouteListItem } from '../api'
 import { ConfirmDialog } from './ConfirmDialog'
 
 interface Props {
-  onLoadRoute: (gpxContent: string, avgSpeedKmh: number, startTime: string, id: string, name: string) => void
+  onLoadRoute: (gpxContent: string, avgSpeedKmh: number, startTime: string, id: string, name: string, checkpointsJson?: string) => void
   onDeleted: (id: string) => void
   refreshKey?: string
 }
@@ -35,7 +35,7 @@ export function MyRoutesPanel({ onLoadRoute, onDeleted, refreshKey }: Props) {
 
   async function handleClick(id: string, avgSpeedKmh: number, startTime: string, name: string) {
     const res = await routesApi.getRoute(id)
-    onLoadRoute(res.data.gpxContent as string, avgSpeedKmh, startTime, id, name)
+    onLoadRoute(res.data.gpxContent as string, avgSpeedKmh, startTime, id, name, res.data.checkpointsJson as string | undefined)
   }
 
   async function handleDuplicate(e: React.MouseEvent, id: string, name: string, avgSpeedKmh: number, startTime: string) {
@@ -46,6 +46,7 @@ export function MyRoutesPanel({ onLoadRoute, onDeleted, refreshKey }: Props) {
       gpxContent: res.data.gpxContent as string,
       avgSpeedKmh,
       startTime,
+      checkpointsJson: res.data.checkpointsJson as string | undefined,
     })
     await fetchRoutes()
   }

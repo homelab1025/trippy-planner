@@ -23,9 +23,12 @@ import { ElevationChart } from './components/ElevationChart';
 import { HoverPane } from './components/HoverPane';
 import { WindArrowRow } from './components/WindArrowRow';
 import { PrecipBarRow } from './components/PrecipBarRow';
+import { CheckpointTrackRow } from './components/CheckpointTrackRow';
 import { Tooltip } from './components/Tooltip';
 import { useWeatherChartData } from './hooks/useWeatherChartData';
 import type { ChartDataPoint, WeatherSample } from './hooks/useWeatherChartData';
+import type { Checkpoint } from './utils/speedProfile';
+import { computeArrivalTime, defaultCheckpoints, buildSequence, impliedSpeedKmh, parseCheckpointsJson } from './utils/speedProfile';
 
 const getLocalDateString = (date: Date): string => {
   const year = date.getFullYear();
@@ -44,6 +47,16 @@ function App() {
   const [route, setRoute] = useState<RouteData | null>(null);
   const [avgSpeed, setAvgSpeed] = useState(25);
   const [startTime, setStartTime] = useState<Date>(new Date());
+  const [checkpoints, setCheckpoints] = useState<Checkpoint[]>([]);
+  // Checkpoints not yet manually edited ("pinned: false") keep tracking Average
+  // Speed / Start Time live; once a checkpoint's time is explicitly set it detaches.
+  const effectiveCheckpoints = useMemo(
+    () => checkpoints.map(cp => cp.pinned ? cp : {
+      ...cp,
+      arrivalTime: new Date(startTime.getTime() + (cp.distanceM / (avgSpeed * 1000)) * 3_600_000),
+    }),
+    [checkpoints, avgSpeed, startTime]
+  );
   const [weatherPoints, setWeatherPoints] = useState<WeatherSample[]>([]);
   const [loading, setLoading] = useState(false);
   const [weatherLoading, setWeatherLoading] = useState(false);
@@ -54,13 +67,14 @@ function App() {
   const [dpEpsilon, setDpEpsilon] = useState(DP_EPSILON_METERS);
   const [dpMaxGap, setDpMaxGap] = useState(DP_MAX_GAP_METERS);
   const [weatherDebug, setWeatherDebugState] = useState(false);
-  const [activePanel, setActivePanel] = useState<'ride' | 'routes' | 'tech' | null>('ride');
+  const [activePanel, setActivePanel] = useState<'ride' | 'checkpoints' | 'routes' | 'tech' | null>('ride');
   const [selectedProvider, setSelectedProvider] = useState<WeatherProvider>(DEFAULT_PROVIDER);
   const [chartWidth, setChartWidth] = useState(800);
   const [lastFetchedParams, setLastFetchedParams] = useState<{
     avgSpeed: number;
     startTime: Date;
     selectedProvider: WeatherProvider;
+    checkpoints: Checkpoint[];
   } | null>(null);
 
   const [user, setUser] = useState<{ id: number; email: string } | null>(null);
@@ -83,10 +97,10 @@ function App() {
     route,
     weatherPoints,
     chartWidth,
-    avgSpeed,
     startTime,
-    weatherAvgSpeed: lastFetchedParams?.avgSpeed,
+    checkpoints: effectiveCheckpoints,
     weatherStartTime: lastFetchedParams?.startTime,
+    weatherCheckpoints: lastFetchedParams?.checkpoints,
   });
 
   const elevationData = useMemo(
@@ -150,9 +164,13 @@ function App() {
       setRoute(parsedRoute);
       setRouteName(parsedRoute.name);
       setSavedRouteId(null);
+      // A new GPX means the old checkpoint distances are meaningless — reset to
+      // just the mandatory end checkpoint, seeded from the current Average Speed.
+      const freshCheckpoints = defaultCheckpoints(parsedRoute.totalDistance, avgSpeed, startTime);
+      setCheckpoints(freshCheckpoints);
       setWeatherLoading(true);
-      const success = await updateWeather(parsedRoute, avgSpeed, startTime, selectedProvider);
-      if (success) setLastFetchedParams({ avgSpeed, startTime, selectedProvider });
+      const success = await updateWeather(parsedRoute, freshCheckpoints, startTime, selectedProvider);
+      if (success) setLastFetchedParams({ avgSpeed, startTime, selectedProvider, checkpoints: freshCheckpoints });
     } catch (error) {
       console.error('Failed to parse GPX:', error);
       const message = error instanceof Error ? error.message : 'Failed to parse GPX file. Please ensure it is a valid track.';
@@ -167,10 +185,11 @@ function App() {
     lastFetchedParams !== null && (
       lastFetchedParams.avgSpeed !== avgSpeed ||
       lastFetchedParams.startTime.getTime() !== startTime.getTime() ||
-      lastFetchedParams.selectedProvider !== selectedProvider
+      lastFetchedParams.selectedProvider !== selectedProvider ||
+      JSON.stringify(lastFetchedParams.checkpoints) !== JSON.stringify(effectiveCheckpoints)
     );
 
-  const updateWeather = useCallback(async (currentRoute: RouteData, speed: number, start: Date, provider: WeatherProvider): Promise<boolean> => {
+  const updateWeather = useCallback(async (currentRoute: RouteData, cps: Checkpoint[], start: Date, provider: WeatherProvider): Promise<boolean> => {
     let weatherPointsDistance = 5000;
     let weatherPointsCount = currentRoute.totalDistance / weatherPointsDistance;
     if (weatherPointsCount < 10) {
@@ -187,8 +206,7 @@ function App() {
       if (seenIndices.has(pointIdx)) continue;
       seenIndices.add(pointIdx);
       const point = currentRoute.points[pointIdx];
-      const travelTimeHours = distance / (speed * 1000);
-      const arrivalTime = new Date(start.getTime() + travelTimeHours * 3600 * 1000);
+      const arrivalTime = computeArrivalTime(distance, start, cps);
       requestMap.set(pointIdx, { lat: point.lat, lon: point.lng, timestamp: arrivalTime.getTime() / 1000 });
       metaMap.set(pointIdx, { point, arrivalTime, label: String(pointIdx) });
     }
@@ -210,15 +228,17 @@ function App() {
     }
   }, []);
 
-  const loadRouteFromGpxText = useCallback(async (gpxContent: string, speed: number, start: Date, epsilon: number, maxGap: number) => {
+  const loadRouteFromGpxText = useCallback(async (gpxContent: string, speed: number, start: Date, epsilon: number, maxGap: number, cps?: Checkpoint[]) => {
     setRawGpxContent(gpxContent);
     const parsedRoute = await parseGPXAsync(gpxContent, epsilon, maxGap);
     appliedTechParamsRef.current = { dpEpsilon: epsilon, dpMaxGap: maxGap };
     setRoute(parsedRoute);
+    const resolvedCheckpoints = cps ?? defaultCheckpoints(parsedRoute.totalDistance, speed, start);
+    setCheckpoints(resolvedCheckpoints);
     setWeatherLoading(true);
     try {
-      const success = await updateWeather(parsedRoute, speed, start, selectedProvider);
-      if (success) setLastFetchedParams({ avgSpeed: speed, startTime: start, selectedProvider });
+      const success = await updateWeather(parsedRoute, resolvedCheckpoints, start, selectedProvider);
+      if (success) setLastFetchedParams({ avgSpeed: speed, startTime: start, selectedProvider, checkpoints: resolvedCheckpoints });
     } finally {
       setWeatherLoading(false);
     }
@@ -228,12 +248,12 @@ function App() {
     if (!route) return;
     setWeatherLoading(true);
     try {
-      const success = await updateWeather(route, avgSpeed, startTime, selectedProvider);
-      if (success) setLastFetchedParams({ avgSpeed, startTime, selectedProvider });
+      const success = await updateWeather(route, effectiveCheckpoints, startTime, selectedProvider);
+      if (success) setLastFetchedParams({ avgSpeed, startTime, selectedProvider, checkpoints: effectiveCheckpoints });
     } finally {
       setWeatherLoading(false);
     }
-  }, [route, avgSpeed, startTime, selectedProvider, updateWeather]);
+  }, [route, effectiveCheckpoints, avgSpeed, startTime, selectedProvider, updateWeather]);
 
   // Tracks the DP epsilon/maxGap actually baked into the current `route`, so a blur/Enter
   // that didn't change either value is a no-op instead of a redundant re-parse.
@@ -258,9 +278,9 @@ function App() {
       setHoveredPoint(null);
       setHoveredData(null);
       setWeatherLoading(true);
-      const params = lastFetchedParams ?? { avgSpeed, startTime, selectedProvider };
+      const params = lastFetchedParams ?? { avgSpeed, startTime, selectedProvider, checkpoints: effectiveCheckpoints };
       try {
-        const success = await updateWeather(parsedRoute, params.avgSpeed, params.startTime, params.selectedProvider);
+        const success = await updateWeather(parsedRoute, params.checkpoints, params.startTime, params.selectedProvider);
         if (success) setLastFetchedParams(params);
       } finally {
         setWeatherLoading(false);
@@ -268,7 +288,7 @@ function App() {
     } finally {
       techCommitInFlightRef.current = false;
     }
-  }, [route, rawGpxContent, lastFetchedParams, avgSpeed, startTime, selectedProvider, updateWeather]);
+  }, [route, rawGpxContent, lastFetchedParams, avgSpeed, startTime, selectedProvider, effectiveCheckpoints, updateWeather]);
 
   const commitTechParams = useCallback(() => {
     applyTechParams(dpEpsilon, dpMaxGap);
@@ -322,11 +342,12 @@ function App() {
           const data = res.data;
           const speed = data.avgSpeedKmh as number;
           const start = new Date(data.startTime as string);
+          const sharedCheckpoints = data.checkpointsJson ? parseCheckpointsJson(data.checkpointsJson as string) : undefined;
           setIsViewingShared(true);
           setAvgSpeed(speed);
           setStartTime(start);
           setRouteName(data.name as string);
-          loadRouteFromGpxText(data.gpxContent as string, speed, start, dpEpsilon, dpMaxGap);
+          loadRouteFromGpxText(data.gpxContent as string, speed, start, dpEpsilon, dpMaxGap, sharedCheckpoints);
         })
         .catch(() => {
           // Token invalid or route made private — let user upload
@@ -337,6 +358,7 @@ function App() {
         const start = new Date(stored.startTime);
         const epsilon = stored.dpEpsilonMeters ?? DP_EPSILON_METERS;
         const maxGap = stored.dpMaxGapMeters ?? DP_MAX_GAP_METERS;
+        const storedCheckpoints = stored.checkpointsJson ? parseCheckpointsJson(stored.checkpointsJson) : undefined;
         // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time mount initialization from localStorage, not a prop-sync pattern
         setAvgSpeed(stored.avgSpeedKmh);
         setStartTime(start);
@@ -344,7 +366,7 @@ function App() {
         setSavedRouteId(stored.id ?? null);
         setDpEpsilon(epsilon);
         setDpMaxGap(maxGap);
-        loadRouteFromGpxText(stored.gpxContent, stored.avgSpeedKmh, start, epsilon, maxGap)
+        loadRouteFromGpxText(stored.gpxContent, stored.avgSpeedKmh, start, epsilon, maxGap, storedCheckpoints)
           .catch(() => clearStoredRoute());
       }
     }
@@ -364,8 +386,12 @@ function App() {
       id: savedRouteId ?? undefined,
       dpEpsilonMeters: dpEpsilon,
       dpMaxGapMeters: dpMaxGap,
+      // Persist the *effective* checkpoints: unpinned entries' raw arrivalTime goes
+      // stale as soon as Average Speed / Start Time changes, so storing the raw array
+      // would restore times inconsistent with the avgSpeed/startTime stored beside them.
+      checkpointsJson: JSON.stringify(effectiveCheckpoints),
     });
-  }, [route, rawGpxContent, avgSpeed, startTime, isViewingShared, routeName, savedRouteId, dpEpsilon, dpMaxGap]);
+  }, [route, rawGpxContent, avgSpeed, startTime, isViewingShared, routeName, savedRouteId, dpEpsilon, dpMaxGap, effectiveCheckpoints]);
 
   const onHoverIndex = useCallback((index: number | null) => {
     setHoveredIndex(index);
@@ -539,6 +565,33 @@ function App() {
             </div>
           </div>
 
+          {/* Checkpoints */}
+          {route && (
+            <div className={`collapse collapse-arrow bg-base-100 shadow rounded-none border-x border-b border-base-300 ${activePanel === 'checkpoints' ? 'collapse-open' : ''}`}>
+              <div
+                className="collapse-title font-medium cursor-pointer"
+                onClick={() => setActivePanel(p => p === 'checkpoints' ? null : 'checkpoints')}
+              >
+                Checkpoints
+              </div>
+              <div className="collapse-content flex flex-col gap-1.5">
+                {buildSequence(startTime, effectiveCheckpoints).map((p, i, seq) => {
+                  const label = i === 0 ? 'Start' : i === seq.length - 1 ? 'Finish' : `CP ${i}`;
+                  const speed = i > 0 ? impliedSpeedKmh(seq[i - 1], p) : null;
+                  return (
+                    <div key={i} className="flex items-center justify-between text-sm">
+                      <span>{label} · {(p.distanceM / 1000).toFixed(1)} km</span>
+                      <span className="font-mono">
+                        {p.arrivalTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {speed !== null && <span className="text-base-content/50 text-xs ml-1">({Math.round(speed)} km/h)</span>}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {((route && rawGpxContent && !isViewingShared) || (user && savedRouteId && !isViewingShared)) && (
             <div className="bg-base-100 shadow rounded-none border-x border-b border-base-300 p-4">
               <div className="flex flex-col gap-2">
@@ -551,6 +604,7 @@ function App() {
                       gpxContent: rawGpxContent,
                       avgSpeedKmh: avgSpeed,
                       startTime: startTime.toISOString(),
+                      checkpointsJson: JSON.stringify(effectiveCheckpoints),
                     }}
                     savedRouteId={savedRouteId}
                     onSaved={(id) => { setSavedRouteId(id); setRoutesRefreshToken(t => t + 1) }}
@@ -582,13 +636,16 @@ function App() {
               </div>
               <div className="collapse-content overflow-hidden">
                 <MyRoutesPanel
-                  onLoadRoute={(gpxContent, avgSpeedKmh, startTime, id, name) => {
+                  onLoadRoute={(gpxContent, avgSpeedKmh, startTime, id, name, checkpointsJson) => {
                     const start = new Date(startTime)
                     setAvgSpeed(avgSpeedKmh)
                     setStartTime(start)
                     setRouteName(name)
                     setSavedRouteId(id)
-                    loadRouteFromGpxText(gpxContent, avgSpeedKmh, start, dpEpsilon, dpMaxGap)
+                    loadRouteFromGpxText(
+                      gpxContent, avgSpeedKmh, start, dpEpsilon, dpMaxGap,
+                      checkpointsJson ? parseCheckpointsJson(checkpointsJson) : undefined,
+                    )
                   }}
                   onDeleted={(id) => {
                     if (id === savedRouteId) {
@@ -756,6 +813,17 @@ function App() {
                       onHoverIndex={onHoverIndex}
                       onResize={setChartWidth}
                       hoveredIndex={hoveredIndex}
+                      checkpoints={effectiveCheckpoints}
+                    />
+                  </div>
+                  <div className="border-t border-base-200" style={{ height: 30 }}>
+                    <CheckpointTrackRow
+                      checkpoints={effectiveCheckpoints}
+                      startTime={startTime}
+                      totalDistanceM={route.totalDistance}
+                      distanceRange={distanceRange}
+                      chartWidth={chartWidth}
+                      onChange={setCheckpoints}
                     />
                   </div>
                   <div className="border-t border-base-200" style={{ height: 40 }}>
