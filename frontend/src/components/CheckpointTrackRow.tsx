@@ -44,7 +44,104 @@ export function CheckpointTrackRow({ checkpoints, startTime, distanceRange, char
     onSave: (time: Date) => void;
   } | null>(null);
 
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [menu, setMenu] = useState<{ id: string; x: number; y: number } | null>(null);
+  const [cascade, setCascade] = useState<{
+    downstreamIds: string[];
+    deltaMs: number;
+    pendingCheckpoints: Checkpoint[];
+    position: { x: number; y: number };
+  } | null>(null);
+
   const sequence = fullSequence(checkpoints, startTime);
+
+  function neighborsOf(id: string): { prev: FullPoint; next: FullPoint | null } {
+    const idx = sequence.findIndex(p => p.id === id);
+    return { prev: sequence[idx - 1], next: idx + 1 < sequence.length ? sequence[idx + 1] : null };
+  }
+
+  function onMarkerMouseDown(e: React.MouseEvent, id: string) {
+    e.preventDefault();
+    setDragId(id);
+    const trackEl = e.currentTarget.parentElement as HTMLElement;
+
+    function onMove(ev: MouseEvent) {
+      const rect = trackEl.getBoundingClientRect();
+      let km = kmOf(ev.clientX - rect.left);
+      const { prev, next } = neighborsOf(id);
+      const minKm = prev.distanceM / 1000 + (dMax - dMin) * 0.005;
+      const maxKm = next ? next.distanceM / 1000 - (dMax - dMin) * 0.005 : dMax;
+      km = Math.min(maxKm, Math.max(minKm, km));
+      onChange(checkpoints.map(cp => cp.id === id ? { ...cp, distanceM: km * 1000 } : cp));
+    }
+    function onUp() {
+      setDragId(null);
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    }
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }
+
+  function onMarkerContextMenu(e: React.MouseEvent, id: string) {
+    e.preventDefault();
+    setMenu({ id, x: e.clientX, y: e.clientY });
+  }
+
+  function menuChangeTime() {
+    if (!menu) return;
+    const { id, x, y } = menu;
+    const cp = checkpoints.find(c => c.id === id)!;
+    const { prev, next } = neighborsOf(id);
+    setMenu(null);
+    setEditor({
+      title: 'Change arrival time',
+      initialTime: cp.arrivalTime,
+      minTime: prev.arrivalTime,
+      maxTime: next ? next.arrivalTime : new Date(cp.arrivalTime.getTime() + 365 * 24 * 3_600_000),
+      position: { x, y },
+      onSave: (time) => {
+        const idx = sequence.findIndex(p => p.id === id);
+        // idx is this checkpoint's position within [start, ...checkpoints] — everything
+        // after it is a real downstream checkpoint ('start' can never appear here,
+        // since it's always index 0).
+        const downstream = sequence.slice(idx + 1);
+        const deltaMs = time.getTime() - cp.arrivalTime.getTime();
+        const updated = checkpoints.map(c => c.id === id ? { ...c, arrivalTime: time, pinned: true } : c);
+        setEditor(null);
+        if (deltaMs !== 0 && downstream.length > 0) {
+          setCascade({
+            downstreamIds: downstream.map(p => p.id),
+            deltaMs,
+            pendingCheckpoints: updated,
+            position: { x, y },
+          });
+        } else {
+          onChange(updated);
+        }
+      },
+    });
+  }
+
+  function menuDelete() {
+    if (!menu) return;
+    onChange(checkpoints.filter(c => c.id !== menu.id));
+    setMenu(null);
+  }
+
+  function cascadeShift() {
+    if (!cascade) return;
+    onChange(cascade.pendingCheckpoints.map(c =>
+      cascade.downstreamIds.includes(c.id) ? { ...c, arrivalTime: new Date(c.arrivalTime.getTime() + cascade.deltaMs) } : c
+    ));
+    setCascade(null);
+  }
+
+  function cascadeKeep() {
+    if (!cascade) return;
+    onChange(cascade.pendingCheckpoints);
+    setCascade(null);
+  }
 
   function handleTrackClick(e: React.MouseEvent<HTMLDivElement>) {
     // Measure the wrapper (this element's parent), not the track-line div itself —
@@ -112,23 +209,57 @@ export function CheckpointTrackRow({ checkpoints, startTime, distanceRange, char
           cursor: 'copy',
         }}
       />
-      {sequence.map((p) => (
-        <div
-          key={p.id}
-          data-checkpoint-marker
-          style={{
-            position: 'absolute',
-            left: xOf(p.distanceM / 1000) - 6,
-            top: 'calc(50% - 6px)',
-            width: 12,
-            height: 12,
-            borderRadius: '50%',
-            background: p.id === 'start' || p.id === 'end' ? chartPalette.checkpointLocked : chartPalette.checkpointWaypoint,
-            border: '2px solid white',
-            boxShadow: '0 0 0 1px rgba(0,0,0,0.15)',
-          }}
-        />
-      ))}
+      {sequence.map((p) => {
+        const isLocked = p.id === 'start' || p.id === 'end';
+        return (
+          <div
+            key={p.id}
+            data-checkpoint-marker
+            data-checkpoint-id={p.id}
+            data-draggable={!isLocked}
+            onMouseDown={isLocked ? undefined : (e) => onMarkerMouseDown(e, p.id)}
+            onContextMenu={p.id === 'start' ? undefined : (e) => onMarkerContextMenu(e, p.id)}
+            style={{
+              position: 'absolute',
+              left: xOf(p.distanceM / 1000) - 6,
+              top: 'calc(50% - 6px)',
+              width: 12,
+              height: 12,
+              borderRadius: '50%',
+              background: isLocked ? chartPalette.checkpointLocked : chartPalette.checkpointWaypoint,
+              border: '2px solid white',
+              boxShadow: '0 0 0 1px rgba(0,0,0,0.15)',
+              cursor: isLocked ? 'default' : dragId === p.id ? 'grabbing' : 'grab',
+            }}
+          />
+        );
+      })}
+
+      {menu && (
+        <div className="fixed bg-base-100 shadow-lg rounded-lg p-1 z-50 text-sm" style={{ left: menu.x, top: menu.y }}>
+          <button className="block w-full text-left px-3 py-1.5 rounded hover:bg-base-200" onClick={menuChangeTime}>
+            Change time
+          </button>
+          {menu.id !== 'end' && (
+            <button className="block w-full text-left px-3 py-1.5 rounded hover:bg-base-200 text-error" onClick={menuDelete}>
+              Delete checkpoint
+            </button>
+          )}
+        </div>
+      )}
+
+      {cascade && (
+        <div className="fixed bg-neutral text-neutral-content rounded-lg p-3 z-50 text-sm max-w-xs" style={{ left: cascade.position.x, top: cascade.position.y }}>
+          <div className="mb-2">
+            Move {cascade.downstreamIds.length} later checkpoint{cascade.downstreamIds.length > 1 ? 's' : ''} by{' '}
+            {cascade.deltaMs > 0 ? '+' : ''}{Math.round(cascade.deltaMs / 60_000)} min, or keep their times and recalculate speed?
+          </div>
+          <div className="flex justify-end gap-2">
+            <button className="btn btn-xs" onClick={cascadeKeep}>Keep times</button>
+            <button className="btn btn-xs btn-primary" onClick={cascadeShift}>Shift times</button>
+          </div>
+        </div>
+      )}
 
       {pendingAddKm !== null && (
         <ConfirmDialog
