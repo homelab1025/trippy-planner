@@ -43,6 +43,15 @@ const getLocalTimeString = (date: Date): string => {
   return `${hours}:${minutes}`;
 };
 
+function parseCheckpointsJson(json: string): Checkpoint[] {
+  try {
+    const raw = JSON.parse(json) as { id: string; distanceM: number; arrivalTime: string; pinned: boolean }[];
+    return raw.map(cp => ({ ...cp, arrivalTime: new Date(cp.arrivalTime) }));
+  } catch {
+    return [];
+  }
+}
+
 function App() {
   const [route, setRoute] = useState<RouteData | null>(null);
   const [avgSpeed, setAvgSpeed] = useState(25);
@@ -342,11 +351,12 @@ function App() {
           const data = res.data;
           const speed = data.avgSpeedKmh as number;
           const start = new Date(data.startTime as string);
+          const sharedCheckpoints = data.checkpointsJson ? parseCheckpointsJson(data.checkpointsJson as string) : undefined;
           setIsViewingShared(true);
           setAvgSpeed(speed);
           setStartTime(start);
           setRouteName(data.name as string);
-          loadRouteFromGpxText(data.gpxContent as string, speed, start, dpEpsilon, dpMaxGap, undefined);
+          loadRouteFromGpxText(data.gpxContent as string, speed, start, dpEpsilon, dpMaxGap, sharedCheckpoints);
         })
         .catch(() => {
           // Token invalid or route made private — let user upload
@@ -357,6 +367,7 @@ function App() {
         const start = new Date(stored.startTime);
         const epsilon = stored.dpEpsilonMeters ?? DP_EPSILON_METERS;
         const maxGap = stored.dpMaxGapMeters ?? DP_MAX_GAP_METERS;
+        const storedCheckpoints = stored.checkpointsJson ? parseCheckpointsJson(stored.checkpointsJson) : undefined;
         // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time mount initialization from localStorage, not a prop-sync pattern
         setAvgSpeed(stored.avgSpeedKmh);
         setStartTime(start);
@@ -364,7 +375,7 @@ function App() {
         setSavedRouteId(stored.id ?? null);
         setDpEpsilon(epsilon);
         setDpMaxGap(maxGap);
-        loadRouteFromGpxText(stored.gpxContent, stored.avgSpeedKmh, start, epsilon, maxGap, undefined)
+        loadRouteFromGpxText(stored.gpxContent, stored.avgSpeedKmh, start, epsilon, maxGap, storedCheckpoints)
           .catch(() => clearStoredRoute());
       }
     }
@@ -384,8 +395,9 @@ function App() {
       id: savedRouteId ?? undefined,
       dpEpsilonMeters: dpEpsilon,
       dpMaxGapMeters: dpMaxGap,
+      checkpointsJson: JSON.stringify(checkpoints),
     });
-  }, [route, rawGpxContent, avgSpeed, startTime, isViewingShared, routeName, savedRouteId, dpEpsilon, dpMaxGap]);
+  }, [route, rawGpxContent, avgSpeed, startTime, isViewingShared, routeName, savedRouteId, dpEpsilon, dpMaxGap, checkpoints]);
 
   const onHoverIndex = useCallback((index: number | null) => {
     setHoveredIndex(index);
