@@ -3,7 +3,9 @@ import {
   ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, ReferenceLine, ReferenceDot, ResponsiveContainer,
 } from 'recharts';
 import type { Climb } from '../utils/climbDetector';
+import type { Checkpoint } from '../utils/speedProfile';
 import { ClimbOverlay, type ClimbRange } from './ClimbOverlay';
+import { CheckpointOverlay } from './CheckpointOverlay';
 import { CHART_MARGIN_LEFT, CHART_YAXIS_LEFT_WIDTH } from './chartConstants';
 import { chartPalette } from '../theme/chartColors';
 
@@ -19,10 +21,12 @@ interface ElevationChartProps {
   onHoverIndex: (index: number | null) => void;
   onResize: (width: number) => void;
   hoveredIndex: number | null;
+  checkpoints: Checkpoint[];
+  startTime: Date;
 }
 
 const ElevationChart: React.FC<ElevationChartProps> = ({
-  data, climbs, onHoverIndex, onResize, hoveredIndex,
+  data, climbs, onHoverIndex, onResize, hoveredIndex, checkpoints, startTime,
 }) => {
   const climbRanges = useMemo((): ClimbRange[] =>
     climbs.map(climb => ({
@@ -112,6 +116,7 @@ const ElevationChart: React.FC<ElevationChartProps> = ({
             />
           )}
           <ClimbOverlay climbRanges={climbRanges} data={data} />
+          <CheckpointOverlay checkpoints={checkpoints} startTime={startTime} data={data} />
           {hoveredIndex !== null && data[hoveredIndex] != null && (
             <>
               <ReferenceLine
