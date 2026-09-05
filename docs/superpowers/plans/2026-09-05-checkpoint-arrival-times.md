@@ -2081,7 +2081,7 @@ import { buildSequence, impliedSpeedKmh } from './utils/speedProfile';
 
 (`buildSequence`/`impliedSpeedKmh` come from the shared `speedProfile.ts` utility from Task 4, not from `CheckpointTrackRow` — that component's own internal sequence helper is private to its rendering needs, per Task 7's note.)
 
-Pass `checkpoints` to `<ElevationChart>` (Task 5 added this prop — `startTime` is deliberately not one of `ElevationChart`'s props; `CheckpointOverlay` never needed it):
+Pass `effectiveCheckpoints` (Task 10's `useMemo`-derived, auto-tracked view of `checkpoints` — see Task 10's fix-round note; NOT the raw `checkpoints` state) to `<ElevationChart>` (Task 5 added this prop — `startTime` is deliberately not one of `ElevationChart`'s props; `CheckpointOverlay` never needed it):
 
 ```tsx
                     <ElevationChart
@@ -2090,16 +2090,16 @@ Pass `checkpoints` to `<ElevationChart>` (Task 5 added this prop — `startTime`
                       onHoverIndex={onHoverIndex}
                       onResize={setChartWidth}
                       hoveredIndex={hoveredIndex}
-                      checkpoints={checkpoints}
+                      checkpoints={effectiveCheckpoints}
                     />
 ```
 
-Insert the track row between the elevation chart and the wind row:
+Insert the track row between the elevation chart and the wind row. It reads the auto-tracked `effectiveCheckpoints` for display, but writes back through the raw `setCheckpoints` — the component's own edits (add/drag/delete/change-time) always operate on the base state, never the derived view:
 
 ```tsx
                   <div className="border-t border-base-200" style={{ height: 30 }}>
                     <CheckpointTrackRow
-                      checkpoints={checkpoints}
+                      checkpoints={effectiveCheckpoints}
                       startTime={startTime}
                       totalDistanceM={route.totalDistance}
                       distanceRange={distanceRange}
@@ -2155,7 +2155,7 @@ Add `'checkpoints'` to the `activePanel` union type and insert the panel in `App
                 Checkpoints
               </div>
               <div className="collapse-content flex flex-col gap-1.5">
-                {buildSequence(startTime, checkpoints).map((p, i, seq) => {
+                {buildSequence(startTime, effectiveCheckpoints).map((p, i, seq) => {
                   const label = i === 0 ? 'Start' : i === seq.length - 1 ? 'Finish' : `CP ${i}`;
                   const speed = i > 0 ? impliedSpeedKmh(seq[i - 1], p) : null;
                   return (

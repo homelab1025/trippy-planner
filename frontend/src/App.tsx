@@ -47,6 +47,15 @@ function App() {
   const [avgSpeed, setAvgSpeed] = useState(25);
   const [startTime, setStartTime] = useState<Date>(new Date());
   const [checkpoints, setCheckpoints] = useState<Checkpoint[]>([]);
+  // Checkpoints not yet manually edited ("pinned: false") keep tracking Average
+  // Speed / Start Time live; once a checkpoint's time is explicitly set it detaches.
+  const effectiveCheckpoints = useMemo(
+    () => checkpoints.map(cp => cp.pinned ? cp : {
+      ...cp,
+      arrivalTime: new Date(startTime.getTime() + (cp.distanceM / (avgSpeed * 1000)) * 3_600_000),
+    }),
+    [checkpoints, avgSpeed, startTime]
+  );
   const [weatherPoints, setWeatherPoints] = useState<WeatherSample[]>([]);
   const [loading, setLoading] = useState(false);
   const [weatherLoading, setWeatherLoading] = useState(false);
@@ -88,7 +97,7 @@ function App() {
     weatherPoints,
     chartWidth,
     startTime,
-    checkpoints,
+    checkpoints: effectiveCheckpoints,
     weatherStartTime: lastFetchedParams?.startTime,
     weatherCheckpoints: lastFetchedParams?.checkpoints,
   });
@@ -176,7 +185,7 @@ function App() {
       lastFetchedParams.avgSpeed !== avgSpeed ||
       lastFetchedParams.startTime.getTime() !== startTime.getTime() ||
       lastFetchedParams.selectedProvider !== selectedProvider ||
-      JSON.stringify(lastFetchedParams.checkpoints) !== JSON.stringify(checkpoints)
+      JSON.stringify(lastFetchedParams.checkpoints) !== JSON.stringify(effectiveCheckpoints)
     );
 
   const updateWeather = useCallback(async (currentRoute: RouteData, cps: Checkpoint[], start: Date, provider: WeatherProvider): Promise<boolean> => {
@@ -238,12 +247,12 @@ function App() {
     if (!route) return;
     setWeatherLoading(true);
     try {
-      const success = await updateWeather(route, checkpoints, startTime, selectedProvider);
-      if (success) setLastFetchedParams({ avgSpeed, startTime, selectedProvider, checkpoints });
+      const success = await updateWeather(route, effectiveCheckpoints, startTime, selectedProvider);
+      if (success) setLastFetchedParams({ avgSpeed, startTime, selectedProvider, checkpoints: effectiveCheckpoints });
     } finally {
       setWeatherLoading(false);
     }
-  }, [route, checkpoints, avgSpeed, startTime, selectedProvider, updateWeather]);
+  }, [route, effectiveCheckpoints, avgSpeed, startTime, selectedProvider, updateWeather]);
 
   // Tracks the DP epsilon/maxGap actually baked into the current `route`, so a blur/Enter
   // that didn't change either value is a no-op instead of a redundant re-parse.
@@ -268,7 +277,7 @@ function App() {
       setHoveredPoint(null);
       setHoveredData(null);
       setWeatherLoading(true);
-      const params = lastFetchedParams ?? { avgSpeed, startTime, selectedProvider, checkpoints };
+      const params = lastFetchedParams ?? { avgSpeed, startTime, selectedProvider, checkpoints: effectiveCheckpoints };
       try {
         const success = await updateWeather(parsedRoute, params.checkpoints, params.startTime, params.selectedProvider);
         if (success) setLastFetchedParams(params);
@@ -278,7 +287,7 @@ function App() {
     } finally {
       techCommitInFlightRef.current = false;
     }
-  }, [route, rawGpxContent, lastFetchedParams, avgSpeed, startTime, selectedProvider, checkpoints, updateWeather]);
+  }, [route, rawGpxContent, lastFetchedParams, avgSpeed, startTime, selectedProvider, effectiveCheckpoints, updateWeather]);
 
   const commitTechParams = useCallback(() => {
     applyTechParams(dpEpsilon, dpMaxGap);
@@ -293,16 +302,6 @@ function App() {
     setDpMaxGap(DP_MAX_GAP_METERS);
     applyTechParams(DP_EPSILON_METERS, DP_MAX_GAP_METERS);
   }, [applyTechParams]);
-
-  // Checkpoints not yet manually edited ("pinned: false") keep tracking Average
-  // Speed / Start Time live; once a checkpoint's time is explicitly set it detaches.
-  React.useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- derives checkpoint arrival times from avgSpeed/startTime, not a prop-sync anti-pattern
-    setCheckpoints(cps => cps.map(cp => cp.pinned ? cp : {
-      ...cp,
-      arrivalTime: new Date(startTime.getTime() + (cp.distanceM / (avgSpeed * 1000)) * 3_600_000),
-    }));
-  }, [avgSpeed, startTime]);
 
   React.useEffect(() => {
     setWeatherDebug(weatherDebug);
