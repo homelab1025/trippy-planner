@@ -113,4 +113,29 @@ class RouteRepositoryTest {
         assertThat(routeRepo.findOwnerUserId(saved.getId())).contains(userId);
         assertThat(routeRepo.findOwnerUserId(UUID.randomUUID())).isEmpty();
     }
+
+    @Test
+    void checkpointsJsonIsNullByDefault() {
+        var saved = routeRepo.save(userId, sampleRequest());
+        assertThat(saved.getCheckpointsJson()).isNull();
+    }
+
+    @Test
+    void savesAndRetrievesCheckpointsJson() {
+        var req = sampleRequest();
+        req.setCheckpointsJson("[{\"id\":\"end\",\"distanceM\":1000}]");
+        var saved = routeRepo.save(userId, req);
+        assertThat(saved.getCheckpointsJson()).isEqualTo("[{\"id\":\"end\",\"distanceM\":1000}]");
+        var reloaded = routeRepo.findById(saved.getId()).orElseThrow();
+        assertThat(reloaded.getCheckpointsJson()).isEqualTo("[{\"id\":\"end\",\"distanceM\":1000}]");
+    }
+
+    @Test
+    void updatesCheckpointsJson() {
+        var saved = routeRepo.save(userId, sampleRequest());
+        var update = new UpdateRouteRequest();
+        update.setCheckpointsJson("[{\"id\":\"end\",\"distanceM\":500}]");
+        var updated = routeRepo.update(saved.getId(), update).orElseThrow();
+        assertThat(updated.getCheckpointsJson()).isEqualTo("[{\"id\":\"end\",\"distanceM\":500}]");
+    }
 }

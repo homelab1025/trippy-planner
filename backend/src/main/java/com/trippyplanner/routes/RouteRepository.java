@@ -28,6 +28,7 @@ public class RouteRepository {
         r.setIsPublic(rs.getBoolean("is_public"));
         r.setCreatedAt(rs.getObject("created_at", OffsetDateTime.class));
         r.setGpxContent(rs.getString("gpx_content"));
+        r.setCheckpointsJson(rs.getString("checkpoints_json"));
         return r;
     };
 
@@ -51,7 +52,7 @@ public class RouteRepository {
 
     public Optional<Route> findById(UUID id) {
         return jdbc.query(
-            "SELECT id, name, avg_speed_kmh, start_time, is_public, created_at, gpx_content " +
+            "SELECT id, name, avg_speed_kmh, start_time, is_public, created_at, gpx_content, checkpoints_json " +
             "FROM routes WHERE id = ?",
             FULL_MAPPER, id).stream().findFirst();
     }
@@ -64,10 +65,10 @@ public class RouteRepository {
     public Route save(long userId, CreateRouteRequest req) {
         UUID id = UUID.randomUUID();
         jdbc.update(
-            "INSERT INTO routes (id, user_id, name, gpx_content, avg_speed_kmh, start_time) " +
-            "VALUES (?, ?, ?, ?, ?, ?)",
+            "INSERT INTO routes (id, user_id, name, gpx_content, avg_speed_kmh, start_time, checkpoints_json) " +
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
             id, userId, req.getName(), req.getGpxContent(),
-            req.getAvgSpeedKmh(), req.getStartTime());
+            req.getAvgSpeedKmh(), req.getStartTime(), req.getCheckpointsJson());
         return findById(id).orElseThrow();
     }
 
@@ -77,6 +78,7 @@ public class RouteRepository {
         if (req.getName() != null) { sets.add("name = ?"); params.add(req.getName()); }
         if (req.getAvgSpeedKmh() != null) { sets.add("avg_speed_kmh = ?"); params.add(req.getAvgSpeedKmh()); }
         if (req.getStartTime() != null) { sets.add("start_time = ?"); params.add(req.getStartTime()); }
+        if (req.getCheckpointsJson() != null) { sets.add("checkpoints_json = ?"); params.add(req.getCheckpointsJson()); }
         if (sets.isEmpty()) return findById(id);
         sets.add("updated_at = now()");
         params.add(id);
@@ -103,7 +105,7 @@ public class RouteRepository {
 
     public Optional<Route> findByShareToken(String token) {
         return jdbc.query(
-            "SELECT id, name, avg_speed_kmh, start_time, is_public, created_at, gpx_content " +
+            "SELECT id, name, avg_speed_kmh, start_time, is_public, created_at, gpx_content, checkpoints_json " +
             "FROM routes WHERE share_token = ? AND is_public = true",
             FULL_MAPPER, token).stream().findFirst();
     }
