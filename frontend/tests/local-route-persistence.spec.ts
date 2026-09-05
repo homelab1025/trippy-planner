@@ -55,3 +55,33 @@ test.describe('Local route persistence across magic-link login (#44)', () => {
     await expect(myRoutesPanel.locator('li').first()).toContainText('Sample Ride');
   });
 });
+
+test.describe('Checkpoint persistence across a full page reload', () => {
+  test('a checkpoint added to the track survives a full page reload', async ({ page }) => {
+    await page.goto('/');
+
+    // Upload a GPX file while anonymous
+    await page.setInputFiles('input[type="file"]', 'public/sample-route.gpx');
+    await page.waitForTimeout(1000);
+    await expect(page.locator('.header-stats')).toContainText('Sample Ride');
+
+    // Add a checkpoint by clicking the empty track, confirming the add, and
+    // accepting the pre-filled interpolated arrival time.
+    const track = page.getByTestId('checkpoint-track-line');
+    const box = await track.boundingBox();
+    if (!box) throw new Error('checkpoint track not found');
+    await track.click({ position: { x: box.width * 0.4, y: box.height / 2 } });
+    await page.getByRole('button', { name: /yes, add/i }).click();
+    await page.getByRole('button', { name: /^save$/i }).click();
+
+    await expect(page.locator('[data-checkpoint-marker][data-draggable="true"]')).toHaveCount(1);
+
+    await page.reload();
+    await page.waitForTimeout(1000);
+
+    // The route (and the checkpoint added to it) survives the full-page reload,
+    // restored from localStorage the same way the route itself is (see #44).
+    await expect(page.locator('.header-stats')).toContainText('Sample Ride');
+    await expect(page.locator('[data-checkpoint-marker][data-draggable="true"]')).toHaveCount(1);
+  });
+});

@@ -203,4 +203,47 @@ test.describe('My Routes panel', () => {
     // The still-loaded route in the main view is untouched.
     await expect(page.locator('.header-stats')).toContainText('Sample Ride');
   });
+
+  test('a saved route\'s checkpoints are restored when reloaded from My Routes', async ({ page }) => {
+    await cleanRoutes(page);
+
+    // Upload a GPX file
+    await page.setInputFiles('input[type="file"]', 'public/sample-route.gpx');
+    await page.waitForTimeout(1000);
+    await expect(page.locator('.header-stats')).toContainText('Sample Ride');
+
+    // Add a checkpoint by clicking the empty track, confirming the add, and
+    // accepting the pre-filled interpolated arrival time.
+    const track = page.getByTestId('checkpoint-track-line');
+    const box = await track.boundingBox();
+    if (!box) throw new Error('checkpoint track not found');
+    await track.click({ position: { x: box.width * 0.4, y: box.height / 2 } });
+    await page.getByRole('button', { name: /yes, add/i }).click();
+    await page.getByRole('button', { name: /^save$/i }).click();
+
+    await expect(page.locator('[data-checkpoint-marker][data-draggable="true"]')).toHaveCount(1);
+
+    // Save the route (should save since authenticated via init script)
+    await page.getByRole('button', { name: 'Save route' }).click();
+    await page.waitForTimeout(500);
+
+    // Clear the locally-persisted route, then reload — nothing should be loaded now
+    // (same rationale as the "clicking a saved route loads it" test above: without
+    // this, the reload would restore the just-saved route from localStorage instead
+    // of exercising the My Routes load path).
+    await page.evaluate(() => localStorage.removeItem('trippy_current_route'));
+    await page.reload();
+    await page.waitForTimeout(1000);
+    await expect(page.locator('.header-stats')).toHaveCount(0);
+
+    // Open My Routes and load the saved route
+    await page.getByText('My routes').click();
+    await page.waitForTimeout(500);
+    await page.getByRole('button', { name: /Sample Ride/ }).first().click();
+    await page.waitForTimeout(1000);
+
+    // The route — and the checkpoint it was saved with — are both restored
+    await expect(page.locator('.header-stats')).toContainText('Sample Ride');
+    await expect(page.locator('[data-checkpoint-marker][data-draggable="true"]')).toHaveCount(1);
+  });
 });
