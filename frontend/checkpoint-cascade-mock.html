@@ -1,0 +1,691 @@
+<!doctype html>
+<html lang="en" data-theme="alpine">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Checkpoint cascade mock</title>
+<link href="https://cdn.jsdelivr.net/npm/daisyui@4/dist/full.min.css" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  * { font-family: 'Hanken Grotesk', sans-serif; }
+  body { background: #f4f5f7; margin: 0; }
+
+  #elevWrap { position: relative; height: 260px; }
+  #cpTrackWrap { position: relative; height: 78px; border-top: 1px solid #e2e9ec; background: #fafbfc; }
+
+  .cp-dot {
+    position: absolute;
+    width: 14px; height: 14px;
+    margin-left: -7px; margin-top: -7px;
+    border-radius: 50%;
+    background: #1b6ec2;
+    border: 2px solid white;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.15);
+    cursor: grab;
+    z-index: 6;
+  }
+  .cp-dot.cp-locked { background: #256a4e; cursor: default; }
+  .cp-dot.dragging { cursor: grabbing; filter: brightness(1.2); }
+  .cp-dot:hover { filter: brightness(1.15); }
+
+  .cp-guide {
+    position: absolute;
+    width: 0;
+    border-left: 1px dashed #9aa4a0;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .cp-time-label {
+    position: absolute;
+    top: 34px;
+    transform: translateX(-50%);
+    font-size: 10px;
+    font-family: monospace;
+    font-weight: 700;
+    color: #33403a;
+    white-space: nowrap;
+    z-index: 6;
+  }
+
+  .cp-track-line {
+    position: absolute;
+    top: 16px;
+    height: 2px;
+    background: #d3dad6;
+    z-index: 0;
+    cursor: copy;
+  }
+
+  .cp-segment {
+    position: absolute;
+    top: 10px;
+    height: 14px;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 700;
+    z-index: 2;
+    pointer-events: none;
+  }
+  .seg-climb { background: #f5c7a0; color: #7a3d0a; }
+  .seg-desc  { background: #a8d4e6; color: #1a4a5e; }
+  .seg-flat  { background: #c7eab8; color: #2d5a27; }
+  .seg-recomputed {
+    background: #f7b4ac !important;
+    color: #7a1410 !important;
+    border: 1px dashed #c0392b;
+  }
+
+  .cp-popover {
+    position: fixed;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.18);
+    padding: 12px;
+    z-index: 50;
+    display: none;
+    font-size: 12px;
+    width: 220px;
+  }
+  .cp-menu {
+    position: fixed;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.18);
+    padding: 4px;
+    z-index: 50;
+    display: none;
+    font-size: 12px;
+    min-width: 150px;
+  }
+  .cp-menu button, .cp-popover button {
+    font-family: inherit;
+  }
+  .cp-menu-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+  }
+  .cp-menu-item:hover { background: #f1f3f2; }
+  .cp-menu-item.danger { color: #ba1a1a; }
+
+  .cp-banner {
+    position: fixed;
+    background: #1f2937;
+    color: white;
+    border-radius: 10px;
+    padding: 10px 12px;
+    z-index: 60;
+    display: none;
+    font-size: 12px;
+    max-width: 280px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+  }
+  .cp-banner button {
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  .legend-dot {
+    display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 4px;
+  }
+</style>
+</head>
+<body class="h-screen flex flex-col">
+
+<!-- Navbar -->
+<div class="navbar bg-primary text-primary-content rounded-b-xl shadow-lg mb-3 px-4 min-h-[58px] relative">
+  <div class="flex-1">
+    <span class="text-lg font-bold">Trippy Planner</span>
+    <span class="badge badge-sm badge-outline ml-2 opacity-80">mock &middot; issue #38</span>
+  </div>
+  <div class="flex-none hidden lg:block">
+    <span class="text-sm opacity-80">Alpe d'Huez Loop: 132 km &middot; 1,680 m of character-building</span>
+  </div>
+  <div class="flex-none gap-2">
+    <button class="btn btn-sm btn-outline">Upload GPX</button>
+    <div class="avatar placeholder">
+      <div class="bg-secondary text-primary-content rounded-full w-8"><span>FD</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- Main Grid -->
+<div class="flex flex-1 gap-3 px-3 pb-3 overflow-hidden">
+
+  <!-- Sidebar -->
+  <div class="w-[320px] flex-shrink-0 flex flex-col gap-2 overflow-y-auto">
+
+    <!-- Ride Details -->
+    <div class="collapse collapse-arrow bg-base-200 rounded-t-xl">
+      <input type="radio" name="sidebar-panels" checked />
+      <div class="collapse-title font-semibold text-sm">Ride Details</div>
+      <div class="collapse-content flex flex-col gap-3">
+        <div>
+          <label class="label"><span class="label-text text-xs">Flat-terrain speed (km/h)</span></label>
+          <input id="flatSpeed" type="number" value="25" min="5" max="60" class="input input-bordered input-sm w-full" />
+          <span class="text-[10px] text-base-content/50 mt-0.5 block">Baseline for the gradient model (not wired in this mock)</span>
+        </div>
+        <div>
+          <label class="label"><span class="label-text text-xs">Start Time</span></label>
+          <input id="startTimeInput" type="time" value="10:10" class="input input-bordered input-sm w-full" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Checkpoints summary -->
+    <div class="collapse collapse-arrow bg-base-200">
+      <input type="radio" name="sidebar-panels" checked />
+      <div class="collapse-title font-semibold text-sm">Checkpoints <span id="cpCountBadge" class="badge badge-sm badge-ghost ml-2">4</span></div>
+      <div class="collapse-content flex flex-col gap-1.5">
+        <div id="cpList" class="flex flex-col gap-1.5"></div>
+        <div class="divider my-1"></div>
+        <div class="flex justify-between text-xs">
+          <span class="text-base-content/60">Finish</span>
+          <span id="finishTime" class="font-semibold font-mono"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Legend / how-to -->
+    <div class="collapse collapse-arrow bg-base-200 rounded-b-xl">
+      <input type="radio" name="sidebar-panels" />
+      <div class="collapse-title font-semibold text-sm">How to use this mock</div>
+      <div class="collapse-content flex flex-col gap-2 text-xs text-base-content/70">
+        <div><span class="legend-dot" style="background:#f5c7a0"></span>Climb segment</div>
+        <div><span class="legend-dot" style="background:#a8d4e6"></span>Descent segment</div>
+        <div><span class="legend-dot" style="background:#c7eab8"></span>Flat segment</div>
+        <div><span class="legend-dot" style="background:#f7b4ac; border:1px dashed #c0392b;"></span>Recalculated after an edit</div>
+        <div class="divider my-1"></div>
+        <div>&bull; Click empty track &rarr; add a checkpoint</div>
+        <div>&bull; Drag a checkpoint &rarr; reposition (time fixed, speed recalculates)</div>
+        <div>&bull; Right-click a checkpoint &rarr; change time or delete</div>
+        <div>&bull; Start and finish always exist &mdash; fixed in place, can't be deleted. Finish time can still be changed.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Display Area -->
+  <div class="flex-1 flex flex-col gap-3 min-w-0">
+
+    <div class="card bg-base-200 shadow-sm flex-1 min-h-0">
+      <div class="card-body p-4" style="height: 100%;">
+
+        <!-- Elevation Chart -->
+        <div id="elevWrap">
+          <svg width="100%" height="100%" viewBox="0 0 900 260" preserveAspectRatio="none">
+            <line x1="60" y1="20" x2="860" y2="20" stroke="#e2e9ec" stroke-width="0.5" />
+            <line x1="60" y1="80" x2="860" y2="80" stroke="#e2e9ec" stroke-width="0.5" />
+            <line x1="60" y1="140" x2="860" y2="140" stroke="#e2e9ec" stroke-width="0.5" />
+            <line x1="60" y1="200" x2="860" y2="200" stroke="#e2e9ec" stroke-width="0.5" />
+
+            <text x="52" y="24" text-anchor="end" font-size="9" fill="#707973">1800m</text>
+            <text x="52" y="84" text-anchor="end" font-size="9" fill="#707973">1200m</text>
+            <text x="52" y="144" text-anchor="end" font-size="9" fill="#707973">600m</text>
+            <text x="52" y="204" text-anchor="end" font-size="9" fill="#707973">200m</text>
+
+            <text x="60" y="250" text-anchor="middle" font-size="10" fill="#707973">0 km</text>
+            <text x="193" y="250" text-anchor="middle" font-size="10" fill="#707973">20 km</text>
+            <text x="326" y="250" text-anchor="middle" font-size="10" fill="#707973">40 km</text>
+            <text x="460" y="250" text-anchor="middle" font-size="10" fill="#707973">60 km</text>
+            <text x="593" y="250" text-anchor="middle" font-size="10" fill="#707973">80 km</text>
+            <text x="726" y="250" text-anchor="middle" font-size="10" fill="#707973">100 km</text>
+            <text x="860" y="250" text-anchor="middle" font-size="10" fill="#707973">132 km</text>
+
+            <path d="M60,200 L100,195 L140,190 L180,185 L220,170 L260,140 L300,100 L340,65 L380,40 L410,30 L440,35 L470,55 L500,80 L530,110 L560,140 L590,160 L620,170 L650,175 L680,178 L710,170 L740,140 L770,100 L800,70 L830,50 L860,45 L860,200 Z"
+                  fill="#256a4e" fill-opacity="0.2" />
+            <path d="M60,200 L100,195 L140,190 L180,185 L220,170 L260,140 L300,100 L340,65 L380,40 L410,30 L440,35 L470,55 L500,80 L530,110 L560,140 L590,160 L620,170 L650,175 L680,178 L710,170 L740,140 L770,100 L800,70 L830,50 L860,45"
+                  fill="none" stroke="#256a4e" stroke-width="2" />
+          </svg>
+          <!-- checkpoint dots + guides get injected here on top of the SVG -->
+        </div>
+
+        <!-- Checkpoint timeline track -->
+        <div id="cpTrackWrap"></div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add-checkpoint confirm -->
+<div id="addConfirm" class="cp-popover">
+  <div class="font-semibold mb-2">Add checkpoint here?</div>
+  <div id="addConfirmDistance" class="text-base-content/60 mb-3 font-mono"></div>
+  <div class="flex justify-end gap-2">
+    <button class="btn btn-xs" onclick="closeAddConfirm()">Cancel</button>
+    <button class="btn btn-xs btn-primary" onclick="confirmAdd()">Yes, add</button>
+  </div>
+</div>
+
+<!-- Time editor popover -->
+<div id="timeEditor" class="cp-popover">
+  <div class="font-semibold mb-2" id="timeEditorTitle">Set arrival time</div>
+  <input id="timeEditorInput" type="time" class="input input-bordered input-sm w-full mb-2" />
+  <div id="timeEditorError" class="text-error text-[11px] mb-2" style="display:none;"></div>
+  <div class="flex justify-end gap-2">
+    <button class="btn btn-xs" onclick="closeTimeEditor()">Cancel</button>
+    <button class="btn btn-xs btn-primary" onclick="saveTimeEditor()">Save</button>
+  </div>
+</div>
+
+<!-- Right-click context menu -->
+<div id="cpMenu" class="cp-menu">
+  <button class="cp-menu-item" onclick="menuChangeTime()">Change time</button>
+  <button id="cpMenuDelete" class="cp-menu-item danger" onclick="menuDelete()">Delete checkpoint</button>
+</div>
+
+<!-- Cascade prompt banner -->
+<div id="cascadeBanner" class="cp-banner">
+  <div id="cascadeText" class="mb-2"></div>
+  <div class="flex justify-end gap-2">
+    <button style="background:#374151; color:white;" onclick="cascadeKeep()">Keep times</button>
+    <button style="background:#256a4e; color:white;" onclick="cascadeShift()">Shift times</button>
+  </div>
+</div>
+
+<script>
+// ---- elevation curve sampling (km 0-132 mapped to svg x 60-860, viewBox 900x260) ----
+const ELEV_POINTS = [
+  [60,200],[100,195],[140,190],[180,185],[220,170],[260,140],[300,100],[340,65],[380,40],
+  [410,30],[440,35],[470,55],[500,80],[530,110],[560,140],[590,160],[620,170],[650,175],
+  [680,178],[710,170],[740,140],[770,100],[800,70],[830,50],[860,45]
+];
+const ROUTE_KM = 132;
+const SVG_W = 900, SVG_H = 260, PLOT_X0 = 60, PLOT_X1 = 860;
+
+function kmToX(km) { return PLOT_X0 + (km / ROUTE_KM) * (PLOT_X1 - PLOT_X0); }
+function xPercent(km) { return (kmToX(km) / SVG_W) * 100; }
+function yAtKm(km) {
+  const x = kmToX(km);
+  for (let i = 0; i < ELEV_POINTS.length - 1; i++) {
+    const [x0, y0] = ELEV_POINTS[i], [x1, y1] = ELEV_POINTS[i + 1];
+    if (x >= x0 && x <= x1) {
+      const t = (x - x0) / (x1 - x0);
+      return y0 + t * (y1 - y0);
+    }
+  }
+  return ELEV_POINTS[ELEV_POINTS.length - 1][1];
+}
+function yPercent(km) { return (yAtKm(km) / SVG_H) * 100; }
+
+// ---- time helpers (minutes since midnight) ----
+function parseTime(hhmm) { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m; }
+function formatTime(mins) {
+  mins = ((mins % 1440) + 1440) % 1440;
+  const h = Math.floor(mins / 60), m = mins % 60;
+  return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+}
+
+// ---- data model ----
+// cp.fixed: 'start' (immovable, undeletable, no time edit at all - driven by the sidebar
+// Start Time field), 'end' (immovable, undeletable, but time IS editable - the finish
+// always exists), or false (a normal checkpoint - draggable, editable, deletable).
+let nextId = 5;
+let checkpoints = [
+  { id: 0, distanceKm: 0,   timeMin: parseTime('10:10'), fixed: 'start', recomputed: false },
+  { id: 1, distanceKm: 38,  timeMin: parseTime('10:50'), fixed: false,   recomputed: false },
+  { id: 2, distanceKm: 82,  timeMin: parseTime('11:50'), fixed: false,   recomputed: false },
+  { id: 3, distanceKm: 124, timeMin: parseTime('13:00'), fixed: false,   recomputed: false },
+  { id: 4, distanceKm: ROUTE_KM, timeMin: parseTime('13:20'), fixed: 'end', recomputed: false },
+];
+
+function sorted() { return checkpoints.slice().sort((a, b) => a.distanceKm - b.distanceKm); }
+function segmentSpeedKmh(a, b) {
+  const distKm = b.distanceKm - a.distanceKm;
+  const hours = (b.timeMin - a.timeMin) / 60;
+  if (hours <= 0) return null;
+  return distKm / hours;
+}
+function terrainClass(a, b) {
+  const dy = yAtKm(b.distanceKm) - yAtKm(a.distanceKm); // svg y grows downward
+  if (dy < -8) return 'seg-climb';
+  if (dy > 8) return 'seg-desc';
+  return 'seg-flat';
+}
+
+// ---- rendering ----
+const elevWrap = document.getElementById('elevWrap');
+const trackWrap = document.getElementById('cpTrackWrap');
+
+function clearInjected(container, keepSelector) {
+  container.querySelectorAll('.injected').forEach(el => el.remove());
+}
+
+function render() {
+  const cps = sorted();
+  document.getElementById('cpCountBadge').textContent = cps.length;
+
+  // clear previously injected elements
+  elevWrap.querySelectorAll('.injected').forEach(el => el.remove());
+  trackWrap.innerHTML = '';
+
+  // track line spanning the plot area, clickable to add a checkpoint
+  const trackLine = document.createElement('div');
+  trackLine.className = 'cp-track-line';
+  trackLine.style.left = xPercent(0) + '%';
+  trackLine.style.width = (xPercent(ROUTE_KM) - xPercent(0)) + '%';
+  trackLine.title = 'Click to add a checkpoint';
+  trackLine.addEventListener('click', onTrackClick);
+  trackWrap.appendChild(trackLine);
+
+  // segments between consecutive checkpoints (the last one always ends at the finish)
+  for (let i = 0; i < cps.length - 1; i++) {
+    renderSegment(cps[i], cps[i + 1]);
+  }
+  const finish = cps[cps.length - 1];
+  document.getElementById('finishTime').textContent = formatTime(finish.timeMin);
+
+  // checkpoint dots + guides + time labels
+  cps.forEach(cp => renderCheckpoint(cp));
+
+  renderSidebarList(cps);
+}
+
+function renderSegment(a, b) {
+  const left = xPercent(a.distanceKm);
+  const width = xPercent(b.distanceKm) - left;
+  const div = document.createElement('div');
+  div.className = 'cp-segment injected ' + terrainClass(a, b);
+  if (b.recomputed) div.classList.add('seg-recomputed');
+  div.style.left = left + '%';
+  div.style.width = width + '%';
+  const speed = segmentSpeedKmh(a, b);
+  div.textContent = speed ? Math.round(speed) + ' km/h' : '—';
+  trackWrap.appendChild(div);
+}
+
+function renderCheckpoint(cp) {
+  const left = xPercent(cp.distanceKm);
+  const top = yPercent(cp.distanceKm);
+
+  // dot on the elevation curve
+  const curveDot = document.createElement('div');
+  curveDot.className = 'cp-dot injected' + (cp.fixed ? ' cp-locked' : '');
+  curveDot.style.left = left + '%';
+  curveDot.style.top = top + '%';
+  curveDot.style.width = '10px'; curveDot.style.height = '10px';
+  curveDot.style.marginLeft = '-5px'; curveDot.style.marginTop = '-5px';
+  elevWrap.appendChild(curveDot);
+
+  // dashed guide from curve down to bottom of the elevation panel
+  const guide = document.createElement('div');
+  guide.className = 'cp-guide injected';
+  guide.style.left = left + '%';
+  guide.style.top = top + '%';
+  guide.style.height = (100 - top) + '%';
+  elevWrap.appendChild(guide);
+
+  // dot on the track
+  const dot = document.createElement('div');
+  dot.className = 'cp-dot injected' + (cp.fixed ? ' cp-locked' : '');
+  dot.style.left = left + '%';
+  dot.style.top = '17px';
+  dot.dataset.cpId = cp.id;
+  if (!cp.fixed) dot.addEventListener('mousedown', e => onDragStart(e, cp.id));
+  if (cp.fixed !== 'start') dot.addEventListener('contextmenu', e => onContextMenu(e, cp.id));
+  trackWrap.appendChild(dot);
+
+  // time label
+  const label = document.createElement('div');
+  label.className = 'cp-time-label injected';
+  label.style.left = left + '%';
+  const suffix = cp.fixed === 'start' ? ' (start)' : cp.fixed === 'end' ? ' (finish)' : '';
+  label.textContent = formatTime(cp.timeMin) + suffix;
+  trackWrap.appendChild(label);
+}
+
+function renderSidebarList(cps) {
+  const list = document.getElementById('cpList');
+  list.innerHTML = '';
+  cps.forEach((cp, i) => {
+    const row = document.createElement('div');
+    row.className = 'flex items-center justify-between text-xs p-2 rounded bg-base-100';
+    const speedLabel = i > 0 ? Math.round(segmentSpeedKmh(cps[i - 1], cp)) + ' km/h in' : '';
+    const name = cp.fixed === 'start' ? 'Start' : cp.fixed === 'end' ? 'Finish' : 'CP ' + i;
+    row.innerHTML = `<span>${name} &middot; ${cp.distanceKm.toFixed(0)} km</span>
+      <span class="font-mono font-semibold">${formatTime(cp.timeMin)} ${speedLabel ? '<span class="text-base-content/40">(' + speedLabel + ')</span>' : ''}</span>`;
+    list.appendChild(row);
+  });
+}
+
+// ---- drag to reposition (time fixed, speed recalculates) ----
+let dragging = null;
+function onDragStart(e, id) {
+  e.preventDefault();
+  dragging = id;
+  document.querySelectorAll(`.cp-dot[data-cp-id="${id}"]`).forEach(el => el.classList.add('dragging'));
+  document.addEventListener('mousemove', onDragMove);
+  document.addEventListener('mouseup', onDragEnd);
+}
+function onDragMove(e) {
+  if (dragging == null) return;
+  const rect = trackWrap.getBoundingClientRect();
+  const pct = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+  let km = pct * ROUTE_KM;
+
+  const cps = sorted();
+  const idx = cps.findIndex(c => c.id === dragging);
+  const minKm = cps[idx - 1].distanceKm + 1;
+  const maxKm = idx + 1 < cps.length ? cps[idx + 1].distanceKm - 1 : ROUTE_KM - 1;
+  km = Math.min(maxKm, Math.max(minKm, km));
+
+  const cp = checkpoints.find(c => c.id === dragging);
+  cp.distanceKm = km;
+  cp.recomputed = true; // segment ending at this checkpoint changed (distance moved, time fixed)
+  const next = cps[idx + 1];
+  if (next) next.recomputed = true; // segment starting at this checkpoint changed too
+
+  render();
+}
+function onDragEnd() {
+  if (dragging != null) {
+    document.querySelectorAll('.cp-dot.dragging').forEach(el => el.classList.remove('dragging'));
+  }
+  dragging = null;
+  document.removeEventListener('mousemove', onDragMove);
+  document.removeEventListener('mouseup', onDragEnd);
+}
+
+// ---- add checkpoint (click empty track) ----
+let pendingAddKm = null;
+function onTrackClick(e) {
+  if (dragging != null) return;
+  const rect = trackWrap.getBoundingClientRect();
+  const pct = (e.clientX - rect.left) / rect.width;
+  pendingAddKm = pct * ROUTE_KM;
+
+  const cps = sorted();
+  const withinNeighbor = cps.some(c => Math.abs(c.distanceKm - pendingAddKm) < 3);
+  if (withinNeighbor) return; // too close to an existing checkpoint
+
+  const popup = document.getElementById('addConfirm');
+  document.getElementById('addConfirmDistance').textContent = pendingAddKm.toFixed(1) + ' km from start';
+  positionPopover(popup, e.clientX, e.clientY);
+  popup.style.display = 'block';
+}
+function closeAddConfirm() {
+  document.getElementById('addConfirm').style.display = 'none';
+  pendingAddKm = null;
+}
+function confirmAdd() {
+  document.getElementById('addConfirm').style.display = 'none';
+  const cps = sorted();
+  let prev = cps[0], next = cps[cps.length - 1];
+  for (let i = 0; i < cps.length - 1; i++) {
+    if (pendingAddKm >= cps[i].distanceKm && pendingAddKm <= cps[i + 1].distanceKm) {
+      prev = cps[i]; next = cps[i + 1]; break;
+    }
+  }
+  const frac = (pendingAddKm - prev.distanceKm) / (next.distanceKm - prev.distanceKm);
+  const estimateMin = Math.round(prev.timeMin + frac * (next.timeMin - prev.timeMin));
+
+  const newCp = { id: nextId++, distanceKm: pendingAddKm, timeMin: estimateMin, fixed: false, recomputed: true };
+  next.recomputed = true;
+  checkpoints.push(newCp);
+
+  editingId = newCp.id;
+  editingMode = 'add';
+  editingBounds = { min: prev.timeMin, max: next.timeMin };
+  openTimeEditor(newCp, 'Set arrival time', lastClickX, lastClickY);
+}
+
+// ---- right-click context menu ----
+let menuTargetId = null;
+let lastClickX = 0, lastClickY = 0;
+function onContextMenu(e, id) {
+  e.preventDefault();
+  menuTargetId = id;
+  lastClickX = e.clientX; lastClickY = e.clientY;
+  const cp = checkpoints.find(c => c.id === id);
+  document.getElementById('cpMenuDelete').style.display = cp.fixed === 'end' ? 'none' : 'block';
+  const menu = document.getElementById('cpMenu');
+  positionPopover(menu, e.clientX, e.clientY);
+  menu.style.display = 'block';
+  document.addEventListener('click', hideMenuOnce, { once: true });
+}
+function hideMenuOnce() { document.getElementById('cpMenu').style.display = 'none'; }
+
+function menuChangeTime() {
+  document.getElementById('cpMenu').style.display = 'none';
+  const cp = checkpoints.find(c => c.id === menuTargetId);
+  const cps = sorted();
+  const idx = cps.findIndex(c => c.id === cp.id);
+  editingId = cp.id;
+  editingMode = 'change';
+  editingBounds = { min: cps[idx - 1].timeMin + 1, max: idx + 1 < cps.length ? cps[idx + 1].timeMin - 1 : Infinity };
+  openTimeEditor(cp, 'Change arrival time', lastClickX, lastClickY);
+}
+function menuDelete() {
+  document.getElementById('cpMenu').style.display = 'none';
+  const target = checkpoints.find(c => c.id === menuTargetId);
+  if (target.fixed === 'end') return; // the finish checkpoint can never be deleted
+  const cps = sorted();
+  const idx = cps.findIndex(c => c.id === menuTargetId);
+  const next = cps[idx + 1];
+  checkpoints = checkpoints.filter(c => c.id !== menuTargetId);
+  if (next) next.recomputed = true;
+  render();
+}
+
+// ---- time editor popover (shared by add + change-time) ----
+let editingId = null, editingMode = null, editingBounds = null;
+function openTimeEditor(cp, title, x, y) {
+  document.getElementById('timeEditorTitle').textContent = title;
+  document.getElementById('timeEditorInput').value = formatTime(cp.timeMin);
+  document.getElementById('timeEditorError').style.display = 'none';
+  const popup = document.getElementById('timeEditor');
+  positionPopover(popup, x, y);
+  popup.style.display = 'block';
+  render();
+}
+function closeTimeEditor() {
+  document.getElementById('timeEditor').style.display = 'none';
+  if (editingMode === 'add') {
+    // adding was cancelled entirely — remove the just-created checkpoint
+    checkpoints = checkpoints.filter(c => c.id !== editingId);
+    render();
+  }
+  editingId = null; editingMode = null; editingBounds = null;
+}
+function saveTimeEditor() {
+  const cp = checkpoints.find(c => c.id === editingId);
+  const newMin = parseTime(document.getElementById('timeEditorInput').value);
+  const errEl = document.getElementById('timeEditorError');
+
+  if (newMin <= editingBounds.min || newMin >= editingBounds.max) {
+    errEl.textContent = 'Time must stay between the neighboring checkpoints.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  document.getElementById('timeEditor').style.display = 'none';
+
+  if (editingMode === 'add') {
+    cp.timeMin = newMin;
+    cp.recomputed = true;
+    render();
+    editingId = null; editingMode = null; editingBounds = null;
+    return;
+  }
+
+  // change-time mode: figure out if a cascade decision is needed
+  const delta = newMin - cp.timeMin;
+  const cps = sorted();
+  const idx = cps.findIndex(c => c.id === cp.id);
+  const downstream = cps.slice(idx + 1);
+
+  cp.timeMin = newMin;
+  cp.recomputed = true; // prev -> edited segment always recalculates
+
+  if (delta !== 0 && downstream.length > 0) {
+    pendingCascade = { cpId: cp.id, delta, downstreamIds: downstream.map(d => d.id) };
+    const banner = document.getElementById('cascadeBanner');
+    document.getElementById('cascadeText').textContent =
+      `Shift ${downstream.length} later checkpoint${downstream.length > 1 ? 's' : ''} by ${delta > 0 ? '+' : ''}${delta} min, or keep their times and recalculate speed?`;
+    positionPopover(banner, lastClickX, lastClickY);
+    banner.style.display = 'block';
+  }
+
+  render();
+  editingId = null; editingMode = null; editingBounds = null;
+}
+
+// ---- cascade decision ----
+let pendingCascade = null;
+function cascadeShift() {
+  if (pendingCascade) {
+    pendingCascade.downstreamIds.forEach(id => {
+      const c = checkpoints.find(c => c.id === id);
+      c.timeMin += pendingCascade.delta;
+    });
+  }
+  document.getElementById('cascadeBanner').style.display = 'none';
+  pendingCascade = null;
+  render();
+}
+function cascadeKeep() {
+  if (pendingCascade) {
+    const cps = sorted();
+    const idx = cps.findIndex(c => c.id === pendingCascade.cpId);
+    const next = cps[idx + 1];
+    if (next) next.recomputed = true; // edited -> next segment now recalculates
+  }
+  document.getElementById('cascadeBanner').style.display = 'none';
+  pendingCascade = null;
+  render();
+}
+
+// ---- shared popover positioning (keep on screen) ----
+function positionPopover(el, x, y) {
+  el.style.display = 'block';
+  const w = el.offsetWidth || 220, h = el.offsetHeight || 100;
+  const left = Math.min(window.innerWidth - w - 10, x);
+  const top = Math.min(window.innerHeight - h - 10, y + 12);
+  el.style.left = Math.max(10, left) + 'px';
+  el.style.top = Math.max(10, top) + 'px';
+}
+
+document.getElementById('startTimeInput').addEventListener('input', e => {
+  checkpoints.find(c => c.fixed === 'start').timeMin = parseTime(e.target.value);
+  render();
+});
+
+render();
+</script>
+</body>
+</html>
