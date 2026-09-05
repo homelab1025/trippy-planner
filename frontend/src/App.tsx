@@ -26,6 +26,8 @@ import { PrecipBarRow } from './components/PrecipBarRow';
 import { Tooltip } from './components/Tooltip';
 import { useWeatherChartData } from './hooks/useWeatherChartData';
 import type { ChartDataPoint, WeatherSample } from './hooks/useWeatherChartData';
+import type { Checkpoint } from './utils/speedProfile';
+import { computeArrivalTime, defaultCheckpoints } from './utils/speedProfile';
 
 const getLocalDateString = (date: Date): string => {
   const year = date.getFullYear();
@@ -44,6 +46,7 @@ function App() {
   const [route, setRoute] = useState<RouteData | null>(null);
   const [avgSpeed, setAvgSpeed] = useState(25);
   const [startTime, setStartTime] = useState<Date>(new Date());
+  const [checkpoints, setCheckpoints] = useState<Checkpoint[]>([]);
   const [weatherPoints, setWeatherPoints] = useState<WeatherSample[]>([]);
   const [loading, setLoading] = useState(false);
   const [weatherLoading, setWeatherLoading] = useState(false);
@@ -61,6 +64,7 @@ function App() {
     avgSpeed: number;
     startTime: Date;
     selectedProvider: WeatherProvider;
+    checkpoints: Checkpoint[];
   } | null>(null);
 
   const [user, setUser] = useState<{ id: number; email: string } | null>(null);
@@ -83,10 +87,10 @@ function App() {
     route,
     weatherPoints,
     chartWidth,
-    avgSpeed,
     startTime,
-    weatherAvgSpeed: lastFetchedParams?.avgSpeed,
+    checkpoints,
     weatherStartTime: lastFetchedParams?.startTime,
+    weatherCheckpoints: lastFetchedParams?.checkpoints,
   });
 
   const elevationData = useMemo(
@@ -150,9 +154,13 @@ function App() {
       setRoute(parsedRoute);
       setRouteName(parsedRoute.name);
       setSavedRouteId(null);
+      // A new GPX means the old checkpoint distances are meaningless — reset to
+      // just the mandatory end checkpoint, seeded from the current Average Speed.
+      const freshCheckpoints = defaultCheckpoints(parsedRoute.totalDistance, avgSpeed, startTime);
+      setCheckpoints(freshCheckpoints);
       setWeatherLoading(true);
-      const success = await updateWeather(parsedRoute, avgSpeed, startTime, selectedProvider);
-      if (success) setLastFetchedParams({ avgSpeed, startTime, selectedProvider });
+      const success = await updateWeather(parsedRoute, freshCheckpoints, startTime, selectedProvider);
+      if (success) setLastFetchedParams({ avgSpeed, startTime, selectedProvider, checkpoints: freshCheckpoints });
     } catch (error) {
       console.error('Failed to parse GPX:', error);
       const message = error instanceof Error ? error.message : 'Failed to parse GPX file. Please ensure it is a valid track.';
@@ -167,10 +175,11 @@ function App() {
     lastFetchedParams !== null && (
       lastFetchedParams.avgSpeed !== avgSpeed ||
       lastFetchedParams.startTime.getTime() !== startTime.getTime() ||
-      lastFetchedParams.selectedProvider !== selectedProvider
+      lastFetchedParams.selectedProvider !== selectedProvider ||
+      JSON.stringify(lastFetchedParams.checkpoints) !== JSON.stringify(checkpoints)
     );
 
-  const updateWeather = useCallback(async (currentRoute: RouteData, speed: number, start: Date, provider: WeatherProvider): Promise<boolean> => {
+  const updateWeather = useCallback(async (currentRoute: RouteData, cps: Checkpoint[], start: Date, provider: WeatherProvider): Promise<boolean> => {
     let weatherPointsDistance = 5000;
     let weatherPointsCount = currentRoute.totalDistance / weatherPointsDistance;
     if (weatherPointsCount < 10) {
@@ -187,8 +196,7 @@ function App() {
       if (seenIndices.has(pointIdx)) continue;
       seenIndices.add(pointIdx);
       const point = currentRoute.points[pointIdx];
-      const travelTimeHours = distance / (speed * 1000);
-      const arrivalTime = new Date(start.getTime() + travelTimeHours * 3600 * 1000);
+      const arrivalTime = computeArrivalTime(distance, start, cps);
       requestMap.set(pointIdx, { lat: point.lat, lon: point.lng, timestamp: arrivalTime.getTime() / 1000 });
       metaMap.set(pointIdx, { point, arrivalTime, label: String(pointIdx) });
     }
@@ -210,15 +218,17 @@ function App() {
     }
   }, []);
 
-  const loadRouteFromGpxText = useCallback(async (gpxContent: string, speed: number, start: Date, epsilon: number, maxGap: number) => {
+  const loadRouteFromGpxText = useCallback(async (gpxContent: string, speed: number, start: Date, epsilon: number, maxGap: number, cps?: Checkpoint[]) => {
     setRawGpxContent(gpxContent);
     const parsedRoute = await parseGPXAsync(gpxContent, epsilon, maxGap);
     appliedTechParamsRef.current = { dpEpsilon: epsilon, dpMaxGap: maxGap };
     setRoute(parsedRoute);
+    const resolvedCheckpoints = cps ?? defaultCheckpoints(parsedRoute.totalDistance, speed, start);
+    setCheckpoints(resolvedCheckpoints);
     setWeatherLoading(true);
     try {
-      const success = await updateWeather(parsedRoute, speed, start, selectedProvider);
-      if (success) setLastFetchedParams({ avgSpeed: speed, startTime: start, selectedProvider });
+      const success = await updateWeather(parsedRoute, resolvedCheckpoints, start, selectedProvider);
+      if (success) setLastFetchedParams({ avgSpeed: speed, startTime: start, selectedProvider, checkpoints: resolvedCheckpoints });
     } finally {
       setWeatherLoading(false);
     }
@@ -228,12 +238,12 @@ function App() {
     if (!route) return;
     setWeatherLoading(true);
     try {
-      const success = await updateWeather(route, avgSpeed, startTime, selectedProvider);
-      if (success) setLastFetchedParams({ avgSpeed, startTime, selectedProvider });
+      const success = await updateWeather(route, checkpoints, startTime, selectedProvider);
+      if (success) setLastFetchedParams({ avgSpeed, startTime, selectedProvider, checkpoints });
     } finally {
       setWeatherLoading(false);
     }
-  }, [route, avgSpeed, startTime, selectedProvider, updateWeather]);
+  }, [route, checkpoints, avgSpeed, startTime, selectedProvider, updateWeather]);
 
   // Tracks the DP epsilon/maxGap actually baked into the current `route`, so a blur/Enter
   // that didn't change either value is a no-op instead of a redundant re-parse.
@@ -258,9 +268,9 @@ function App() {
       setHoveredPoint(null);
       setHoveredData(null);
       setWeatherLoading(true);
-      const params = lastFetchedParams ?? { avgSpeed, startTime, selectedProvider };
+      const params = lastFetchedParams ?? { avgSpeed, startTime, selectedProvider, checkpoints };
       try {
-        const success = await updateWeather(parsedRoute, params.avgSpeed, params.startTime, params.selectedProvider);
+        const success = await updateWeather(parsedRoute, params.checkpoints, params.startTime, params.selectedProvider);
         if (success) setLastFetchedParams(params);
       } finally {
         setWeatherLoading(false);
@@ -268,7 +278,7 @@ function App() {
     } finally {
       techCommitInFlightRef.current = false;
     }
-  }, [route, rawGpxContent, lastFetchedParams, avgSpeed, startTime, selectedProvider, updateWeather]);
+  }, [route, rawGpxContent, lastFetchedParams, avgSpeed, startTime, selectedProvider, checkpoints, updateWeather]);
 
   const commitTechParams = useCallback(() => {
     applyTechParams(dpEpsilon, dpMaxGap);
@@ -283,6 +293,16 @@ function App() {
     setDpMaxGap(DP_MAX_GAP_METERS);
     applyTechParams(DP_EPSILON_METERS, DP_MAX_GAP_METERS);
   }, [applyTechParams]);
+
+  // Checkpoints not yet manually edited ("pinned: false") keep tracking Average
+  // Speed / Start Time live; once a checkpoint's time is explicitly set it detaches.
+  React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- derives checkpoint arrival times from avgSpeed/startTime, not a prop-sync anti-pattern
+    setCheckpoints(cps => cps.map(cp => cp.pinned ? cp : {
+      ...cp,
+      arrivalTime: new Date(startTime.getTime() + (cp.distanceM / (avgSpeed * 1000)) * 3_600_000),
+    }));
+  }, [avgSpeed, startTime]);
 
   React.useEffect(() => {
     setWeatherDebug(weatherDebug);
