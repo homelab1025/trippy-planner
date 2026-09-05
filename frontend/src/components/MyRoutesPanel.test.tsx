@@ -38,9 +38,9 @@ describe('MyRoutesPanel', () => {
     })
   })
 
-  it('calls onLoadRoute with GPX, id and name when route is clicked', async () => {
+  it('calls onLoadRoute with GPX, id, name, and checkpointsJson when route is clicked', async () => {
     mocks.listRoutes.mockResolvedValue({ data: sampleItems })
-    mocks.getRoute.mockResolvedValue({ data: { ...sampleItems[0], gpxContent: '<gpx/>' } })
+    mocks.getRoute.mockResolvedValue({ data: { ...sampleItems[0], gpxContent: '<gpx/>', checkpointsJson: '[{"id":"end","distanceM":1000}]' } })
 
     const onLoadRoute = vi.fn()
     render(<MyRoutesPanel onLoadRoute={onLoadRoute} onDeleted={vi.fn()} />)
@@ -49,16 +49,16 @@ describe('MyRoutesPanel', () => {
     fireEvent.click(screen.getByText('Alpine Loop'))
 
     await waitFor(() => {
-      expect(onLoadRoute).toHaveBeenCalledWith('<gpx/>', 18, '2026-06-17T08:00:00Z', 'uuid-1', 'Alpine Loop')
+      expect(onLoadRoute).toHaveBeenCalledWith('<gpx/>', 18, '2026-06-17T08:00:00Z', 'uuid-1', 'Alpine Loop', '[{"id":"end","distanceM":1000}]')
     })
   })
 
-  it('duplicates a route with a "(copy)" suffix without loading it, and refreshes the list', async () => {
+  it('duplicates a route with a "(copy)" suffix without loading it, and carries checkpointsJson over', async () => {
     const duplicatedItem = { ...sampleItems[0], id: 'uuid-2', name: 'Alpine Loop (copy)' }
     mocks.listRoutes
       .mockResolvedValueOnce({ data: sampleItems }) // initial mount
       .mockResolvedValueOnce({ data: [...sampleItems, duplicatedItem] }) // after duplicate
-    mocks.getRoute.mockResolvedValue({ data: { ...sampleItems[0], gpxContent: '<gpx/>' } })
+    mocks.getRoute.mockResolvedValue({ data: { ...sampleItems[0], gpxContent: '<gpx/>', checkpointsJson: '[{"id":"end","distanceM":1000}]' } })
     mocks.createRoute.mockResolvedValue({ data: { id: 'uuid-2' } })
 
     const onLoadRoute = vi.fn()
@@ -73,6 +73,7 @@ describe('MyRoutesPanel', () => {
         gpxContent: '<gpx/>',
         avgSpeedKmh: 18,
         startTime: '2026-06-17T08:00:00Z',
+        checkpointsJson: '[{"id":"end","distanceM":1000}]',
       })
     })
     expect(onLoadRoute).not.toHaveBeenCalled()

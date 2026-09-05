@@ -610,6 +610,7 @@ function App() {
                       gpxContent: rawGpxContent,
                       avgSpeedKmh: avgSpeed,
                       startTime: startTime.toISOString(),
+                      checkpointsJson: JSON.stringify(checkpoints),
                     }}
                     savedRouteId={savedRouteId}
                     onSaved={(id) => { setSavedRouteId(id); setRoutesRefreshToken(t => t + 1) }}
@@ -641,13 +642,16 @@ function App() {
               </div>
               <div className="collapse-content overflow-hidden">
                 <MyRoutesPanel
-                  onLoadRoute={(gpxContent, avgSpeedKmh, startTime, id, name) => {
+                  onLoadRoute={(gpxContent, avgSpeedKmh, startTime, id, name, checkpointsJson) => {
                     const start = new Date(startTime)
                     setAvgSpeed(avgSpeedKmh)
                     setStartTime(start)
                     setRouteName(name)
                     setSavedRouteId(id)
-                    loadRouteFromGpxText(gpxContent, avgSpeedKmh, start, dpEpsilon, dpMaxGap)
+                    loadRouteFromGpxText(
+                      gpxContent, avgSpeedKmh, start, dpEpsilon, dpMaxGap,
+                      checkpointsJson ? parseCheckpointsJson(checkpointsJson) : undefined,
+                    )
                   }}
                   onDeleted={(id) => {
                     if (id === savedRouteId) {
