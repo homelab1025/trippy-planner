@@ -23,11 +23,12 @@ import { ElevationChart } from './components/ElevationChart';
 import { HoverPane } from './components/HoverPane';
 import { WindArrowRow } from './components/WindArrowRow';
 import { PrecipBarRow } from './components/PrecipBarRow';
+import { CheckpointTrackRow } from './components/CheckpointTrackRow';
 import { Tooltip } from './components/Tooltip';
 import { useWeatherChartData } from './hooks/useWeatherChartData';
 import type { ChartDataPoint, WeatherSample } from './hooks/useWeatherChartData';
 import type { Checkpoint } from './utils/speedProfile';
-import { computeArrivalTime, defaultCheckpoints } from './utils/speedProfile';
+import { computeArrivalTime, defaultCheckpoints, buildSequence, impliedSpeedKmh } from './utils/speedProfile';
 
 const getLocalDateString = (date: Date): string => {
   const year = date.getFullYear();
@@ -66,7 +67,7 @@ function App() {
   const [dpEpsilon, setDpEpsilon] = useState(DP_EPSILON_METERS);
   const [dpMaxGap, setDpMaxGap] = useState(DP_MAX_GAP_METERS);
   const [weatherDebug, setWeatherDebugState] = useState(false);
-  const [activePanel, setActivePanel] = useState<'ride' | 'routes' | 'tech' | null>('ride');
+  const [activePanel, setActivePanel] = useState<'ride' | 'checkpoints' | 'routes' | 'tech' | null>('ride');
   const [selectedProvider, setSelectedProvider] = useState<WeatherProvider>(DEFAULT_PROVIDER);
   const [chartWidth, setChartWidth] = useState(800);
   const [lastFetchedParams, setLastFetchedParams] = useState<{
@@ -345,7 +346,7 @@ function App() {
           setAvgSpeed(speed);
           setStartTime(start);
           setRouteName(data.name as string);
-          loadRouteFromGpxText(data.gpxContent as string, speed, start, dpEpsilon, dpMaxGap);
+          loadRouteFromGpxText(data.gpxContent as string, speed, start, dpEpsilon, dpMaxGap, undefined);
         })
         .catch(() => {
           // Token invalid or route made private — let user upload
@@ -363,7 +364,7 @@ function App() {
         setSavedRouteId(stored.id ?? null);
         setDpEpsilon(epsilon);
         setDpMaxGap(maxGap);
-        loadRouteFromGpxText(stored.gpxContent, stored.avgSpeedKmh, start, epsilon, maxGap)
+        loadRouteFromGpxText(stored.gpxContent, stored.avgSpeedKmh, start, epsilon, maxGap, undefined)
           .catch(() => clearStoredRoute());
       }
     }
@@ -557,6 +558,33 @@ function App() {
 
             </div>
           </div>
+
+          {/* Checkpoints */}
+          {route && (
+            <div className={`collapse collapse-arrow bg-base-100 shadow rounded-none border-x border-b border-base-300 ${activePanel === 'checkpoints' ? 'collapse-open' : ''}`}>
+              <div
+                className="collapse-title font-medium cursor-pointer"
+                onClick={() => setActivePanel(p => p === 'checkpoints' ? null : 'checkpoints')}
+              >
+                Checkpoints
+              </div>
+              <div className="collapse-content flex flex-col gap-1.5">
+                {buildSequence(startTime, effectiveCheckpoints).map((p, i, seq) => {
+                  const label = i === 0 ? 'Start' : i === seq.length - 1 ? 'Finish' : `CP ${i}`;
+                  const speed = i > 0 ? impliedSpeedKmh(seq[i - 1], p) : null;
+                  return (
+                    <div key={i} className="flex items-center justify-between text-sm">
+                      <span>{label} · {(p.distanceM / 1000).toFixed(1)} km</span>
+                      <span className="font-mono">
+                        {p.arrivalTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {speed !== null && <span className="text-base-content/50 text-xs ml-1">({Math.round(speed)} km/h)</span>}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {((route && rawGpxContent && !isViewingShared) || (user && savedRouteId && !isViewingShared)) && (
             <div className="bg-base-100 shadow rounded-none border-x border-b border-base-300 p-4">
@@ -775,6 +803,17 @@ function App() {
                       onHoverIndex={onHoverIndex}
                       onResize={setChartWidth}
                       hoveredIndex={hoveredIndex}
+                      checkpoints={effectiveCheckpoints}
+                    />
+                  </div>
+                  <div className="border-t border-base-200" style={{ height: 30 }}>
+                    <CheckpointTrackRow
+                      checkpoints={effectiveCheckpoints}
+                      startTime={startTime}
+                      totalDistanceM={route.totalDistance}
+                      distanceRange={distanceRange}
+                      chartWidth={chartWidth}
+                      onChange={setCheckpoints}
                     />
                   </div>
                   <div className="border-t border-base-200" style={{ height: 40 }}>
