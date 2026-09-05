@@ -28,6 +28,7 @@ export function SaveRouteButton({ isAuthenticated, name, onNameChange, routeData
         name,
         avgSpeedKmh: routeData.avgSpeedKmh,
         startTime: routeData.startTime,
+        checkpointsJson: routeData.checkpointsJson,
       });
       onSaved(res.data.id as string);
     } else {
