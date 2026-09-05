@@ -18,6 +18,9 @@ export interface ChartPalette {
   crosshair: string;
   popupText: string;
   climbCategory: Record<Climb['category'], string>;
+  checkpointWaypoint: string;
+  checkpointLocked: string;
+  checkpointGuide: string;
 }
 
 // Derived from frontend/new-ui/DESIGN.md's token set (primary green, secondary
@@ -46,4 +49,7 @@ export const chartPalette: ChartPalette = {
     Cat1: '#8d4f01',
     HC: '#ba1a1a',
   },
+  checkpointWaypoint: '#1b6ec2',
+  checkpointLocked: '#256a4e',
+  checkpointGuide: '#9aa4a0',
 };

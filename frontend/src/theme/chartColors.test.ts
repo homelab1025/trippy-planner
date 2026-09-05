@@ -15,4 +15,10 @@ describe('chartPalette', () => {
       expect(chartPalette.climbCategory[category]).toMatch(/^#[0-9A-Fa-f]{6}$/);
     }
   });
+
+  it('defines checkpoint marker colors', () => {
+    expect(chartPalette.checkpointWaypoint).toMatch(/^#[0-9A-Fa-f]{6}$/);
+    expect(chartPalette.checkpointLocked).toMatch(/^#[0-9A-Fa-f]{6}$/);
+    expect(chartPalette.checkpointGuide).toMatch(/^#[0-9A-Fa-f]{6}$/);
+  });
 });
