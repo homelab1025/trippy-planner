@@ -300,3 +300,130 @@ describe('CheckpointTrackRow — change time + cascade', () => {
     expect(untouchedEnd.arrivalTime.getTime()).toBe(START.getTime() + 60 * 60_000); // still 09:00
   });
 });
+
+describe('CheckpointTrackRow — terrain segments', () => {
+  it('renders one segment per adjacent checkpoint pair, labeled with the rounded implied speed', () => {
+    const { container } = render(
+      <CheckpointTrackRow
+        checkpoints={[endCp(10_000, 30)]} // 10km in 30min = 20km/h
+        startTime={START}
+        totalDistanceM={10_000}
+        distanceRange={[0, 10]}
+        chartWidth={800}
+        onChange={vi.fn()}
+      />
+    );
+    const segments = container.querySelectorAll('[data-checkpoint-segment]');
+    expect(segments).toHaveLength(1); // start -> end
+    expect(segments[0].textContent).toBe('20 km/h');
+  });
+
+  it('classifies a segment as climb when elevation rises more than the noise threshold', () => {
+    const { container } = render(
+      <CheckpointTrackRow
+        checkpoints={[endCp(10_000, 30)]}
+        startTime={START}
+        totalDistanceM={10_000}
+        distanceRange={[0, 10]}
+        chartWidth={800}
+        onChange={vi.fn()}
+        elevationData={[{ distance: 0, elevation: 100 }, { distance: 10, elevation: 400 }]}
+      />
+    );
+    expect(container.querySelector('[data-checkpoint-segment]')?.getAttribute('data-terrain')).toBe('climb');
+  });
+
+  it('classifies a segment as descent when elevation drops more than the noise threshold', () => {
+    const { container } = render(
+      <CheckpointTrackRow
+        checkpoints={[endCp(10_000, 30)]}
+        startTime={START}
+        totalDistanceM={10_000}
+        distanceRange={[0, 10]}
+        chartWidth={800}
+        onChange={vi.fn()}
+        elevationData={[{ distance: 0, elevation: 400 }, { distance: 10, elevation: 100 }]}
+      />
+    );
+    expect(container.querySelector('[data-checkpoint-segment]')?.getAttribute('data-terrain')).toBe('descent');
+  });
+
+  it('classifies a segment as flat when the elevation change is within the noise threshold, or when no elevation data is given', () => {
+    const { container: withTinyDelta } = render(
+      <CheckpointTrackRow
+        checkpoints={[endCp(10_000, 30)]}
+        startTime={START}
+        totalDistanceM={10_000}
+        distanceRange={[0, 10]}
+        chartWidth={800}
+        onChange={vi.fn()}
+        elevationData={[{ distance: 0, elevation: 100 }, { distance: 10, elevation: 102 }]}
+      />
+    );
+    expect(withTinyDelta.querySelector('[data-checkpoint-segment]')?.getAttribute('data-terrain')).toBe('flat');
+    cleanup();
+
+    const { container: withNoData } = render(
+      <CheckpointTrackRow
+        checkpoints={[endCp(10_000, 30)]}
+        startTime={START}
+        totalDistanceM={10_000}
+        distanceRange={[0, 10]}
+        chartWidth={800}
+        onChange={vi.fn()}
+      />
+    );
+    expect(withNoData.querySelector('[data-checkpoint-segment]')?.getAttribute('data-terrain')).toBe('flat');
+  });
+
+  it('shows a placeholder dash instead of a speed label for a non-positive-duration segment', () => {
+    const zeroTimeEnd: Checkpoint = { id: 'end', distanceM: 10_000, arrivalTime: START, pinned: false };
+    const { container } = render(
+      <CheckpointTrackRow
+        checkpoints={[zeroTimeEnd]}
+        startTime={START}
+        totalDistanceM={10_000}
+        distanceRange={[0, 10]}
+        chartWidth={800}
+        onChange={vi.fn()}
+      />
+    );
+    expect(container.querySelector('[data-checkpoint-segment]')?.textContent).toBe('—');
+  });
+});
+
+describe('CheckpointTrackRow — time labels', () => {
+  it('renders a time label under each checkpoint, with (start)/(finish) suffixes on the locked ones', () => {
+    const { container } = render(
+      <CheckpointTrackRow
+        checkpoints={[endCp(10_000, 30)]}
+        startTime={START} // 08:00
+        totalDistanceM={10_000}
+        distanceRange={[0, 10]}
+        chartWidth={800}
+        onChange={vi.fn()}
+      />
+    );
+    const labels = container.querySelectorAll('[data-checkpoint-time-label]');
+    expect(labels).toHaveLength(2); // start + end
+    expect(labels[0].textContent).toMatch(/\(start\)$/);
+    expect(labels[1].textContent).toMatch(/\(finish\)$/);
+  });
+
+  it('does not add a (start)/(finish) suffix to a waypoint\'s time label', () => {
+    const waypoint: Checkpoint = { id: 'wp-1', distanceM: 3_000, arrivalTime: new Date(START.getTime() + 20 * 60_000), pinned: true };
+    const { container } = render(
+      <CheckpointTrackRow
+        checkpoints={[waypoint, endCp(10_000, 30)]}
+        startTime={START}
+        totalDistanceM={10_000}
+        distanceRange={[0, 10]}
+        chartWidth={800}
+        onChange={vi.fn()}
+      />
+    );
+    const labels = container.querySelectorAll('[data-checkpoint-time-label]');
+    expect(labels).toHaveLength(3);
+    expect(labels[1].textContent).not.toMatch(/\(start\)|\(finish\)/);
+  });
+});

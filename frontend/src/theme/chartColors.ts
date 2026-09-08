@@ -21,6 +21,12 @@ export interface ChartPalette {
   checkpointWaypoint: string;
   checkpointLocked: string;
   checkpointGuide: string;
+  segmentClimbBg: string;
+  segmentClimbText: string;
+  segmentDescentBg: string;
+  segmentDescentText: string;
+  segmentFlatBg: string;
+  segmentFlatText: string;
 }
 
 // Derived from frontend/new-ui/DESIGN.md's token set (primary green, secondary
@@ -52,4 +58,11 @@ export const chartPalette: ChartPalette = {
   checkpointWaypoint: '#1b6ec2',
   checkpointLocked: '#256a4e',
   checkpointGuide: '#9aa4a0',
+  // Matches frontend/checkpoint-cascade-mock.html's .seg-climb/.seg-desc/.seg-flat.
+  segmentClimbBg: '#f5c7a0',
+  segmentClimbText: '#7a3d0a',
+  segmentDescentBg: '#a8d4e6',
+  segmentDescentText: '#1a4a5e',
+  segmentFlatBg: '#c7eab8',
+  segmentFlatText: '#2d5a27',
 };
