@@ -1,11 +1,16 @@
 // frontend/src/components/CheckpointTrackRow.tsx
 import { useState } from 'react';
 import type { Checkpoint } from '../utils/speedProfile';
-import { computeArrivalTime } from '../utils/speedProfile';
+import { computeArrivalTime, impliedSpeedKmh } from '../utils/speedProfile';
 import { CheckpointTimeEditor } from './CheckpointTimeEditor';
 import { ConfirmDialog } from './ConfirmDialog';
 import { CHART_MARGIN_LEFT, CHART_YAXIS_LEFT_WIDTH } from './chartConstants';
 import { chartPalette } from '../theme/chartColors';
+
+interface ElevationSample {
+  distance: number; // km
+  elevation: number;
+}
 
 interface Props {
   checkpoints: Checkpoint[];
@@ -14,7 +19,68 @@ interface Props {
   distanceRange: [number, number]; // km
   chartWidth: number;
   onChange: (next: Checkpoint[]) => void;
+  elevationData?: ElevationSample[];
+  hoveredDistance?: number | null;
+  onHoverIndex?: (index: number | null) => void;
 }
+
+const CLIMB_THRESHOLD_M = 5;
+
+// Linear interpolation between the two elevation samples bracketing `km`,
+// matching CheckpointOverlay.tsx's identical helper (kept separate since each
+// component's data flow is distinct — see that file's Task 5 note on this).
+function elevationAtKm(km: number, data: ElevationSample[]): number | null {
+  if (data.length === 0) return null;
+  for (let i = 0; i < data.length - 1; i++) {
+    const a = data[i], b = data[i + 1];
+    if (km >= a.distance && km <= b.distance) {
+      const span = b.distance - a.distance;
+      const frac = span > 0 ? (km - a.distance) / span : 0;
+      return a.elevation + frac * (b.elevation - a.elevation);
+    }
+  }
+  return data[data.length - 1]?.elevation ?? null;
+}
+
+type Terrain = 'climb' | 'descent' | 'flat';
+
+function terrainAt(aKm: number, bKm: number, elevationData: ElevationSample[]): Terrain {
+  const eleA = elevationAtKm(aKm, elevationData);
+  const eleB = elevationAtKm(bKm, elevationData);
+  const delta = eleA !== null && eleB !== null ? eleB - eleA : 0;
+  if (delta > CLIMB_THRESHOLD_M) return 'climb';
+  if (delta < -CLIMB_THRESHOLD_M) return 'descent';
+  return 'flat';
+}
+
+// Finds the elevationData index whose distance is closest to `km` — elevationData
+// is a plain map() of App's chartData (see App.tsx), so the index returned here
+// lines up with the same index ElevationChart's onHoverIndex reports, letting the
+// checkpoint bar drive the shared hover crosshair across every row, elevation
+// chart included.
+function nearestIndex(km: number, data: ElevationSample[]): number | null {
+  if (data.length === 0) return null;
+  let lo = 0, hi = data.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (data[mid].distance < km) lo = mid + 1;
+    else hi = mid;
+  }
+  if (lo > 0 && Math.abs(data[lo - 1].distance - km) <= Math.abs(data[lo].distance - km)) {
+    return lo - 1;
+  }
+  return lo;
+}
+
+function formatTime(d: Date): string {
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+const TERRAIN_COLORS: Record<Terrain, { bg: string; text: string }> = {
+  climb: { bg: chartPalette.segmentClimbBg, text: chartPalette.segmentClimbText },
+  descent: { bg: chartPalette.segmentDescentBg, text: chartPalette.segmentDescentText },
+  flat: { bg: chartPalette.segmentFlatBg, text: chartPalette.segmentFlatText },
+};
 
 const PLOT_LEFT = CHART_MARGIN_LEFT + CHART_YAXIS_LEFT_WIDTH;
 const PLOT_RIGHT_OFFSET = 55;
@@ -28,7 +94,7 @@ function fullSequence(checkpoints: Checkpoint[], startTime: Date): FullPoint[] {
   ];
 }
 
-export function CheckpointTrackRow({ checkpoints, startTime, distanceRange, chartWidth, onChange }: Props) {
+export function CheckpointTrackRow({ checkpoints, startTime, distanceRange, chartWidth, onChange, elevationData = [], hoveredDistance = null, onHoverIndex }: Props) {
   const [dMin, dMax] = distanceRange;
   const plotWidth = chartWidth - PLOT_LEFT - PLOT_RIGHT_OFFSET;
   const xOf = (km: number) => PLOT_LEFT + ((km - dMin) / (dMax - dMin)) * plotWidth;
@@ -170,6 +236,18 @@ export function CheckpointTrackRow({ checkpoints, startTime, distanceRange, char
     setPendingAddKm(km);
   }
 
+  function onTrackMouseMove(e: React.MouseEvent<HTMLDivElement>) {
+    if (!onHoverIndex) return;
+    // Same measurement point as handleTrackClick — see its comment.
+    const rect = (e.currentTarget.parentElement as HTMLElement).getBoundingClientRect();
+    const km = kmOf(e.clientX - rect.left);
+    onHoverIndex(km < dMin || km > dMax ? null : nearestIndex(km, elevationData));
+  }
+
+  function onTrackMouseLeave() {
+    onHoverIndex?.(null);
+  }
+
   function confirmAdd(clientX: number, clientY: number) {
     if (pendingAddKm === null) return;
     const distanceM = pendingAddKm * 1000;
@@ -205,16 +283,64 @@ export function CheckpointTrackRow({ checkpoints, startTime, distanceRange, char
       <div
         data-testid="checkpoint-track-line"
         onClick={handleTrackClick}
+        onMouseMove={onTrackMouseMove}
+        onMouseLeave={onTrackMouseLeave}
         style={{
           position: 'absolute',
           left: PLOT_LEFT,
           width: plotWidth,
-          top: '50%',
-          height: 2,
-          background: '#d3dad6',
+          // Full bar height (matches the terrain segments below) so the "add
+          // checkpoint" click/hover target covers the whole visible bar, not
+          // just the thin center line — the terrain segments overlaid on top
+          // have pointerEvents: 'none' and pass clicks through to this div.
+          top: 'calc(50% - 7px)',
+          height: 14,
           cursor: 'copy',
         }}
-      />
+      >
+        <div
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            top: 6,
+            height: 2,
+            background: '#d3dad6',
+          }}
+        />
+      </div>
+      {sequence.slice(0, -1).map((p, i) => {
+        const next = sequence[i + 1];
+        const aKm = p.distanceM / 1000, bKm = next.distanceM / 1000;
+        const terrain = terrainAt(aKm, bKm, elevationData);
+        const { bg, text } = TERRAIN_COLORS[terrain];
+        const speed = impliedSpeedKmh(p, next);
+        return (
+          <div
+            key={`seg-${p.id}`}
+            data-checkpoint-segment
+            data-terrain={terrain}
+            style={{
+              position: 'absolute',
+              left: xOf(aKm),
+              width: Math.max(0, xOf(bKm) - xOf(aKm)),
+              top: 'calc(50% - 7px)',
+              height: 14,
+              borderRadius: 3,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 9,
+              fontWeight: 700,
+              background: bg,
+              color: text,
+              pointerEvents: 'none',
+            }}
+          >
+            {speed !== null ? `${Math.round(speed)} km/h` : '—'}
+          </div>
+        );
+      })}
       {sequence.map((p) => {
         const isLocked = p.id === 'start' || p.id === 'end';
         return (
@@ -240,6 +366,43 @@ export function CheckpointTrackRow({ checkpoints, startTime, distanceRange, char
           />
         );
       })}
+      {sequence.map((p) => {
+        const suffix = p.id === 'start' ? ' (start)' : p.id === 'end' ? ' (finish)' : '';
+        return (
+          <div
+            key={`time-${p.id}`}
+            data-checkpoint-time-label
+            style={{
+              position: 'absolute',
+              left: xOf(p.distanceM / 1000),
+              top: 'calc(50% + 9px)',
+              transform: 'translateX(-50%)',
+              fontSize: 10,
+              fontFamily: 'monospace',
+              fontWeight: 700,
+              color: '#33403a',
+              whiteSpace: 'nowrap',
+              pointerEvents: 'none',
+            }}
+          >
+            {formatTime(p.arrivalTime)}{suffix}
+          </div>
+        );
+      })}
+      {hoveredDistance !== null && (
+        <div
+          data-testid="checkpoint-hover-crosshair"
+          style={{
+            position: 'absolute',
+            left: xOf(hoveredDistance),
+            top: 0,
+            bottom: 0,
+            width: 0,
+            borderLeft: `1px dashed ${chartPalette.crosshair}`,
+            pointerEvents: 'none',
+          }}
+        />
+      )}
 
       {menu && (
         <div className="fixed bg-base-100 shadow-lg rounded-lg p-1 z-50 text-sm" style={{ left: menu.x, top: menu.y }}>

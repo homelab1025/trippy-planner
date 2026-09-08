@@ -21,4 +21,13 @@ describe('chartPalette', () => {
     expect(chartPalette.checkpointLocked).toMatch(/^#[0-9A-Fa-f]{6}$/);
     expect(chartPalette.checkpointGuide).toMatch(/^#[0-9A-Fa-f]{6}$/);
   });
+
+  it('defines checkpoint segment terrain colors', () => {
+    expect(chartPalette.segmentClimbBg).toMatch(/^#[0-9A-Fa-f]{6}$/);
+    expect(chartPalette.segmentClimbText).toMatch(/^#[0-9A-Fa-f]{6}$/);
+    expect(chartPalette.segmentDescentBg).toMatch(/^#[0-9A-Fa-f]{6}$/);
+    expect(chartPalette.segmentDescentText).toMatch(/^#[0-9A-Fa-f]{6}$/);
+    expect(chartPalette.segmentFlatBg).toMatch(/^#[0-9A-Fa-f]{6}$/);
+    expect(chartPalette.segmentFlatText).toMatch(/^#[0-9A-Fa-f]{6}$/);
+  });
 });

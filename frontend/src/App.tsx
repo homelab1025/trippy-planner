@@ -816,7 +816,7 @@ function App() {
                       checkpoints={effectiveCheckpoints}
                     />
                   </div>
-                  <div className="border-t border-base-200" style={{ height: 30 }}>
+                  <div className="border-t border-base-200" style={{ height: 48 }}>
                     <CheckpointTrackRow
                       checkpoints={effectiveCheckpoints}
                       startTime={startTime}
@@ -824,6 +824,9 @@ function App() {
                       distanceRange={distanceRange}
                       chartWidth={chartWidth}
                       onChange={setCheckpoints}
+                      elevationData={elevationData}
+                      hoveredDistance={hoveredIndex !== null ? (chartData[hoveredIndex]?.distance ?? null) : null}
+                      onHoverIndex={onHoverIndex}
                     />
                   </div>
                   <div className="border-t border-base-200" style={{ height: 40 }}>

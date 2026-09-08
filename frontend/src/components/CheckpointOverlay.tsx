@@ -60,6 +60,38 @@ const CheckpointOverlay: React.FC<CheckpointOverlayProps> = ({ checkpoints, data
               fill={p.locked ? palette.checkpointLocked : palette.checkpointWaypoint}
               stroke="white" strokeWidth={1.5}
             />
+            {!p.locked && (() => {
+              const label = `${p.distanceKm.toFixed(1)} km`;
+              // A pill anchored just above the axis line, inside the plot area — the
+              // default XAxis tick row lives just below that line (its own text sits
+              // right under it), so putting our label there instead of below it avoids
+              // colliding with/overlapping the default "N km" tick labels.
+              const badgeWidth = 8 + label.length * 5.2;
+              const badgeHeight = 14;
+              const badgeY = plotArea.y + plotArea.height - badgeHeight - 2;
+              return (
+                <g>
+                  <rect
+                    x={px - badgeWidth / 2}
+                    y={badgeY}
+                    width={badgeWidth}
+                    height={badgeHeight}
+                    rx={7}
+                    fill={palette.checkpointWaypoint}
+                  />
+                  <text
+                    x={px}
+                    y={badgeY + badgeHeight - 4}
+                    textAnchor="middle"
+                    fontSize={9}
+                    fontWeight={600}
+                    fill="white"
+                  >
+                    {label}
+                  </text>
+                </g>
+              );
+            })()}
           </g>
         );
       })}
