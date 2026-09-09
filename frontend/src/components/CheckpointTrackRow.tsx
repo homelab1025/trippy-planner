@@ -133,16 +133,37 @@ function CheckpointTrackRow({ checkpoints, startTime, distanceRange, chartWidth,
     setDragId(id);
     const trackEl = e.currentTarget.parentElement as HTMLElement;
 
-    function onMove(ev: MouseEvent) {
+    // Native mousemove can fire far faster than the screen repaints, and each call
+    // triggers a full onChange -> App re-render -> recharts redraw. Coalescing to at
+    // most one update per animation frame keeps drag smooth without changing the
+    // final result: whichever position was most recent when the frame fires wins.
+    let rafId: number | null = null;
+    let latestClientX: number | null = null;
+
+    function applyPendingMove() {
+      rafId = null;
+      if (latestClientX === null) return;
       const rect = trackEl.getBoundingClientRect();
-      let km = kmOf(ev.clientX - rect.left);
+      let km = kmOf(latestClientX - rect.left);
       const { prev, next } = neighborsOf(id);
       const minKm = prev.distanceM / 1000 + (dMax - dMin) * 0.005;
       const maxKm = next ? next.distanceM / 1000 - (dMax - dMin) * 0.005 : dMax;
       km = Math.min(maxKm, Math.max(minKm, km));
       onChange(checkpoints.map(cp => cp.id === id ? { ...cp, distanceM: km * 1000 } : cp));
     }
+    function onMove(ev: MouseEvent) {
+      latestClientX = ev.clientX;
+      if (rafId === null) {
+        rafId = requestAnimationFrame(applyPendingMove);
+      }
+    }
     function onUp() {
+      // Flush rather than drop a still-pending frame, so the checkpoint always ends
+      // up exactly where the cursor was released, not one frame behind.
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+        applyPendingMove();
+      }
       setDragId(null);
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
