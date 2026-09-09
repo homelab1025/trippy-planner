@@ -69,4 +69,5 @@ const MapComponent: React.FC<MapComponentProps> = ({ route, hoveredPoint, debugP
   );
 };
 
-export { MapComponent };
+const MapComponentMemo = React.memo(MapComponent);
+export { MapComponentMemo as MapComponent };

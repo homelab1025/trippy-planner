@@ -75,4 +75,5 @@ const WindArrowRow: React.FC<WindArrowRowProps> = ({ samplePoints, distanceRange
   );
 };
 
-export { WindArrowRow };
+const WindArrowRowMemo = React.memo(WindArrowRow);
+export { WindArrowRowMemo as WindArrowRow };
