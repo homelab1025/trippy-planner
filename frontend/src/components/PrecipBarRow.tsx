@@ -71,4 +71,5 @@ const PrecipBarRow: React.FC<PrecipBarRowProps> = ({ samplePoints, distanceRange
   );
 };
 
-export { PrecipBarRow };
+const PrecipBarRowMemo = React.memo(PrecipBarRow);
+export { PrecipBarRowMemo as PrecipBarRow };
