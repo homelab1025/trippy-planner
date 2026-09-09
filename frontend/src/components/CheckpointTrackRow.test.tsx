@@ -299,6 +299,61 @@ describe('CheckpointTrackRow — change time + cascade', () => {
     const untouchedEnd = next.find(cp => cp.id === 'end')!;
     expect(untouchedEnd.arrivalTime.getTime()).toBe(START.getTime() + 60 * 60_000); // still 09:00
   });
+
+  it('allows setting a time past the next checkpoint\'s time, disabling Keep and requiring Shift', () => {
+    const onChange = vi.fn();
+    const waypoint: Checkpoint = { id: 'wp-1', distanceM: 3_000, arrivalTime: new Date(START.getTime() + 20 * 60_000), pinned: true }; // 08:20
+    render(
+      <CheckpointTrackRow
+        checkpoints={[waypoint, endCp(10_000, 60)]} // end at 09:00
+        startTime={START}
+        totalDistanceM={10_000}
+        distanceRange={[0, 10]}
+        chartWidth={800}
+        onChange={onChange}
+      />
+    );
+    const marker = document.querySelector('[data-checkpoint-marker][data-draggable="true"]')!;
+    fireEvent.contextMenu(marker);
+    fireEvent.click(screen.getByText(/change time/i));
+    // Past the end checkpoint's current 09:00 arrival time — no longer rejected.
+    fireEvent.change(screen.getByLabelText(/arrival time/i), { target: { value: '09:30' } });
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
+    expect(screen.queryByText(/must stay between/i)).not.toBeInTheDocument();
+
+    expect(screen.getByText(/shift/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /keep times/i })).toBeDisabled();
+    expect(screen.getByText(/would reorder checkpoints/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /shift times/i }));
+    const next: Checkpoint[] = onChange.mock.calls[onChange.mock.calls.length - 1][0];
+    const shiftedEnd = next.find(cp => cp.id === 'end')!;
+    // waypoint moved 08:20 -> 09:30 (+70min); end (09:00) shifts by the same delta -> 10:10
+    expect(shiftedEnd.arrivalTime.getTime()).toBe(START.getTime() + 130 * 60_000);
+    expect(shiftedEnd.pinned).toBe(true);
+  });
+
+  it('clicking a disabled Keep times button does not call onChange', () => {
+    const onChange = vi.fn();
+    const waypoint: Checkpoint = { id: 'wp-1', distanceM: 3_000, arrivalTime: new Date(START.getTime() + 20 * 60_000), pinned: true };
+    render(
+      <CheckpointTrackRow
+        checkpoints={[waypoint, endCp(10_000, 60)]}
+        startTime={START}
+        totalDistanceM={10_000}
+        distanceRange={[0, 10]}
+        chartWidth={800}
+        onChange={onChange}
+      />
+    );
+    const marker = document.querySelector('[data-checkpoint-marker][data-draggable="true"]')!;
+    fireEvent.contextMenu(marker);
+    fireEvent.click(screen.getByText(/change time/i));
+    fireEvent.change(screen.getByLabelText(/arrival time/i), { target: { value: '09:30' } });
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /keep times/i }));
+    expect(onChange).not.toHaveBeenCalled();
+  });
 });
 
 describe('CheckpointTrackRow — terrain segments', () => {

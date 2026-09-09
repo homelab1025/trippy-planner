@@ -1,5 +1,5 @@
 // frontend/src/components/CheckpointTrackRow.tsx
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import type { Checkpoint } from '../utils/speedProfile';
 import { computeArrivalTime, impliedSpeedKmh } from '../utils/speedProfile';
 import { CheckpointTimeEditor } from './CheckpointTimeEditor';
@@ -94,13 +94,14 @@ function fullSequence(checkpoints: Checkpoint[], startTime: Date): FullPoint[] {
   ];
 }
 
-export function CheckpointTrackRow({ checkpoints, startTime, distanceRange, chartWidth, onChange, elevationData = [], hoveredDistance = null, onHoverIndex }: Props) {
+function CheckpointTrackRow({ checkpoints, startTime, distanceRange, chartWidth, onChange, elevationData = [], hoveredDistance = null, onHoverIndex }: Props) {
   const [dMin, dMax] = distanceRange;
   const plotWidth = chartWidth - PLOT_LEFT - PLOT_RIGHT_OFFSET;
   const xOf = (km: number) => PLOT_LEFT + ((km - dMin) / (dMax - dMin)) * plotWidth;
   const kmOf = (x: number) => dMin + ((x - PLOT_LEFT) / plotWidth) * (dMax - dMin);
 
   const [pendingAddKm, setPendingAddKm] = useState<number | null>(null);
+  const [pendingAddPos, setPendingAddPos] = useState<{ x: number; y: number } | null>(null);
   const [editor, setEditor] = useState<{
     title: string;
     initialTime: Date;
@@ -117,6 +118,7 @@ export function CheckpointTrackRow({ checkpoints, startTime, distanceRange, char
     deltaMs: number;
     pendingCheckpoints: Checkpoint[];
     position: { x: number; y: number };
+    keepDisabled: boolean;
   } | null>(null);
 
   const sequence = fullSequence(checkpoints, startTime);
@@ -158,13 +160,17 @@ export function CheckpointTrackRow({ checkpoints, startTime, distanceRange, char
     if (!menu) return;
     const { id, x, y } = menu;
     const cp = checkpoints.find(c => c.id === id)!;
-    const { prev, next } = neighborsOf(id);
+    const { prev } = neighborsOf(id);
     setMenu(null);
     setEditor({
       title: 'Change arrival time',
       initialTime: cp.arrivalTime,
       minTime: prev.arrivalTime,
-      maxTime: next ? next.arrivalTime : new Date(cp.arrivalTime.getTime() + 365 * 24 * 3_600_000),
+      // No upper bound at the next checkpoint's time: going past it is allowed, and
+      // the cascade prompt below (Shift/Keep) is how the user resolves the resulting
+      // order, same as the always-unbounded case this used to reserve for the last
+      // checkpoint.
+      maxTime: new Date(cp.arrivalTime.getTime() + 365 * 24 * 3_600_000),
       position: { x, y },
       onSave: (time) => {
         const idx = sequence.findIndex(p => p.id === id);
@@ -176,11 +182,16 @@ export function CheckpointTrackRow({ checkpoints, startTime, distanceRange, char
         const updated = checkpoints.map(c => c.id === id ? { ...c, arrivalTime: time, pinned: true } : c);
         setEditor(null);
         if (deltaMs !== 0 && downstream.length > 0) {
+          // Keeping downstream times as-is only stays valid if the new time is still
+          // earlier than the immediate next checkpoint's (pre-edit) arrival time —
+          // otherwise "Keep" would leave that checkpoint before the one just edited.
+          const keepDisabled = time.getTime() >= downstream[0].arrivalTime.getTime();
           setCascade({
             downstreamIds: downstream.map(p => p.id),
             deltaMs,
             pendingCheckpoints: updated,
             position: { x, y },
+            keepDisabled,
           });
         } else {
           onChange(updated);
@@ -210,7 +221,7 @@ export function CheckpointTrackRow({ checkpoints, startTime, distanceRange, char
   }
 
   function cascadeKeep() {
-    if (!cascade) return;
+    if (!cascade || cascade.keepDisabled) return;
     onChange(cascade.pendingCheckpoints);
     setCascade(null);
   }
@@ -234,6 +245,7 @@ export function CheckpointTrackRow({ checkpoints, startTime, distanceRange, char
     const tooClose = sequence.some(p => Math.abs(p.distanceM / 1000 - km) < (dMax - dMin) * 0.01);
     if (tooClose) return;
     setPendingAddKm(km);
+    setPendingAddPos({ x: e.clientX, y: e.clientY });
   }
 
   function onTrackMouseMove(e: React.MouseEvent<HTMLDivElement>) {
@@ -248,8 +260,12 @@ export function CheckpointTrackRow({ checkpoints, startTime, distanceRange, char
     onHoverIndex?.(null);
   }
 
-  function confirmAdd(clientX: number, clientY: number) {
+  function confirmAdd() {
     if (pendingAddKm === null) return;
+    // Anchor the time editor to where the user actually clicked on the track
+    // (captured in handleTrackClick), not some unrelated fixed point — falls
+    // back to the checkpoint's own screen position if that's somehow missing.
+    const position = pendingAddPos ?? { x: xOf(pendingAddKm), y: 0 };
     const distanceM = pendingAddKm * 1000;
     let prev = sequence[0], next = sequence[sequence.length - 1];
     for (let i = 0; i < sequence.length - 1; i++) {
@@ -259,12 +275,13 @@ export function CheckpointTrackRow({ checkpoints, startTime, distanceRange, char
     }
     const estimate = computeArrivalTime(distanceM, startTime, checkpoints);
     setPendingAddKm(null);
+    setPendingAddPos(null);
     setEditor({
       title: 'Set arrival time',
       initialTime: estimate,
       minTime: prev.arrivalTime,
       maxTime: next.arrivalTime,
-      position: { x: clientX, y: clientY },
+      position,
       onSave: (time) => {
         const waypoint: Checkpoint = {
           id: `wp-${Date.now()}-${Math.round(Math.random() * 1e6)}`,
@@ -423,8 +440,11 @@ export function CheckpointTrackRow({ checkpoints, startTime, distanceRange, char
             Move {cascade.downstreamIds.length} later checkpoint{cascade.downstreamIds.length > 1 ? 's' : ''} by{' '}
             {cascade.deltaMs > 0 ? '+' : ''}{Math.round(cascade.deltaMs / 60_000)} min, or keep their times and recalculate speed?
           </div>
+          {cascade.keepDisabled && (
+            <div className="text-xs opacity-70 mb-2">Keep times is unavailable: it would reorder checkpoints.</div>
+          )}
           <div className="flex justify-end gap-2">
-            <button className="btn btn-xs" onClick={cascadeKeep}>Keep times</button>
+            <button className="btn btn-xs" disabled={cascade.keepDisabled} onClick={cascadeKeep}>Keep times</button>
             <button className="btn btn-xs btn-primary" onClick={cascadeShift}>Shift times</button>
           </div>
         </div>
@@ -437,8 +457,8 @@ export function CheckpointTrackRow({ checkpoints, startTime, distanceRange, char
           message={`${pendingAddKm.toFixed(1)} km from start`}
           confirming={false}
           confirmLabel="Yes, add"
-          onCancel={() => setPendingAddKm(null)}
-          onConfirm={() => confirmAdd(window.innerWidth / 2, window.innerHeight / 2)}
+          onCancel={() => { setPendingAddKm(null); setPendingAddPos(null); }}
+          onConfirm={confirmAdd}
         />
       )}
 
@@ -456,3 +476,6 @@ export function CheckpointTrackRow({ checkpoints, startTime, distanceRange, char
     </div>
   );
 }
+
+const CheckpointTrackRowMemo = memo(CheckpointTrackRow);
+export { CheckpointTrackRowMemo as CheckpointTrackRow };
