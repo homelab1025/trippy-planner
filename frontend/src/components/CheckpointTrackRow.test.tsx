@@ -1,6 +1,6 @@
 // frontend/src/components/CheckpointTrackRow.test.tsx
 // @vitest-environment jsdom
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { CheckpointTrackRow } from './CheckpointTrackRow';
 import type { Checkpoint } from '../utils/speedProfile';
@@ -148,7 +148,7 @@ describe('CheckpointTrackRow — drag', () => {
     expect(moved.arrivalTime.getTime()).toBe(waypoint.arrivalTime.getTime()); // unchanged
   });
 
-  it('coalesces rapid mousemove events into a single onChange per animation frame', () => {
+  it('coalesces rapid mousemove events into a single local preview update per animation frame', () => {
     const onChange = vi.fn();
     const waypoint: Checkpoint = { id: 'wp-1', distanceM: 3_000, arrivalTime: new Date(START.getTime() + 20 * 60_000), pinned: true };
     render(
@@ -175,20 +175,51 @@ describe('CheckpointTrackRow — drag', () => {
     fireEvent.mouseMove(document, { clientX: 350 });
     fireEvent.mouseMove(document, { clientX: 400 }); // final position, ~5km
 
-    // Three mousemoves in the same frame schedule only one rAF callback, and don't
-    // touch onChange until that frame actually runs.
+    // Three mousemoves in the same frame schedule only one rAF callback.
     expect(rafSpy).toHaveBeenCalledTimes(1);
-    expect(onChange).not.toHaveBeenCalled();
 
-    rafCallback!(0);
+    act(() => { rafCallback!(0); });
+
+    // The frame firing only updates this row's own preview — onChange (and so App,
+    // the chart rebuild, localStorage) must stay untouched until mouse release.
+    expect(onChange).not.toHaveBeenCalled();
+    // xOf(5) with distanceRange [0,10] and chartWidth 800 (PLOT_LEFT=55, PLOT_RIGHT_OFFSET=55, marker offset -6)
+    expect(marker.getAttribute('style')).toContain('left: 394');
+
+    fireEvent.mouseUp(document);
 
     expect(onChange).toHaveBeenCalledTimes(1);
     const next: Checkpoint[] = onChange.mock.calls[0][0];
     const moved = next.find(cp => cp.id === 'wp-1')!;
     expect(moved.distanceM).toBeCloseTo(5_000, -2); // the last (not first/middle) position wins
 
-    fireEvent.mouseUp(document);
     rafSpy.mockRestore();
+  });
+
+  it('does not call onChange while dragging, only once on mouse release', () => {
+    const onChange = vi.fn();
+    const waypoint: Checkpoint = { id: 'wp-1', distanceM: 3_000, arrivalTime: new Date(START.getTime() + 20 * 60_000), pinned: true };
+    render(
+      <CheckpointTrackRow
+        checkpoints={[waypoint, endCp(10_000, 60)]}
+        startTime={START}
+        totalDistanceM={10_000}
+        distanceRange={[0, 10]}
+        chartWidth={800}
+        onChange={onChange}
+      />
+    );
+    const marker = document.querySelector('[data-checkpoint-marker][data-draggable="true"]')!;
+    stubRect(marker.parentElement!, { left: 0, width: 800 });
+
+    fireEvent.mouseDown(marker, { clientX: 240 });
+    fireEvent.mouseMove(document, { clientX: 300 });
+    fireEvent.mouseMove(document, { clientX: 350 });
+    fireEvent.mouseMove(document, { clientX: 400 });
+    expect(onChange).not.toHaveBeenCalled();
+
+    fireEvent.mouseUp(document);
+    expect(onChange).toHaveBeenCalledTimes(1);
   });
 });
 
