@@ -112,6 +112,10 @@ function CheckpointTrackRow({ checkpoints, startTime, distanceRange, chartWidth,
   } | null>(null);
 
   const [dragId, setDragId] = useState<string | null>(null);
+  // Live drag position, kept local to this component so moving a marker only
+  // repaints this row — it never reaches onChange (and so never touches App,
+  // the chart rebuild, or localStorage) until the mouse is released.
+  const [dragPreviewKm, setDragPreviewKm] = useState<number | null>(null);
   const [menu, setMenu] = useState<{ id: string; x: number; y: number } | null>(null);
   const [cascade, setCascade] = useState<{
     downstreamIds: string[];
@@ -121,7 +125,14 @@ function CheckpointTrackRow({ checkpoints, startTime, distanceRange, chartWidth,
     keepDisabled: boolean;
   } | null>(null);
 
-  const sequence = fullSequence(checkpoints, startTime);
+  // While a marker is being dragged, render its live preview position instead of
+  // the last-committed one — everything below (markers, segments, terrain, time
+  // labels) reads from `sequence`, so this is the only place the preview needs to
+  // be spliced in.
+  const displayCheckpoints = dragId !== null && dragPreviewKm !== null
+    ? checkpoints.map(cp => cp.id === dragId ? { ...cp, distanceM: dragPreviewKm * 1000 } : cp)
+    : checkpoints;
+  const sequence = fullSequence(displayCheckpoints, startTime);
 
   function neighborsOf(id: string): { prev: FullPoint; next: FullPoint | null } {
     const idx = sequence.findIndex(p => p.id === id);
@@ -133,23 +144,29 @@ function CheckpointTrackRow({ checkpoints, startTime, distanceRange, chartWidth,
     setDragId(id);
     const trackEl = e.currentTarget.parentElement as HTMLElement;
 
-    // Native mousemove can fire far faster than the screen repaints, and each call
-    // triggers a full onChange -> App re-render -> recharts redraw. Coalescing to at
-    // most one update per animation frame keeps drag smooth without changing the
-    // final result: whichever position was most recent when the frame fires wins.
+    // Native mousemove can fire far faster than the screen repaints, and committing
+    // to onChange on every event would cascade into a full App re-render, a
+    // route-wide chart rebuild, and a localStorage write each time (see the
+    // dragPreviewKm comment above). So each frame only updates the local preview;
+    // the real commit (onChange) happens once, in onUp, on mouse release.
     let rafId: number | null = null;
     let latestClientX: number | null = null;
+    let committedKm: number | null = null;
 
-    function applyPendingMove() {
-      rafId = null;
-      if (latestClientX === null) return;
+    function computeClampedKm(clientX: number): number {
       const rect = trackEl.getBoundingClientRect();
-      let km = kmOf(latestClientX - rect.left);
+      let km = kmOf(clientX - rect.left);
       const { prev, next } = neighborsOf(id);
       const minKm = prev.distanceM / 1000 + (dMax - dMin) * 0.005;
       const maxKm = next ? next.distanceM / 1000 - (dMax - dMin) * 0.005 : dMax;
       km = Math.min(maxKm, Math.max(minKm, km));
-      onChange(checkpoints.map(cp => cp.id === id ? { ...cp, distanceM: km * 1000 } : cp));
+      return km;
+    }
+    function applyPendingMove() {
+      rafId = null;
+      if (latestClientX === null) return;
+      committedKm = computeClampedKm(latestClientX);
+      setDragPreviewKm(committedKm);
     }
     function onMove(ev: MouseEvent) {
       latestClientX = ev.clientX;
@@ -164,6 +181,10 @@ function CheckpointTrackRow({ checkpoints, startTime, distanceRange, chartWidth,
         cancelAnimationFrame(rafId);
         applyPendingMove();
       }
+      if (committedKm !== null) {
+        onChange(checkpoints.map(cp => cp.id === id ? { ...cp, distanceM: committedKm! * 1000 } : cp));
+      }
+      setDragPreviewKm(null);
       setDragId(null);
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
