@@ -270,6 +270,41 @@ describe('App', () => {
     });
   });
 
+  it('shifts a pinned checkpoint\'s time by the same delta as a Start Time change, keeping the gap unchanged', async () => {
+    render(<App />);
+    await uploadFile();
+    await waitFor(() => screen.getByTestId('checkpoint-track-row'));
+
+    let startBefore!: Date;
+    await waitFor(() => {
+      const stored = JSON.parse(localStorage.getItem('trippy_current_route')!);
+      expect(stored.startTime).toBeTruthy();
+      startBefore = new Date(stored.startTime);
+    });
+
+    // Pin the end checkpoint 30 minutes after the current start time.
+    const pinnedArrival = new Date(startBefore.getTime() + 30 * 60_000);
+    await act(async () => {
+      capturedOnCheckpointsChange?.([
+        { id: 'end', distanceM: 1000, arrivalTime: pinnedArrival, pinned: true },
+      ]);
+    });
+
+    // Move Start Time forward by 15 minutes, same day (avoids a date-rollover edge case).
+    const newStart = new Date(startBefore.getTime() + 15 * 60_000);
+    const newTimeStr = `${String(newStart.getHours()).padStart(2, '0')}:${String(newStart.getMinutes()).padStart(2, '0')}`;
+    fireEvent.change(screen.getByLabelText('Start Time'), { target: { value: newTimeStr } });
+
+    await waitFor(() => {
+      const stored = JSON.parse(localStorage.getItem('trippy_current_route')!);
+      const cps = JSON.parse(stored.checkpointsJson);
+      const end = cps.find((cp: { id: string }) => cp.id === 'end');
+      // The pinned checkpoint must have shifted along with startTime, so the gap
+      // between them is still exactly 30 minutes, not the pre-shift absolute time.
+      expect(Date.parse(end.arrivalTime) - Date.parse(stored.startTime)).toBe(30 * 60_000);
+    });
+  });
+
   it('changing avg speed re-fetches weather and updates charts', async () => {
     render(<App />);
     await uploadFile();

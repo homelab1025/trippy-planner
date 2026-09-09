@@ -125,6 +125,17 @@ function App() {
   maxDate.setDate(maxDate.getDate() + 7);
   const maxDateStr = getLocalDateString(maxDate);
 
+  // Pinned checkpoints hold an absolute arrivalTime, so unlike unpinned ones
+  // (which effectiveCheckpoints re-derives from startTime live) they need an
+  // explicit shift here to keep the gaps between checkpoints unchanged when
+  // Start Date/Time is edited from the Route details panel.
+  const shiftPinnedCheckpoints = (deltaMs: number) => {
+    if (deltaMs === 0) return;
+    setCheckpoints(prev => prev.map(cp =>
+      cp.pinned ? { ...cp, arrivalTime: new Date(cp.arrivalTime.getTime() + deltaMs) } : cp
+    ));
+  };
+
   const handleDateChange = (dateStr: string) => {
     if (!dateStr) return;
     const [year, month, day] = dateStr.split('-').map(Number);
@@ -132,10 +143,10 @@ function App() {
     newDate.setFullYear(year);
     newDate.setMonth(month - 1);
     newDate.setDate(day);
+    shiftPinnedCheckpoints(newDate.getTime() - startTime.getTime());
     setStartTime(newDate);
   };
 
-  // TODO: test handleTimeChange - verify time parsing, boundary conditions (midnight rollover), and that it correctly updates startTime state
   const handleTimeChange = (timeStr: string) => {
     if (!timeStr) return;
     const [hours, minutes] = timeStr.split(':').map(Number);
@@ -144,6 +155,7 @@ function App() {
     newDate.setMinutes(minutes);
     newDate.setSeconds(0);
     newDate.setMilliseconds(0);
+    shiftPinnedCheckpoints(newDate.getTime() - startTime.getTime());
     setStartTime(newDate);
   };
 
