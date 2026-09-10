@@ -1,6 +1,7 @@
 # Checkpoint Arrival Times — Design Spec
 
 **Date:** 2026-09-05
+**Updated:** 2026-09-10 — revised to match the shipped implementation; see [ADR](../../adr/2026-09-10-checkpoint-arrival-time-model.md) and [FDR](../../fdr/2026-09-10-checkpoint-arrival-times.md) for the decisions made along the way.
 **Issue:** #38 — "Average speed is not reflecting reality for calculation of the timeline."
 
 ## Context
@@ -31,18 +32,15 @@ Exported functions:
 - `computeArrivalTime(distanceM: number, startTime: Date, checkpoints: Checkpoint[]): Date` — finds the bracketing pair in `buildSequence` and linearly interpolates by distance fraction. Clamps to the sequence's first/last time outside `[0, totalDistance]`. This is the single function that replaces every inline `distance / (speed * 1000)` arrival-time formula in the app.
 - `impliedSpeedKmh(a: { distanceM; arrivalTime }, b: { distanceM; arrivalTime }): number | null` — `(b.distanceM - a.distanceM) / 1000 / hoursBetween`; `null` if `hoursBetween <= 0` (used for display only, e.g. "— km/h" when a user picks a non-increasing time before validation catches it).
 - `defaultCheckpoints(totalDistanceM: number, avgSpeedKmh: number, startTime: Date): Checkpoint[]` — returns `[{ id: 'end', distanceM: totalDistanceM, arrivalTime: computed from avgSpeed, pinned: false }]`, used whenever a route has no stored checkpoints.
+- `parseCheckpointsJson(json: string): Checkpoint[] | undefined` — revives a persisted `checkpoints_json` payload (localStorage mirror, saved route, share link). Deliberately returns `undefined`, never `[]`, for anything unusable (parse failure, empty array, all-invalid dates), so that callers' `?? defaultCheckpoints(...)` fallback actually engages — an empty array would satisfy `??` and silently leave the route with no `end` checkpoint, breaking the invariant that one always exists. Used by the share-link effect, the localStorage mount effect, and `MyRoutesPanel`'s `onLoadRoute` in section 5.
 
 ### 2. Auto-track vs. pinned (App.tsx)
 
-```ts
-React.useEffect(() => {
-  setCheckpoints(cps => cps.map(cp =>
-    cp.pinned ? cp : { ...cp, arrivalTime: new Date(startTime.getTime() + cp.distanceM / (avgSpeed * 1000) * 3_600_000) }
-  ));
-}, [avgSpeed, startTime]);
-```
+Implemented as a derived value rather than an effect (`4c2bca6`, refactored from an initial effect-based version to avoid the extra render/commit an effect causes): `effectiveCheckpoints` is a `useMemo` over `[checkpoints, avgSpeed, startTime]` that maps every unpinned checkpoint to a live-recomputed `arrivalTime` (`startTime + distanceM / (avgSpeed * 1000)` hours) and passes pinned ones through unchanged. `checkpoints` state holds the raw, possibly-stale array; `effectiveCheckpoints` is the value actually consumed everywhere else in the app — chart, sidebar, weather calculation, the localStorage mirror, and Save (see section 5).
 
-In practice this only ever touches `end` before its first manual edit, since waypoints are always pinned. Right-click → "Change time" on any checkpoint sets `pinned: true` as part of the same update (matches the mock).
+In practice the live recompute only ever touches `end` before its first manual edit, since waypoints are always pinned. Right-click → "Change time" on any checkpoint sets `pinned: true` as part of the same update (matches the mock).
+
+**Shifting pinned checkpoints on Start Date/Time change:** added after the initial implementation (`f500cee`) — pinned checkpoints hold an absolute `arrivalTime`, so unlike unpinned ones they don't move when `startTime` changes. Editing Start Date or Start Time in the Route details panel now also calls `shiftPinnedCheckpoints(deltaMs)`, which shifts every pinned checkpoint's `arrivalTime` by the same delta applied to `startTime`, so the gap between pinned checkpoints and the rest of the route stays unchanged instead of silently drifting.
 
 ### 3. Chart UI
 
@@ -58,32 +56,39 @@ interface Props {
   distanceRange: [number, number];
   chartWidth: number;
   onChange: (next: Checkpoint[]) => void;
+  elevationData?: ElevationSample[]; // terrain-colored segments, see below
+  hoveredDistance?: number | null;   // hover-crosshair sync, see below
+  onHoverIndex?: (index: number | null) => void;
 }
 ```
 
 Ports the mock's three interactions as a controlled component (all mutations go through `onChange`, no local copy of the array):
 - **Click empty track** → `ConfirmDialog` ("Add checkpoint here?") → on confirm, `CheckpointTimeEditor` popover pre-filled via `computeArrivalTime` at that distance → on save, inserts a new pinned waypoint.
-- **Drag** an existing waypoint (not `end`) → live-updates `distanceM` only, clamped between neighbors; time unchanged (already pinned).
-- **Right-click** → small context menu ("Change time" / "Delete checkpoint" — delete hidden for `end`, matching the mock's `cpMenuDelete` visibility toggle). "Change time" opens `CheckpointTimeEditor`; if downstream checkpoints exist and the time actually changed, a small cascade popover offers **Shift times** (add the same delta to every downstream checkpoint) or **Keep times** (leave them, let the following segment's speed recompute) — ports the mock's `cascadeShift`/`cascadeKeep` logic exactly.
+- **Drag** an existing waypoint (not `end`) → clamped between neighbors; time unchanged (already pinned). Implemented as a local `dragPreviewKm` state rather than a live `onChange` per mousemove: updates are rAF-throttled per frame (`55dc1ad`) and held entirely in local state until mouse-up, when the final position is committed once via `onChange` (`3f7d911`, `ac6f9ca`). This is user-visible — the map, sidebar list, and localStorage mirror only reflect the new position after the drag ends, not during it.
+- **Right-click** → small context menu ("Change time" / "Delete checkpoint" — delete hidden for `end`, matching the mock's `cpMenuDelete` visibility toggle). "Change time" opens `CheckpointTimeEditor` with no upper time bound (`af5c2d1` removed the original cap at the next checkpoint's time — editing past it is now allowed). If downstream checkpoints exist and the time actually changed, a cascade popover offers **Shift times** (add the same delta to every downstream checkpoint) or **Keep times** (leave them, let the following segment's speed recompute) — ports the mock's `cascadeShift`/`cascadeKeep` logic, extended with a `keepDisabled` case: "Keep times" is disabled whenever the new time would be at or past the immediate next checkpoint's (pre-edit) time, since keeping would reorder checkpoints — only Shift stays valid then.
+
+**Terrain-colored segments** (not in the original design): each gap between adjacent checkpoints in the track row is rendered as a colored bar — climb, descent, or flat, classified via `terrainAt`/`elevationAtKm` against the route's elevation profile — labeled with the segment's rounded implied speed. This requires `CheckpointTrackRow` to also receive the route's `elevationData` as a prop.
+
+**Hover-crosshair sync** (`1c30e93`, not in the original design): `CheckpointTrackRow` gained `hoveredDistance`/`onHoverIndex` props. Hovering the track row drives the shared crosshair across the elevation chart and the other rows (via `nearestIndex`), and the row renders its own crosshair line when the hover originates elsewhere (e.g. the elevation chart) — keeping checkpoint position and hovered chart position visually in sync.
 
 **`frontend/src/components/CheckpointTimeEditor.tsx`** (new) — the shared add/change-time popover (time `<input>` + Save/Cancel + inline validation error), extracted since both flows need it. The "Add checkpoint here?" step reuses the existing `ConfirmDialog.tsx` as-is. The cascade shift-vs-keep choice does not fit `ConfirmDialog`'s Cancel/OK shape (two non-destructive alternatives, not a confirm/cancel) — it's a small purpose-built popover local to `CheckpointTrackRow.tsx`.
 
-**`frontend/src/theme/chartColors.ts`**: add `checkpointWaypoint`, `checkpointLocked`, `checkpointGuide`, `checkpointRecomputed` entries (colors ported from the mock: `#1b6ec2` waypoint blue, `#256a4e` locked green — reusing the existing brand green rather than inventing a new one, `#9aa4a0` guide gray, `#c0392b` recomputed red).
+**`frontend/src/theme/chartColors.ts`**: add `checkpointWaypoint`, `checkpointLocked`, `checkpointGuide` entries (colors ported from the mock: `#1b6ec2` waypoint blue, `#256a4e` locked green — reusing the existing brand green rather than inventing a new one, `#9aa4a0` guide gray). The originally-planned `checkpointRecomputed` (`#c0392b` red) was never implemented — no UI state ended up needing it. Implementation also added `segmentClimbBg/Text`, `segmentDescentBg/Text`, `segmentFlatBg/Text` (sourced from `checkpoint-cascade-mock.html`'s `.seg-climb`/`.seg-desc`/`.seg-flat` classes) to back the terrain-colored segments described below, not anticipated in the original design.
 
 ### 4. Sidebar panel
 
-A new "Checkpoints" collapse section in `App.tsx`, inserted immediately after "Ride Details" (`App.tsx:540`), following the same `collapse collapse-arrow` + `activePanel` single-open-accordion pattern as the existing panels (`App.tsx:460-467`). Lists each checkpoint (distance, time, implied segment speed via `impliedSpeedKmh`), read-only — all editing happens on the chart, matching the mock.
+A new "Checkpoints" collapse section in `App.tsx`, inserted immediately after "Ride Details", following the same `collapse collapse-arrow` + `activePanel` single-open-accordion pattern as the existing panels. Only rendered once a route is loaded. Lists each checkpoint (distance, time, implied segment speed via `buildSequence`/`impliedSpeedKmh`), read-only — all editing happens on the chart, matching the mock. Rows are labeled "Start" / "CP n" / "Finish".
 
 ### 5. `App.tsx` wiring
 
-- New state: `const [checkpoints, setCheckpoints] = useState<Checkpoint[]>([]);`
-- `isDirty` (`App.tsx:166-171`) gains a checkpoints comparison: `JSON.stringify(lastFetchedParams.checkpoints) !== JSON.stringify(checkpoints)` — string comparison matches the "store as opaque JSON" treatment used everywhere else for this data, and avoids writing a structural-equality helper for a small array.
-- `handleFileUpload` (`App.tsx:136-164`): a genuinely new GPX means old checkpoint distances are meaningless (issue's gap #5) — reset via `setCheckpoints(defaultCheckpoints(parsedRoute.totalDistance, avgSpeed, startTime))` right after `setRoute`.
-- `loadRouteFromGpxText` (`App.tsx:213-225`) gains a `checkpoints?: Checkpoint[]` param: saved/shared routes restore their own (parsed from `checkpointsJson`); a route with no stored checkpoints (older data, column is `NULL`) falls back to `defaultCheckpoints`. Callers: the share-link effect (`App.tsx:318-333`), the localStorage mount effect (`App.tsx:334-350`), and `MyRoutesPanel`'s `onLoadRoute` (`App.tsx:585-592`) all thread the parsed value through.
-- `updateWeather` (`App.tsx:173-211`): drop the `speed: number` param, add `checkpoints: Checkpoint[]`; replace the inline `travelTimeHours`/`arrivalTime` calculation (`App.tsx:190-191`) with `computeArrivalTime(distance, start, checkpoints)`. `lastFetchedParams` gains a `checkpoints` field alongside `avgSpeed`/`startTime`/`selectedProvider`, following the same "value in effect when weather was last fetched" pattern already used for the dirty flag and chart interpolation lag.
-- `useWeatherChartData.ts`: `buildChartData`'s per-point `time` field (`useWeatherChartData.ts:56`) and the `modeledTimeAt` helper (`useWeatherChartData.ts:89-90`) both swap `avgSpeed`/`weatherAvgSpeed` for `computeArrivalTime(distance, startTime/weatherStartTime, checkpoints/weatherCheckpoints)` — same lag-until-Refresh pattern, now driven by checkpoints instead of a flat speed.
-- `routeStorage.ts`: `StoredRoute` gains `checkpointsJson?: string`; the mirror effect (`App.tsx:356-368`) and the mount-time restore (`App.tsx:334-350`) read/write it via `JSON.stringify`/`JSON.parse` of the `Checkpoint[]` array (dates serialized as ISO strings, matching `startTime`'s existing treatment).
-- `SaveRouteButton.tsx`: `routeData` gains `checkpointsJson: JSON.stringify(checkpoints)` passed from `App.tsx` alongside the existing `gpxContent`/`avgSpeedKmh`/`startTime` (`App.tsx:550-554`). Update also sends it (currently `updateRoute` only sends `name`/`avgSpeedKmh`/`startTime` — `SaveRouteButton.tsx:27-31` — extend to include it, since editing checkpoints on an already-saved route should be persisted by the same "Save" button, not just at creation time).
+- New state: `const [checkpoints, setCheckpoints] = useState<Checkpoint[]>([]);`, plus the `effectiveCheckpoints` derived value from section 2 that every consumer below actually reads.
+- `isDirty` gains a checkpoints comparison against `effectiveCheckpoints`, not the raw `checkpoints` state: `JSON.stringify(lastFetchedParams.checkpoints) !== JSON.stringify(effectiveCheckpoints)` — string comparison matches the "store as opaque JSON" treatment used everywhere else for this data, and avoids writing a structural-equality helper for a small array.
+- `handleFileUpload`: a genuinely new GPX means old checkpoint distances are meaningless (issue's gap #5) — reset via `setCheckpoints(defaultCheckpoints(parsedRoute.totalDistance, avgSpeed, startTime))` right after `setRoute`.
+- `loadRouteFromGpxText` gains a `checkpoints?: Checkpoint[]` param: saved/shared routes restore their own (parsed from `checkpointsJson` via `parseCheckpointsJson`); a route with no stored checkpoints (older data, column is `NULL`, or an unparseable/empty payload) falls back to `defaultCheckpoints`. Callers: the share-link effect, the localStorage mount effect, and `MyRoutesPanel`'s `onLoadRoute` all thread the parsed value through.
+- `updateWeather`: drop the `speed: number` param, add `checkpoints: Checkpoint[]`; replace the inline `travelTimeHours`/`arrivalTime` calculation with `computeArrivalTime(distance, start, checkpoints)`. `lastFetchedParams` gains a `checkpoints` field alongside `avgSpeed`/`startTime`/`selectedProvider`, following the same "value in effect when weather was last fetched" pattern already used for the dirty flag and chart interpolation lag.
+- `useWeatherChartData.ts`: `buildChartData`'s per-point `time` field and the `modeledTimeAt` helper both swap `avgSpeed`/`weatherAvgSpeed` for `computeArrivalTime(distance, startTime/weatherStartTime, checkpoints/weatherCheckpoints)` — same lag-until-Refresh pattern, now driven by checkpoints instead of a flat speed.
+- `routeStorage.ts`: `StoredRoute` gains `checkpointsJson?: string`; the mirror effect and the mount-time restore read/write it via `JSON.stringify`/`parseCheckpointsJson` of `effectiveCheckpoints` (not raw `checkpoints` — persisting an unpinned entry's stale, non-live-recomputed time would go stale relative to the `avgSpeed`/`startTime` stored beside it), dates serialized as ISO strings matching `startTime`'s existing treatment.
+- `SaveRouteButton.tsx`: `routeData` gains `checkpointsJson: JSON.stringify(effectiveCheckpoints)` passed from `App.tsx` alongside the existing `gpxContent`/`avgSpeedKmh`/`startTime`. Update also sends it (`updateRoute` previously only sent `name`/`avgSpeedKmh`/`startTime` — extended to include it, since editing checkpoints on an already-saved route should be persisted by the same "Save" button, not just at creation time).
 - `MyRoutesPanel.tsx`: `handleClick`/`handleDuplicate` already call `routesApi.getRoute(id)` for the full `Route` (which will now include `checkpointsJson`); thread it through `onLoadRoute`'s new parameter and into `createRoute` for duplication.
 
 ### 6. Backend persistence
@@ -110,12 +115,14 @@ Injecting extra sample points exactly at checkpoint distances (so a checkpoint a
 
 ## Testing
 
-- `frontend/src/utils/speedProfile.test.ts` (new): `computeArrivalTime` before the start, after `end`, between two waypoints, and with only `end` present (must equal today's constant-speed formula exactly — regression guard); `defaultCheckpoints` shape; the auto-track effect's pinned-vs-unpinned recompute logic (can be tested as a pure reducer-style function extracted for testability, or via an `App.tsx` integration test if simpler at implementation time).
-- `backend/.../RouteRepositoryTest.java`: extend with a `checkpoints_json` round-trip (save with a JSON string, retrieve, assert equality) and a null-column case (save without it, assert the field is `null` on read).
-- `backend/.../RoutesControllerTest.java`: extend one existing create/update case to assert `checkpointsJson` passes through the mock repository call.
-- `frontend/tests/local-route-persistence.spec.ts` (Playwright, extend): add a checkpoint via the track row, reload the page, assert it's still there (localStorage round-trip) — mirrors this file's existing pattern of reload-and-assert for other route fields.
-- A new or extended save/load Playwright spec: save a route with a checkpoint, reload it via `MyRoutesPanel`, assert the checkpoint is present — covers the backend round-trip end-to-end.
+- `frontend/src/utils/speedProfile.test.ts` (new): `computeArrivalTime` before the start, after `end`, between two waypoints, and with only `end` present (must equal today's constant-speed formula exactly — regression guard); `defaultCheckpoints` shape; `parseCheckpointsJson`'s undefined-not-empty-array fallback behavior (not anticipated in the original plan).
+- The auto-track/pinned-shift recompute logic landed as `App.tsx` integration tests rather than a standalone reducer test (the plan allowed either) — see `App.test.tsx`'s `'mirrors auto-tracked checkpoint times to localStorage after an avg speed change'` and `'shifts a pinned checkpoint's time by the same delta as a Start Time change, keeping the gap unchanged'`.
+- `backend/.../RouteRepositoryTest.java`: extended with a `checkpoints_json` round-trip (save with a JSON string, retrieve, assert equality) and a null-column case (save without it, assert the field is `null` on read), as planned.
+- `backend/.../RoutesControllerTest.java`: extended with `createRoutePassesThroughCheckpointsJson`, covering the create path only — the update path isn't separately asserted here.
+- `frontend/tests/local-route-persistence.spec.ts` (Playwright, extended): add a checkpoint via the track row, reload the page, assert it's still there (localStorage round-trip).
+- `frontend/tests/my-routes.spec.ts` (Playwright, extended): `'a saved route's checkpoints are restored when reloaded from My Routes'` — covers the backend round-trip end-to-end.
 - Pixel-precise drag interaction is not covered by Playwright (fragile, as noted when verifying the mock) — click-to-add and right-click-menu flows are, since those are precise/deterministic.
+- Two whole test files not anticipated in the original plan, added as the UI grew beyond the initial design: `CheckpointTrackRow.test.tsx` (drag/rAF-throttling behavior, past-next-checkpoint cascade and `keepDisabled`, terrain classification, hover-crosshair sync, segment speed labels) and `CheckpointTimeEditor.test.tsx`.
 
 ## Out of scope
 
