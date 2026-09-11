@@ -108,6 +108,11 @@ describe('parseCheckpointsJson', () => {
     expect(result[0].id).toBe('end');
   });
 
+  it('returns undefined when no entry has id \'end\', even if otherwise well-formed', () => {
+    const json = JSON.stringify([{ id: 'wp-1', distanceM: 500, arrivalTime: '2026-06-17T09:00:00.000Z', pinned: true }]);
+    expect(parseCheckpointsJson(json)).toBeUndefined();
+  });
+
   it('revives a well-formed checkpoint with arrivalTime as a real Date', () => {
     const json = JSON.stringify([{ id: 'end', distanceM: 1000, arrivalTime: '2026-06-17T09:00:00.000Z', pinned: true }]);
     const result = parseCheckpointsJson(json)!;

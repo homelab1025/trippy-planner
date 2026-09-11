@@ -53,7 +53,7 @@ export function parseCheckpointsJson(json: string): Checkpoint[] | undefined {
     const revived = raw
       .map(cp => ({ ...cp, arrivalTime: new Date(cp.arrivalTime) }))
       .filter(cp => !Number.isNaN(cp.arrivalTime.getTime()));
-    return revived.length > 0 ? revived : undefined;
+    return revived.some(cp => cp.id === 'end') ? revived : undefined;
   } catch {
     return undefined;
   }

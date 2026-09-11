@@ -33,6 +33,24 @@ describe('CheckpointTrackRow', () => {
     expect(container.querySelectorAll('[data-checkpoint-marker]')).toHaveLength(2); // synthesized start + end
   });
 
+  it('does not render NaN marker positions when distanceRange is zero-width', () => {
+    const { container } = render(
+      <CheckpointTrackRow
+        checkpoints={[endCp(0, 30)]}
+        startTime={START}
+        totalDistanceM={0}
+        distanceRange={[5, 5]}
+        chartWidth={800}
+        onChange={vi.fn()}
+      />
+    );
+    const markers = container.querySelectorAll<HTMLElement>('[data-checkpoint-marker]');
+    expect(markers.length).toBeGreaterThan(0);
+    for (const marker of markers) {
+      expect(marker.style.left).not.toContain('NaN');
+    }
+  });
+
   it('opens an "Add checkpoint here?" confirmation when the empty track is clicked', () => {
     render(
       <CheckpointTrackRow

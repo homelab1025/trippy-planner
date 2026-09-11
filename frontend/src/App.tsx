@@ -150,11 +150,20 @@ function App() {
   const handleTimeChange = (timeStr: string) => {
     if (!timeStr) return;
     const [hours, minutes] = timeStr.split(':').map(Number);
-    const newDate = new Date(startTime);
-    newDate.setHours(hours);
-    newDate.setMinutes(minutes);
-    newDate.setSeconds(0);
-    newDate.setMilliseconds(0);
+    const base = new Date(startTime);
+    base.setHours(hours, minutes, 0, 0);
+    // A time-only input has no day of its own; among the same day and the days
+    // immediately before/after, pick whichever makes the change smallest in
+    // magnitude, so moving the time across midnight (e.g. 23:50 -> 00:10) reads
+    // as a short step forward instead of a ~24h jump backward.
+    const DAY_MS = 24 * 3_600_000;
+    let newDate = base;
+    for (const offset of [-DAY_MS, DAY_MS]) {
+      const candidate = new Date(base.getTime() + offset);
+      if (Math.abs(candidate.getTime() - startTime.getTime()) < Math.abs(newDate.getTime() - startTime.getTime())) {
+        newDate = candidate;
+      }
+    }
     shiftPinnedCheckpoints(newDate.getTime() - startTime.getTime());
     setStartTime(newDate);
   };
