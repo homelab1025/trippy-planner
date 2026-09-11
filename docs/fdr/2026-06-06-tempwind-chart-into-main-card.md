@@ -32,3 +32,10 @@ With this and the precip-chart move on the same day, the sidebar Weather
 panel introduced by the 2026-06-05 chart-split redesign no longer exists;
 the Ride Details/Tech Details two-panel accordion from that record is
 unaffected.
+
+**Note (2026-06-07):** the combined temp+wind chart this record moved into
+the main card was split apart the next day — temperature became an overlay
+on `ElevationChart` and wind became its own sub-chart — see [FDR: Move
+temperature into the elevation chart](2026-06-07-temp-into-elevation-chart.md).
+The "in the main card, not the sidebar" placement decision itself still
+stands.

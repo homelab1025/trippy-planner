@@ -21,6 +21,8 @@ The table below is kept sorted chronologically.
 | 2026-06-05 | [Split the single weather chart into focused components sharing one data hook](2026-06-05-chart-split-architecture.md) | Accepted |
 | 2026-06-06 | [Migrate hand-rolled UI to DaisyUI v4 + Tailwind CSS](2026-06-06-daisyui-tailwind-migration.md) | Accepted |
 | 2026-06-06 | [Use distance, not time, as the chart X-axis reference](2026-06-06-distance-based-chart-xaxis.md) | Accepted |
+| 2026-06-08 | [Render wind/precip rows as hand-built SVG instead of Recharts](2026-06-08-svg-wind-precip-rows.md) | Accepted |
+| 2026-06-12 | [u/v vector decomposition for wind interpolation, time-based interpolation factor](2026-06-12-wind-uv-vector-interpolation.md) | Accepted |
 | 2026-07-18 | [Backend service, magic-link auth, and route persistence architecture](2026-07-18-backend-auth-and-persistence-architecture.md) | Accepted |
 | 2026-08-03 | [Mirror the working route to localStorage; decouple sign-in from Save](2026-08-03-local-route-mirror-decoupled-auth.md) | Accepted |
 | 2026-08-07 | [Independent frontend/backend versioning and release workflows](2026-08-07-independent-component-versioning.md) | Accepted |
