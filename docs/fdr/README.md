@@ -21,6 +21,9 @@ The table below is kept sorted chronologically.
 | 2026-06-05 | [Sidebar weather accordion and persistent hover pane](2026-06-05-sidebar-weather-accordion-and-hover-pane.md) | Shipped |
 | 2026-06-06 | [Move the precipitation chart under the elevation chart](2026-06-06-precip-chart-under-elevation.md) | Shipped |
 | 2026-06-06 | [Move the temp+wind chart into the main elevation card, remove the sidebar Weather panel](2026-06-06-tempwind-chart-into-main-card.md) | Shipped |
+| 2026-06-07 | [Move temperature into the elevation chart, shrink weather sub-charts to 40px](2026-06-07-temp-into-elevation-chart.md) | Shipped |
+| 2026-06-08 | [Directional wind arrows and precipitation bars replace the wind/precip line rows](2026-06-08-wind-arrow-and-precip-bar-rows.md) | Shipped |
+| 2026-06-09 | [Auto-fetch weather on GPX load, manual Refresh for later parameter changes](2026-06-09-manual-weather-refresh.md) | Shipped |
 | 2026-07-18 | [Accounts, saved routes, and public sharing](2026-07-18-accounts-saved-routes-and-sharing.md) | Shipped |
 | 2026-08-03 | [Persist working route across sign-in, decouple sign-in from saving](2026-08-03-persist-route-across-signin.md) | Shipped |
 | 2026-08-14 | [Update existing route on Save instead of duplicating](2026-08-14-save-route-update-rename-duplicate.md) | Shipped |
