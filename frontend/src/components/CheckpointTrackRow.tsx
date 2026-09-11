@@ -97,8 +97,10 @@ function fullSequence(checkpoints: Checkpoint[], startTime: Date): FullPoint[] {
 function CheckpointTrackRow({ checkpoints, startTime, distanceRange, chartWidth, onChange, elevationData = [], hoveredDistance = null, onHoverIndex }: Props) {
   const [dMin, dMax] = distanceRange;
   const plotWidth = chartWidth - PLOT_LEFT - PLOT_RIGHT_OFFSET;
-  const xOf = (km: number) => PLOT_LEFT + ((km - dMin) / (dMax - dMin)) * plotWidth;
-  const kmOf = (x: number) => dMin + ((x - PLOT_LEFT) / plotWidth) * (dMax - dMin);
+  // Guard against a zero-width range (e.g. a single-point route), which would
+  // otherwise divide by zero and place every marker/segment/label at NaN.
+  const xOf = (km: number) => dMax > dMin ? PLOT_LEFT + ((km - dMin) / (dMax - dMin)) * plotWidth : PLOT_LEFT;
+  const kmOf = (x: number) => dMax > dMin ? dMin + ((x - PLOT_LEFT) / plotWidth) * (dMax - dMin) : dMin;
 
   const [pendingAddKm, setPendingAddKm] = useState<number | null>(null);
   const [pendingAddPos, setPendingAddPos] = useState<{ x: number; y: number } | null>(null);

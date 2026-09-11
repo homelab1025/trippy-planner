@@ -290,7 +290,7 @@ describe('App', () => {
       ]);
     });
 
-    // Move Start Time forward by 15 minutes, same day (avoids a date-rollover edge case).
+    // Move Start Time forward by 15 minutes, same day.
     const newStart = new Date(startBefore.getTime() + 15 * 60_000);
     const newTimeStr = `${String(newStart.getHours()).padStart(2, '0')}:${String(newStart.getMinutes()).padStart(2, '0')}`;
     fireEvent.change(screen.getByLabelText('Start Time'), { target: { value: newTimeStr } });
@@ -301,6 +301,46 @@ describe('App', () => {
       const end = cps.find((cp: { id: string }) => cp.id === 'end');
       // The pinned checkpoint must have shifted along with startTime, so the gap
       // between them is still exactly 30 minutes, not the pre-shift absolute time.
+      expect(Date.parse(end.arrivalTime) - Date.parse(stored.startTime)).toBe(30 * 60_000);
+    });
+  });
+
+  it('treats a Start Time change across midnight as a small step, not a ~24h jump', async () => {
+    render(<App />);
+    await uploadFile();
+    await waitFor(() => screen.getByTestId('checkpoint-track-row'));
+
+    // Anchor Start Time at 23:50 on its current date.
+    fireEvent.change(screen.getByLabelText('Start Time'), { target: { value: '23:50' } });
+
+    let startBefore!: Date;
+    await waitFor(() => {
+      const stored = JSON.parse(localStorage.getItem('trippy_current_route')!);
+      startBefore = new Date(stored.startTime);
+      expect(startBefore.getHours()).toBe(23);
+      expect(startBefore.getMinutes()).toBe(50);
+    });
+
+    // Pin the end checkpoint 30 minutes after the current start time.
+    const pinnedArrival = new Date(startBefore.getTime() + 30 * 60_000);
+    await act(async () => {
+      capturedOnCheckpointsChange?.([
+        { id: 'end', distanceM: 1000, arrivalTime: pinnedArrival, pinned: true },
+      ]);
+    });
+
+    // Move Start Time to 00:10 — a ~20min step forward across midnight, not a
+    // ~23h40m jump backward to 00:10 on the *same* calendar day.
+    fireEvent.change(screen.getByLabelText('Start Time'), { target: { value: '00:10' } });
+
+    await waitFor(() => {
+      const stored = JSON.parse(localStorage.getItem('trippy_current_route')!);
+      const newStart = new Date(stored.startTime);
+      expect(newStart.getTime() - startBefore.getTime()).toBe(20 * 60_000);
+      const cps = JSON.parse(stored.checkpointsJson);
+      const end = cps.find((cp: { id: string }) => cp.id === 'end');
+      // The pinned checkpoint must have shifted along with startTime, so the gap
+      // between them is still exactly 30 minutes.
       expect(Date.parse(end.arrivalTime) - Date.parse(stored.startTime)).toBe(30 * 60_000);
     });
   });
