@@ -2,6 +2,8 @@
 
 A route weather planner for cyclists and hikers. Upload a GPX file, set your start time and average speed, and see what the weather will be like at each point along your route.
 
+**Live app:** https://trippy.homelab1025.com/
+
 ## Features
 
 - **GPX route loading** — upload any GPX track file to visualise your route
