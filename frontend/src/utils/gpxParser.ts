@@ -18,6 +18,17 @@ export interface RouteData {
   name: string;
 }
 
+// Binary-searches cumulative distance to find the route point at (or just past) targetM.
+export const latLngAtDistance = (points: RoutePoint[], targetM: number): { lat: number; lng: number } => {
+  let lo = 0, hi = points.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (points[mid].distance < targetM) lo = mid + 1;
+    else hi = mid;
+  }
+  return { lat: points[lo].lat, lng: points[lo].lng };
+};
+
 const xmlParser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: '@_',
