@@ -6,6 +6,7 @@ import { Upload, Map as MapIcon, CloudRain, RefreshCw, CircleHelp, RotateCcw } f
 import logo from './assets/logo.png';
 import { parseGPXAsync } from './workers/gpxWorkerClient';
 import type { RouteData, RoutePoint } from './utils/gpxParser';
+import { latLngAtDistance } from './utils/gpxParser';
 import { DP_EPSILON_METERS, DP_MAX_GAP_METERS } from './utils/douglasPeucker';
 import { detectClimbs } from './utils/climbDetector';
 import { loadStoredRoute, saveStoredRoute, clearStoredRoute } from './services/routeStorage';
@@ -423,17 +424,20 @@ function App() {
     }
     const point = chartData[index];
     if (!point) { setHoveredPoint(null); setHoveredData(null); return; }
-    const targetM = point.distance * 1000;
-    const points = route.points;
-    let lo = 0, hi = points.length - 1;
-    while (lo < hi) {
-      const mid = (lo + hi) >> 1;
-      if (points[mid].distance < targetM) lo = mid + 1;
-      else hi = mid;
-    }
-    setHoveredPoint({ lat: points[lo].lat, lng: points[lo].lng });
+    setHoveredPoint(latLngAtDistance(route.points, point.distance * 1000));
     setHoveredData(point);
   }, [route, chartData]);
+
+  const checkpointMarkers = useMemo(() => {
+    if (!route) return [];
+    const seq = buildSequence(startTime, effectiveCheckpoints);
+    return seq.map((p, i) => ({
+      ...latLngAtDistance(route.points, p.distanceM),
+      distanceM: p.distanceM,
+      arrivalTime: p.arrivalTime,
+      label: i === 0 ? 'Start' : i === seq.length - 1 ? 'Finish' : `CP ${i}`,
+    }));
+  }, [route, startTime, effectiveCheckpoints]);
 
   return (
     <div className="flex flex-col h-screen overflow-y-auto w-full p-3 sm:p-6 gap-4 sm:gap-6">
@@ -883,6 +887,7 @@ function App() {
               <MapComponent
                 route={route}
                 hoveredPoint={hoveredPoint}
+                checkpoints={checkpointMarkers}
                 debugPins={weatherDebug ? weatherPoints.map(wp => ({ lat: wp.point.lat, lng: wp.point.lng, label: wp.label })) : undefined}
               />
             )}
