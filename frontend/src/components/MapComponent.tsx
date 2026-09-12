@@ -14,13 +14,22 @@ function FitBounds({ route }: { route: RouteData }) {
   return null;
 }
 
+interface CheckpointMarker {
+  lat: number;
+  lng: number;
+  distanceM: number;
+  arrivalTime: Date;
+  label: string;
+}
+
 interface MapComponentProps {
   route: RouteData;
   hoveredPoint: { lat: number; lng: number } | null;
+  checkpoints?: CheckpointMarker[];
   debugPins?: Array<{ lat: number; lng: number; label: string }>;
 }
 
-const MapComponent: React.FC<MapComponentProps> = ({ route, hoveredPoint, debugPins }) => {
+const MapComponent: React.FC<MapComponentProps> = ({ route, hoveredPoint, checkpoints, debugPins }) => {
   // Stable reference prevents react-leaflet from calling setLatLngs on every hover re-render
   const positions = useMemo(
     () => route.points.map(p => [p.lat, p.lng] as [number, number]),
@@ -41,6 +50,28 @@ const MapComponent: React.FC<MapComponentProps> = ({ route, hoveredPoint, debugP
       />
       <FitBounds route={route} />
       <Polyline positions={positions} color={palette.routeLine} weight={5} opacity={0.7} />
+
+      {checkpoints?.map(cp => {
+        const locked = cp.label === 'Start' || cp.label === 'Finish';
+        return (
+          <CircleMarker
+            key={cp.label}
+            center={[cp.lat, cp.lng]}
+            radius={7}
+            pathOptions={{
+              fillColor: locked ? palette.checkpointLocked : palette.checkpointWaypoint,
+              fillOpacity: 1,
+              stroke: true,
+              color: 'white',
+              weight: 2,
+            }}
+          >
+            <Tooltip direction="top">
+              {(cp.distanceM / 1000).toFixed(1)} km · {cp.arrivalTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </Tooltip>
+          </CircleMarker>
+        );
+      })}
 
       {hoveredPoint && (<>
         <CircleMarker
