@@ -34,17 +34,6 @@ constant-`avgSpeed` model.
   this PR implements only the Phase 1 bug fixes above and leaves the
   sample-density question unresolved.
 
-## Alternatives considered
-
-- **Raise sample count (spec's Option A)** — not implemented in this PR;
-  no phase-2 commit followed in this change.
-- **Elevation-aware sampling (spec's Option B)** — same; deferred as the
-  higher-complexity option the spec itself flagged as needing a new
-  sampling utility.
-- **Visually flag interpolated (non-sample) wind values as estimated** —
-  raised as an open question in the spec, not addressed here; interpolated
-  and fetched wind values still render identically.
-
 ## Consequences
 
 - Wind arrows and speed labels away from the 11 sample points are now

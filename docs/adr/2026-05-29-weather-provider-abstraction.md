@@ -27,15 +27,6 @@ integration point for it before that backend existed.
 - `weatherService.ts` is deleted; `App.tsx` calls
   `selectedProvider.fetchWeather(points)` directly.
 
-## Alternatives considered
-
-- **OpenWeatherMap as the second provider** — this was the original 2026-05-28
-  spec (an `OpenWeatherMapProvider` with a batch `fetchWeather`). Revised the
-  next day to a self-hosted placeholder instead, dropping the API-key
-  requirement OpenWeatherMap would have introduced, and adding the
-  `available` field so a provider could be registered without being
-  selectable.
-
 ## Consequences
 
 - Every provider must independently satisfy the null-per-point failure

@@ -29,20 +29,6 @@ shaping in the same change.
   (migration `V5__add_route_checkpoints.sql`), nullable, no server-side
   validation of its contents — the same treatment already given `gpx_content`.
 
-## Alternatives considered
-
-- **Gradient-based intra-segment speed** (issue's Proposal A) — rejected for
-  this iteration; no gradient data source is in scope yet, and it would have
-  significantly expanded the change for a first pass.
-- **Normalized `route_checkpoints` table** instead of a JSON blob — rejected;
-  checkpoints are always read and written as a whole array, never queried by
-  field, so a table buys queryability the app doesn't use yet at the cost of
-  a second migration path. Matches the existing `gpx_content` precedent.
-- **Injecting extra weather-sample points at checkpoint distances** — rejected
-  for this change; the weather-sampling grid stays purely distance-based and
-  independent of checkpoints, keeping this feature additive rather than
-  entangled with sampling logic.
-
 ## Consequences
 
 - `speedProfile.test.ts` pins `computeArrivalTime` to exactly match the old

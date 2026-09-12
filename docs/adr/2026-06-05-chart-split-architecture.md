@@ -32,18 +32,6 @@ persistent readout of the hovered point's values.
 - `BuildInfoPanel` is deleted; version and build date are absorbed into the
   Tech Details collapsible body instead of a separate pinned panel.
 
-## Alternatives considered
-
-- **The original 2026-06-02 chart-split-design** — kept the sidebar
-  unchanged and arranged the three new charts in a left/right column split
-  (map + elevation on the left, fixed-height precip/temp-wind boxes on the
-  right), with no persistent hover readout. This spec is marked as
-  superseded by the 2026-06-03 redesign before implementation began: the
-  redesign instead reclaimed sidebar space by removing a stats card and
-  added `HoverPane` specifically to solve the vanishing-tooltip problem, at
-  the cost of moving the weather charts into the sidebar behind an accordion
-  rather than keeping them always visible beside the map.
-
 ## Consequences
 
 - Playwright selectors tied to `.stats-card`, `.stat-item`,

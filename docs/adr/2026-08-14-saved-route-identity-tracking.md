@@ -24,13 +24,6 @@ duplicate row instead of updating the existing one (issues #45, #46).
 - "Save as new" explicitly clears the tracked id before saving, so forking a
   copy is a deliberate action rather than something inferred from edits.
 
-## Alternatives considered
-
-- **Ask the backend to detect duplicates** (e.g. by GPX content hash) —
-  rejected; it would guess at user intent and couldn't distinguish "re-save
-  my edits" from "I want a second copy," which the explicit "Save as new"
-  action handles directly instead.
-
 ## Consequences
 
 - Any future flow that loads a route into the working state (open from My

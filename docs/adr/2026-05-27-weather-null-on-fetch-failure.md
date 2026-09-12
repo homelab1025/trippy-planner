@@ -26,12 +26,6 @@ precipitation values with no indication they were fake.
   `weatherAvailable === false`. The elevation profile keeps rendering
   normally regardless.
 
-## Alternatives considered
-
-- **Keep `mockFallback` but flag it as synthetic in the UI** — not pursued;
-  the spec's stated goal was to remove all fake data from the pipeline
-  entirely, not merely label it as fake.
-
 ## Consequences
 
 - Partial failures stay transparent: if a subset of points resolves,

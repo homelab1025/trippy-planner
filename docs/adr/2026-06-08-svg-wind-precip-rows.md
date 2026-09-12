@@ -32,16 +32,6 @@ outside what Recharts' declarative chart model offers.
   precip) are removed by this change; it and its test file are deleted
   outright once that leaves it with zero callers.
 
-## Alternatives considered
-
-- **Keep `WeatherLineChart`** with two separate lines for wind speed and
-  direction — rejected per the design spec: a line can show position, not
-  rotation-as-direction or bar semantics.
-- **A Recharts `Scatter` layer with a custom `shape` render prop** — not
-  evaluated in the spec; the chosen approach bypasses Recharts for these
-  two rows entirely rather than working around its API for one custom mark
-  type.
-
 ## Consequences
 
 - Alignment between the SVG rows and the Recharts elevation chart above is

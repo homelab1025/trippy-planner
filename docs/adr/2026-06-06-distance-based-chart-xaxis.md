@@ -29,12 +29,6 @@ couldn't survive.
   Clock/Elapsed toggle (relabeled "Time Display" in the sidebar) — only the
   chart axes stop being time-based, not the hover readout.
 
-## Alternatives considered
-
-None recorded in the spec. The "Problem" section frames this as a one-way
-correction — distance is the stable, route-invariant reference and time is
-derived from it — rather than a choice between options.
-
 ## Consequences
 
 - This is the axis model the later checkpoint-based arrival-time feature

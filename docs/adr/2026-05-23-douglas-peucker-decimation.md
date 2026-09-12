@@ -34,18 +34,6 @@ visually faithful to the original track.
 - Default max gap lowered from 500m to 50m for finer gap-fill granularity
   by default, based on visual inspection during implementation.
 
-## Alternatives considered
-
-- **Planar (Euclidean) cross-track distance** — rejected; would distort
-  error measurement at latitude extremes since GPX coordinates are
-  lat/lng, not a flat plane.
-- **Recursive DP** — initial implementation; rejected after it
-  stack-overflowed on large files, replaced with an iterative version
-  doing the same algorithm.
-- **Hard-coded epsilon/max-gap constants** — rejected in favor of threaded
-  parameters, specifically to unblock making them user-editable in the
-  same PR.
-
 ## Consequences
 
 - `EARTH_RADIUS_METERS` was extracted out of `haversineMeters` to

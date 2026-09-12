@@ -29,15 +29,6 @@ wrapping the existing one.
 - Document the worker pattern (structured clone, Vite's `?worker` import)
   in `docs/learning/web-workers.md` for future contributors.
 
-## Alternatives considered
-
-- **Keep `gpxparser`, run it inside a worker** — not possible; `gpxparser`
-  depends on `window.DOMParser`, which doesn't exist in a Worker's global
-  scope.
-- **Keep parsing synchronous, optimize the hot loop instead** — rejected;
-  wouldn't address the fundamental problem of a long-running task blocking
-  the main thread on sufficiently large files.
-
 ## Consequences
 
 - `gpxParser.ts`'s core parsing function still exists in synchronous form
