@@ -1,0 +1,34 @@
+name: Spec Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+    branches: ["master"]
+
+jobs:
+  spec-review-gate:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Check spec review checkbox
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          CHANGED=$(git diff --name-status "$BASE_SHA" "$HEAD_SHA" -- docs/superpowers/specs/ | grep -E '^[AM]' | cut -f2)
+          if [ -z "$CHANGED" ]; then
+            echo "No spec files added/modified in this PR — nothing to gate."
+            exit 0
+          fi
+          echo "Spec file(s) changed:"
+          echo "$CHANGED"
+          if echo "$PR_BODY" | grep -qiE '^\s*-\s*\[x\]\s*Spec reviewed/updated'; then
+            echo "Spec review checkbox is ticked."
+            exit 0
+          fi
+          echo "::error::This PR adds/modifies a spec file but the 'Spec reviewed/updated' checkbox in the PR description is not ticked."
+          exit 1
