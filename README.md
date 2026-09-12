@@ -26,6 +26,10 @@ Frontend and backend are versioned and released independently — each has its o
 
 A release is triggered manually via the `Release Frontend` or `Release Backend` GitHub Actions workflow (`workflow_dispatch`, with a `bump_type` input of `major`/`minor`/`patch`). Each strips the `-SNAPSHOT` suffix, runs that component's tests, builds and pushes its Docker image tagged with both the release version and `latest`, tags the commit (`frontend-vX.Y.Z` / `backend-vX.Y.Z`), then bumps to the next `-SNAPSHOT` version for continued development.
 
+## Test Coverage
+
+Combined frontend (Vitest/v8) and backend (JaCoCo) coverage reports are published to GitHub Pages on every push to `master`: https://homelab1025.github.io/trippy-planner/
+
 ## TODO
 
 - **Deduplicate Open-Meteo requests for nearby points.** Each weather sample point fires a separate API call. Open-Meteo returns the full hourly forecast for a location, so two sample points that are geographically close could share the same response. Implement a cache keyed on a rounded lat/lng grid (e.g. 0.1° resolution) and reuse the cached response instead of making a duplicate request.
