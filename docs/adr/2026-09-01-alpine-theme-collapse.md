@@ -44,14 +44,3 @@ sit outside daisyui's reach and needed their own per-theme switch.
   registration, font/shadow CSS scoped to `[data-theme='alpine']`, and the
   small hardcoded-color tables. Removing the flag later was correspondingly
   small (one commit, ~180 lines net removed).
-
-## Changes to prior decisions
-
-- Temporarily violates the [2026-06-06 DaisyUI/Tailwind migration
-  ADR](2026-06-06-daisyui-tailwind-migration.md)'s explicit "no media-query
-  or JS-driven theme switching" decision: `useNewUiTheme()` sets
-  `document.documentElement.dataset.theme` at runtime based on a `?ui=new`
-  URL flag. Collapsing to a single static theme once the reskin was
-  validated restores the "no JS switching" property — but permanently
-  replaces that ADR's `emerald` theme choice with `alpine`, which is not
-  undone.

@@ -13,11 +13,10 @@ persistent readout of the hovered point's values.
 
 ## Decision
 
-- `WeatherTimeline.tsx` (and its test file) is deleted, replaced by
-  `ElevationChart` (elevation + `ClimbOverlay`) plus two instances of a new,
-  single reusable `WeatherLineChart` component — one configured for
-  temperature + wind, one for precipitation probability + amount — instead
-  of two separate bespoke components.
+- `WeatherTimeline.tsx` (and its test file) is deleted, replaced by three
+  focused components: `ElevationChart` (elevation + `ClimbOverlay`),
+  `TempWindChart` (temperature + wind), and `PrecipChart` (precipitation
+  probability + amount).
 - A single pure `useWeatherChartData` hook — LTTB-downsampled data, weather
   samples pinned, temperature/precipitation/wind linearly interpolated
   between samples — is computed once in `App.tsx` and fanned out to all
