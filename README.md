@@ -31,23 +31,3 @@ A release is triggered manually via the `Release Frontend` or `Release Backend` 
 ## Test Coverage
 
 Combined frontend (Vitest/v8) and backend (JaCoCo) coverage reports are published to GitHub Pages on every push to `master`: https://homelab1025.github.io/trippy-planner/
-
-## TODO
-
-- **Deduplicate Open-Meteo requests for nearby points.** Each weather sample point fires a separate API call. Open-Meteo returns the full hourly forecast for a location, so two sample points that are geographically close could share the same response. Implement a cache keyed on a rounded lat/lng grid (e.g. 0.1° resolution) and reuse the cached response instead of making a duplicate request.
-
-- **Cancel in-flight weather requests when refreshing the race parameters.** Stale responses can race and overwrite newer results. Pass an `AbortSignal` through 
- `weatherService.ts` and abort the previous batch whenever a new fetch starts.
-
-
-## Done
-
-- **Delete saved routes.** Added a delete action, with a confirmation dialog, to the "My routes" panel; deleting the currently loaded route clears it from the map and timeline.
-- **Show frontend/backend version in Tech Details.** A public backend `GET /version` endpoint exposes the running version and build time; the Tech Details panel displays both the frontend and backend version alongside their build timestamps.
-- **Investigate wind value interpolation accuracy.** Wind speed and direction shown on the timeline are interpolated between the 11 sample points, but the interpolation may not match actual wind conditions along the route — especially across terrain features. See [this Gemini discussion](https://gemini.google.com/share/20eb3eb2c936) for context.
-- Provide support for multiple weather forecast providers and let the user choose.
-- **Replace hand-rolled UI components with a React component library.** The accordion, buttons, and inputs are currently hand-rolled with custom CSS. Replace with a component library (e.g. [shadcn/ui](https://ui.shadcn.com/) or [Radix UI](https://www.radix-ui.com/)) to gain accessibility, keyboard navigation, and animations for free.
-- **Show the climbs in the weather timeline**
-- **Decimate the map polyline with Douglas-Peucker.** Douglas-Peucker at 5 m epsilon runs at parse time (inside the web worker). The decimated set is used for the map polyline, weather sampling, and LTTB chart input. Original point count is stored separately and displayed in the new Tech Details sidebar panel.
-- **Move GPX parsing to a Web Worker.** `parseGPX` runs synchronously on the main thread — large GPX files (50k+ points, common on long rides) freeze the UI during upload. Post the raw XML string to a worker and return `RouteData` to the main thread.
-- **Downsample elevation chart points.** LTTB (Largest Triangle Three Buckets) downsampling applied to chart data; target point count scales with the rendered chart width (1 point per CSS pixel) so rendering is efficient at any screen size. Weather sample points are always preserved through downsampling.
