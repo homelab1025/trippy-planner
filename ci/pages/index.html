@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Trippy Planner — Test Coverage</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { color-scheme: light dark; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      max-width: 40rem;
+      margin: 4rem auto;
+      padding: 0 1.5rem;
+      line-height: 1.5;
+    }
+    h1 { margin-bottom: 0.25rem; }
+    p.subtitle { color: #666; margin-top: 0; }
+    ul { list-style: none; padding: 0; }
+    li { margin: 1rem 0; }
+    a.card {
+      display: block;
+      padding: 1rem 1.25rem;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      text-decoration: none;
+      color: inherit;
+    }
+    a.card:hover { border-color: #888; }
+    a.card strong { display: block; font-size: 1.1rem; }
+    a.card span { color: #666; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <h1>Trippy Planner</h1>
+  <p class="subtitle">Test coverage reports</p>
+  <ul>
+    <li>
+      <a class="card" href="frontend/index.html">
+        <strong>Frontend</strong>
+        <span>Vitest / v8 coverage report</span>
+      </a>
+    </li>
+    <li>
+      <a class="card" href="backend/index.html">
+        <strong>Backend</strong>
+        <span>JaCoCo coverage report</span>
+      </a>
+    </li>
+  </ul>
+</body>
+</html>
