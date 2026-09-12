@@ -42,21 +42,6 @@ clients (frontend, backend) from drifting apart.
   to k8s via kustomize overlays, secrets consolidated under one
   `trippy-secret` (see the linked k8s DB secret refactor spec).
 
-## Alternatives considered
-
-- **`httpOnly`-cookie session, exchanged from a one-time link token** —
-  the design spec documents this as the intended upgrade path and
-  explicitly defers it: the magic-link-as-session-token approach means the
-  token is visible in the email, browser history, and address bar briefly
-  at landing, accepted for simplicity at this stage. The data model needs
-  no changes to make this upgrade later — only the auth flow.
-- **OAuth / social login** — deferred per the design spec as a possible
-  future addition alongside, not instead of, magic link.
-- **GraalVM native binary backend image** (the design spec's original
-  plan) — implemented, then reverted during the same PR ("remove native
-  support and just use normal jvm in container") in favor of a plain JVM
-  fat-jar image; matches the backend description in CLAUDE.md today.
-
 ## Consequences
 
 - Every API change now goes through `openapi.yaml` first — both generated

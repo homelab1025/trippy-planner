@@ -33,21 +33,6 @@ sit outside daisyui's reach and needed their own per-theme switch.
   `data-theme`, set statically in `index.html`, and `chartColors.ts`
   exports a single flat `chartPalette` instead of a lookup keyed by theme.
 
-## Alternatives considered
-
-- **Feature-flag service or environment-based toggle** — rejected; a URL
-  query param needed no new infrastructure and let anyone preview the
-  redesign by sharing a link, appropriate for a token-level reskin with no
-  functional changes (per the design spec's stated goal).
-- **Restructure layout to match the `new-ui/code.html` mockup** (fixed
-  sidebar, top nav links, profile chip) — explicitly out of scope per the
-  design spec; that mockup supplied only design tokens (colors, type,
-  radius, shadows), not a layout to adopt.
-- **Keep both themes selectable long-term** (e.g. a user-facing theme
-  switcher) — rejected; the redesign was a one-way replacement, not an
-  ongoing choice, so keeping the dual-palette abstraction after alpine was
-  finalized would have been unused generality.
-
 ## Consequences
 
 - The theme-keyed `getChartPalette`/dual-registration abstraction was

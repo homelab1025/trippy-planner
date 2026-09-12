@@ -26,16 +26,6 @@ push — not just an intentional release — moved `:latest`.
 - `:latest` is now reserved exclusively for intentional releases, not
   every build.
 
-## Alternatives considered
-
-- **Keep timestamp+SHA tagging** — rejected; gives no human-meaningful
-  version and provides no distinction between "just built" and
-  "released."
-- **Tag-triggered releases** (push a git tag to trigger release) —
-  rejected in favor of a manual `workflow_dispatch` with an explicit
-  bump-type choice, giving control over major/minor/patch at release time
-  rather than inferring it from a pushed tag.
-
 ## Consequences
 
 - Every release now requires a manual trigger with an explicit

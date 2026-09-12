@@ -25,18 +25,6 @@ component library underneath.
 - Chart internals (Recharts) and map internals (Leaflet) are explicitly out
   of scope and untouched.
 
-## Alternatives considered
-
-- **shadcn/ui** — also Tailwind-based and a closer visual fit, but rejected
-  because it copies component source into the repo, adding more maintenance
-  surface than DaisyUI's semantic-class approach.
-- **Radix UI (unstyled)** — the best option for preserving the existing
-  glass-panel aesthetic, but rejected because the explicit goal was to move
-  to a library's own defaults rather than retain the current custom look.
-- **MUI** — rejected: Material Design's opinionated look clashes with a
-  custom aesthetic, Emotion CSS-in-JS adds complexity, and its bundle is
-  roughly 100KB heavier than DaisyUI for the same three component types.
-
 ## Consequences
 
 - Every test asserting on hand-rolled CSS class names (`btn-primary`,

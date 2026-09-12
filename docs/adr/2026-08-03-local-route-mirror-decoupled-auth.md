@@ -33,14 +33,6 @@ had already been created via `POST /auth/magic-link`.
   independent `SignInPanel`, reachable both from `SaveRouteButton` and a new
   always-visible "Sign in" control in `AuthHeader`.
 
-## Alternatives considered
-
-- **Auto-save immediately after the post-magic-link reload** — rejected;
-  it would fire an API call the user never explicitly triggered on that
-  page load. Since the route no longer disappears, requiring one more
-  explicit "Save route" click was judged a small, predictable cost against
-  surprising the user with a silent write.
-
 ## Consequences
 
 - The working route now has two homes that must stay in sync by

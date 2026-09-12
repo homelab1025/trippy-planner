@@ -26,13 +26,6 @@ break the other's image.
 - Fix `build.yml` to tag each image from its own component's version instead
   of both from the frontend's.
 
-## Alternatives considered
-
-- **Keep one coupled release workflow, fix the root-directory bug in place**
-  — rejected; it would leave the frontend and backend versions artificially
-  locked together and the mis-tagging bug in `build.yml` unaddressed, since
-  that bug stems from the same one-version-for-both assumption.
-
 ## Consequences
 
 - Frontend and backend now ship on independent version numbers and release

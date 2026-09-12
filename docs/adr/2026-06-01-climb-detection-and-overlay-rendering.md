@@ -30,12 +30,6 @@ shipped together in this PR.
 - `climbDetector` runs once per route via `useMemo` keyed only on
   `route.points`, independent of weather state.
 
-## Alternatives considered
-
-No alternative categorization formula or rendering approach is recorded in
-either design spec — the Strava length×grade scoring model and the
-Customized-SVG-overlay technique were the only ones evaluated.
-
 ## Consequences
 
 - Badge overlap on closely-spaced climbs and popup collisions near the chart

@@ -22,12 +22,6 @@ panel showing a stale `-SNAPSHOT` version in prod.
   keeping prod current stays a byproduct of releasing rather than a manual
   step.
 
-## Alternatives considered
-
-- **Manually bump the prod tag after each release** — rejected; that's the
-  same manual-step failure mode that let prod drift to an unreleased
-  `:latest` build in the first place.
-
 ## Consequences
 
 - Prod now only ever runs a version that went through the release workflow,

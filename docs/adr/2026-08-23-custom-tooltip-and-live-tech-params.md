@@ -40,15 +40,6 @@ raised two separate technical problems:
   already in flight (`techCommitInFlightRef`), and is the only path blur,
   Enter, and Reset-to-defaults funnel through.
 
-## Alternatives considered
-
-- **Keep native `title` for these tooltips** — rejected; inconsistent
-  cross-browser delay/dismiss behavior was the reason CLAUDE.md now bans
-  `title` for any tooltip, not just these two.
-- **Re-parse directly in each event handler (blur, Enter, Reset)** —
-  rejected; would duplicate the in-flight/no-op guard three times instead
-  of once, and risks re-parsing on a no-op blur (unchanged value).
-
 ## Consequences
 
 - Every tooltip added anywhere in the app from now on must use this
