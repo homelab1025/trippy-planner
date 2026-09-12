@@ -18,6 +18,7 @@ playwright-screenshots/
 test-results/
 coverage/
 reports/
+/site/
 
 # Local tool config
 .antigravitycli/

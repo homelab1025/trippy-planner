@@ -1,4 +1,4 @@
-.PHONY: generate build dev test clean e2e-test coverage-frontend clean-frontend clean-backend coverage-backend
+.PHONY: generate build dev test clean e2e-test coverage coverage-frontend clean-frontend clean-backend coverage-backend
 
 # Full stack targets
 generate: generate-frontend generate-backend
@@ -64,6 +64,15 @@ test-backend:
 
 coverage-backend:
 	cd backend && ./mvnw test jacoco:report -q
+
+# Combined coverage site (frontend + backend), assembled for GitHub Pages
+coverage: coverage-frontend coverage-backend
+coverage:
+	rm -rf site
+	mkdir -p site/frontend site/backend
+	cp -r frontend/coverage/. site/frontend/
+	cp -r backend/target/site/jacoco/. site/backend/
+	cp ci/pages/index.html site/index.html
 
 # Clean targets
 clean-frontend:
