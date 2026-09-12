@@ -37,3 +37,14 @@ break the other's image.
 - `k8s` overlays and any tooling that assumed one version for both images
   needed to be, or still need to be, updated to track two independent
   version numbers.
+
+## Changes to prior decisions
+
+- Splits the single `release.yml` workflow established by the [2026-05-26
+  semver ADR](2026-05-26-semver-release-workflow.md) into two independent
+  workflows, one per component. That ADR predates the backend's existence
+  (added six weeks later by [ADR: Backend service, magic-link auth, and
+  route persistence
+  architecture](2026-07-18-backend-auth-and-persistence-architecture.md)),
+  so this reads less as a deliberate reversal than as the two-component
+  setup catching up to a decision made in a one-component era.

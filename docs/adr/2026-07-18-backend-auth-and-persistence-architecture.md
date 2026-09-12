@@ -60,3 +60,16 @@ clients (frontend, backend) from drifting apart.
   test-only auth mock path was added alongside this work (see the linked
   e2e auth mock spec) — a permanent addition to the test surface, not a
   temporary scaffold.
+
+## Changes to prior decisions
+
+- Reintroduces `:latest` Docker tags on every push to `master`. `build.yml`
+  was rewritten as part of this PR to build and push two images (frontend +
+  backend) instead of one, and the rewrite silently dropped the "`:latest`
+  reserved for intentional releases only" rule decided in [ADR: Semver-based
+  two-workflow release process](2026-05-26-semver-release-workflow.md) —
+  undocumented at the time; flagged here in retrospect. `build.yml` still
+  pushes `:latest` for both images on every push as of this writing; the
+  drift was never restored, only worked around downstream (see [ADR: Pin
+  prod deployments to explicit release versions instead of
+  :latest](2026-08-15-pin-prod-releases-not-latest.md)).
