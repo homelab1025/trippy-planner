@@ -3,9 +3,11 @@ import { render, screen, cleanup, act } from '@testing-library/react';
 import { vi, describe, it, expect, afterEach, beforeEach } from 'vitest';
 import React from 'react';
 import { ElevationChart, type ElevationPoint } from './ElevationChart';
+import { CLIMB_BADGE_HEIGHT, CLIMB_POLE_HEIGHT, ELEVATION_PLOT_HEIGHT } from './chartConstants';
 
 let capturedMouseMove: ((state: { activeTooltipIndex?: number | null }) => void) | null = null;
 let capturedMouseLeave: (() => void) | null = null;
+let capturedElevationDomain: ((domain: readonly [number, number]) => [number, number]) | null = null;
 
 vi.mock('recharts', () => ({
   ComposedChart: ({ children, onMouseMove, onMouseLeave }: {
@@ -24,7 +26,10 @@ vi.mock('recharts', () => ({
     <div data-testid="reference-dot" data-x={x} data-y={y} data-fill={fill} />
   ),
   XAxis: () => null,
-  YAxis: () => null,
+  YAxis: ({ yAxisId, domain }: { yAxisId: string; domain?: (d: readonly [number, number]) => [number, number] }) => {
+    if (yAxisId === 'elevation') capturedElevationDomain = domain ?? null;
+    return null;
+  },
   CartesianGrid: () => null,
   ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
@@ -134,5 +139,41 @@ describe('ElevationChart', () => {
     ];
     render(<ElevationChart {...defaultProps} data={dataWithTemp} />);
     expect(screen.getByTestId('line-temp')).toBeInTheDocument();
+  });
+
+  describe('elevation Y-axis domain', () => {
+    const sampleClimb = {
+      startDistance: 0,
+      endDistance: 1000,
+      elevationGain: 500,
+      lengthM: 1000,
+      avgGrade: 10,
+      score: 1000,
+      category: 'HC' as const,
+    };
+
+    it('leaves the domain untouched when there are no climbs', () => {
+      render(<ElevationChart {...defaultProps} climbs={[]} />);
+      expect(capturedElevationDomain).not.toBeNull();
+      expect(capturedElevationDomain!([100, 2000])).toEqual([90, 2000]);
+    });
+
+    it('reserves headroom above the highest point so a climb badge always fits', () => {
+      render(<ElevationChart {...defaultProps} climbs={[sampleClimb]} />);
+      expect(capturedElevationDomain).not.toBeNull();
+      const [domainMin, domainMax] = capturedElevationDomain!([100, 2000]);
+      expect(domainMin).toBe(90);
+
+      const badgeHeadroomPx = CLIMB_POLE_HEIGHT + CLIMB_BADGE_HEIGHT;
+      const range = 2000 - domainMin;
+      const expectedExtra = (badgeHeadroomPx * range) / (ELEVATION_PLOT_HEIGHT - badgeHeadroomPx);
+      expect(domainMax).toBeCloseTo(2000 + expectedExtra);
+
+      // The reserved headroom, converted back to pixels over the padded range,
+      // must cover at least a pole + badge worth of space above the peak.
+      const paddedRange = domainMax - domainMin;
+      const headroomPx = ((domainMax - 2000) / paddedRange) * ELEVATION_PLOT_HEIGHT;
+      expect(headroomPx).toBeGreaterThanOrEqual(badgeHeadroomPx - 0.001);
+    });
   });
 });

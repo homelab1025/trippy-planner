@@ -6,7 +6,10 @@ import type { Climb } from '../utils/climbDetector';
 import type { Checkpoint } from '../utils/speedProfile';
 import { ClimbOverlay, type ClimbRange } from './ClimbOverlay';
 import { CheckpointOverlay } from './CheckpointOverlay';
-import { CHART_MARGIN_LEFT, CHART_YAXIS_LEFT_WIDTH } from './chartConstants';
+import {
+  CHART_MARGIN_LEFT, CHART_YAXIS_LEFT_WIDTH, CHART_MARGIN_TOP, ELEVATION_PLOT_HEIGHT,
+  CLIMB_BADGE_HEIGHT, CLIMB_POLE_HEIGHT,
+} from './chartConstants';
 import { chartPalette } from '../theme/chartColors';
 
 export interface ElevationPoint {
@@ -44,7 +47,7 @@ const ElevationChart: React.FC<ElevationChartProps> = ({
       <ResponsiveContainer width="100%" height="100%" onResize={onResize}>
         <ComposedChart
           data={data}
-          margin={{ top: 10, right: hasTemp ? 10 : 55, left: CHART_MARGIN_LEFT, bottom: 0 }}
+          margin={{ top: CHART_MARGIN_TOP, right: hasTemp ? 10 : 55, left: CHART_MARGIN_LEFT, bottom: 0 }}
           onMouseMove={(state) => {
             const idx = state.activeTooltipIndex !== null && state.activeTooltipIndex !== undefined ? Number(state.activeTooltipIndex) : NaN;
             if (isNaN(idx) || !data[idx]) { onHoverIndex(null); return; }
@@ -72,7 +75,17 @@ const ElevationChart: React.FC<ElevationChartProps> = ({
           <YAxis
             yAxisId="elevation"
             width={CHART_YAXIS_LEFT_WIDTH}
-            domain={[(dataMin: number) => dataMin - 10, 'auto']}
+            domain={([dataMin, dataMax]: readonly [number, number]): [number, number] => {
+              const domainMin = dataMin - 10;
+              if (climbs.length === 0) return [domainMin, dataMax];
+              // Reserve enough headroom above the highest data point that a climb
+              // badge anchored there (pole + badge, in pixels) always fits inside
+              // the plot area instead of needing to be clamped by ClimbOverlay.
+              const badgeHeadroomPx = CLIMB_POLE_HEIGHT + CLIMB_BADGE_HEIGHT;
+              const range = dataMax - domainMin;
+              const extra = (badgeHeadroomPx * range) / (ELEVATION_PLOT_HEIGHT - badgeHeadroomPx);
+              return [domainMin, dataMax + extra];
+            }}
             axisLine={false}
             tickLine={false}
             fontSize={10}

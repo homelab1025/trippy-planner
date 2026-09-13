@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useXAxisScale, useYAxisScale, usePlotArea } from 'recharts';
 import type { Climb } from '../utils/climbDetector';
 import { chartPalette } from '../theme/chartColors';
+import { CLIMB_BADGE_HEIGHT, CLIMB_POLE_HEIGHT } from './chartConstants';
 
 export interface ClimbRange extends Climb {
   x1: number;  // km
@@ -120,8 +121,8 @@ const ClimbOverlay: React.FC<ClimbOverlayProps> = ({ climbRanges, data }) => {
         const color = palette.climbCategory[cr.category];
         const label = CATEGORY_LABELS[cr.category];
         const badgeWidth = label.length <= 2 ? 28 : 42;
-        const badgeHeight = 16;
-        const poleHeight = 28;
+        const badgeHeight = CLIMB_BADGE_HEIGHT;
+        const poleHeight = CLIMB_POLE_HEIGHT;
         const bx = Math.min(
           Math.max(peakPx, left + badgeWidth / 2 + 2),
           right - badgeWidth / 2 - 2
