@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-13
 **Status:** Accepted
-**Related:** none
+**Related:** [ADR: Backend service, magic-link auth, and route persistence architecture](2026-07-18-backend-auth-and-persistence-architecture.md)
 
 ## Context
 
@@ -69,3 +69,16 @@ Kubernetes cluster network itself.
   `env`, `heapdump`) is exposed to every pod in the cluster, not just
   Prometheus. Anything sensitive added there needs a stronger control
   than "yet another actuator endpoint on this port."
+
+## Changes to prior decisions
+
+- Removes the `/actuator/health` Host-header allowlist
+  (`ACTUATOR_HEALTH_PATH`, `ACTUATOR_HEALTH_ALLOWED_HOSTS`, and the
+  `hostnameOnly`/`isAllowedHealthHost` helpers) from `SecurityFilter`,
+  introduced the same day as [ADR: Backend service, magic-link auth,
+  and route persistence
+  architecture](2026-07-18-backend-auth-and-persistence-architecture.md)
+  (commit `a724624`, bundled into that same PR though not called out
+  in that ADR's own Decision/Consequences text). That carve-out is
+  fully superseded here: health now only ever arrives on the
+  management port, so the Host-based check can never run.
