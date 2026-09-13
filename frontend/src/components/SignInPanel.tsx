@@ -1,5 +1,6 @@
 import { useState, type SubmitEvent } from 'react';
 import { authApi } from '../apiClient';
+import { reportError } from '../services/errorBus';
 
 interface Props {
   open: boolean;
@@ -26,8 +27,13 @@ export function SignInPanel({ open, onClose }: Props) {
   async function handleSendLink(e: SubmitEvent) {
     e.preventDefault();
     setState('sending');
-    await authApi.requestMagicLink({ email });
-    setState('sent');
+    try {
+      await authApi.requestMagicLink({ email });
+      setState('sent');
+    } catch {
+      reportError("Couldn't send the sign-in link. Please try again.");
+      setState('idle');
+    }
   }
 
   return (
