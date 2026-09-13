@@ -614,6 +614,27 @@ describe('App', () => {
 
     expect(parseGPXAsync).toHaveBeenCalledTimes(1);
   });
+
+  it('reports an error and clears storage when restoring a stored route fails', async () => {
+    window.history.replaceState({}, '', '/');
+    localStorage.setItem('trippy_current_route', JSON.stringify({
+      name: 'Test Route',
+      gpxContent: '<gpx/>',
+      avgSpeedKmh: 20,
+      startTime: '2026-06-17T08:00:00.000Z',
+    }));
+    vi.mocked(parseGPXAsync).mockRejectedValue(new Error('corrupt gpx'));
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(reportError).toHaveBeenCalledWith("Couldn't restore your last route. Please re-upload it.");
+    });
+    expect(localStorage.getItem('trippy_current_route')).toBeNull();
+
+    // Reset mock to resolved state for subsequent tests
+    vi.mocked(parseGPXAsync).mockResolvedValue(mockRoute);
+  });
 });
 
 describe('token landing', () => {
