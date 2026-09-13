@@ -126,14 +126,22 @@ const ClimbOverlay: React.FC<ClimbOverlayProps> = ({ climbRanges, data }) => {
           Math.max(peakPx, left + badgeWidth / 2 + 2),
           right - badgeWidth / 2 - 2
         );
-        const badgeTop = peakPy - poleHeight - badgeHeight;
+        // The badge sits above the peak. Clamp it to the plot area so a peak near
+        // the top of the chart (e.g. the route's highest point) doesn't push it
+        // above the SVG viewport, where overflow:hidden would clip it away.
+        const badgeTop = Math.max(peakPy - poleHeight - badgeHeight, top);
+        const poleTop = badgeTop + badgeHeight; // y where the pole meets the badge
+        const poleLen = peakPy - poleTop;      // > 0 only when the peak is below the badge
 
         const popupWidth = 96;
         const popupHeight = 28;
         const popupX = peakPx + 4 + popupWidth > right - 4
           ? peakPx - 4 - popupWidth
           : peakPx + 4;
-        const popupY = badgeTop - popupHeight - 2;
+        // The popup sits above the badge; flip it below when there's no room above.
+        const popupY = badgeTop - popupHeight - 2 >= top
+          ? badgeTop - popupHeight - 2
+          : badgeTop + badgeHeight + 2;
         const lengthKm = (cr.lengthM / 1000).toFixed(1);
         const grade = cr.avgGrade.toFixed(1);
 
@@ -144,13 +152,15 @@ const ClimbOverlay: React.FC<ClimbOverlayProps> = ({ climbRanges, data }) => {
             onMouseLeave={() => setHoveredClimbIdx(null)}
             style={{ cursor: 'default' }}
           >
-            <line
-              x1={peakPx} y1={peakPy}
-              x2={peakPx} y2={peakPy - poleHeight}
-              stroke={color}
-              strokeWidth={1.5}
-              strokeDasharray="3 2"
-            />
+            {poleLen > 0 && (
+              <line
+                x1={peakPx} y1={peakPy}
+                x2={peakPx} y2={poleTop}
+                stroke={color}
+                strokeWidth={1.5}
+                strokeDasharray="3 2"
+              />
+            )}
             <rect
               x={bx - badgeWidth / 2}
               y={badgeTop}
