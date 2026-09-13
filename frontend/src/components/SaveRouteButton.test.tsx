@@ -12,6 +12,10 @@ vi.mock('../apiClient', () => ({
   routesApi: { createRoute: mocks.createRoute, updateRoute: mocks.updateRoute },
 }));
 
+vi.mock('../services/errorBus', () => ({
+  reportError: vi.fn(),
+}));
+
 const routeData = {
   gpxContent: '<gpx/>',
   avgSpeedKmh: 20,
@@ -171,5 +175,29 @@ describe('SaveRouteButton', () => {
     );
 
     expect(screen.queryByRole('button', { name: /save as new/i })).not.toBeInTheDocument();
+  });
+
+  it('shows an error and resets to idle when saving fails', async () => {
+    const { reportError } = await import('../services/errorBus');
+    mocks.createRoute.mockRejectedValue(new Error('network down'));
+
+    render(
+      <SaveRouteButton
+        isAuthenticated={true}
+        name="My Ride"
+        onNameChange={vi.fn()}
+        routeData={routeData}
+        savedRouteId={null}
+        onSaved={vi.fn()}
+        onRequireAuth={vi.fn()}
+      />
+    );
+    fireEvent.click(screen.getByRole('button', { name: /save route/i }));
+
+    await waitFor(() => {
+      expect(reportError).toHaveBeenCalledWith("Couldn't save the route. Please try again.");
+      // Back to idle, not stuck on "Saving…"
+      expect(screen.getByRole('button', { name: /save route/i })).toBeInTheDocument();
+    });
   });
 });

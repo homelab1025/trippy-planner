@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { routesApi } from '../apiClient';
 import type { CreateRouteRequest } from '../api';
+import { reportError } from '../services/errorBus';
 
 interface Props {
   isAuthenticated: boolean;
@@ -23,19 +24,24 @@ export function SaveRouteButton({ isAuthenticated, name, onNameChange, routeData
       return;
     }
     setState('saving');
-    if (savedRouteId && !saveAsNew) {
-      const res = await routesApi.updateRoute(savedRouteId, {
-        name,
-        avgSpeedKmh: routeData.avgSpeedKmh,
-        startTime: routeData.startTime,
-        checkpointsJson: routeData.checkpointsJson,
-      });
-      onSaved(res.data.id as string);
-    } else {
-      const res = await routesApi.createRoute({ name, ...routeData });
-      onSaved(res.data.id as string);
+    try {
+      if (savedRouteId && !saveAsNew) {
+        const res = await routesApi.updateRoute(savedRouteId, {
+          name,
+          avgSpeedKmh: routeData.avgSpeedKmh,
+          startTime: routeData.startTime,
+          checkpointsJson: routeData.checkpointsJson,
+        });
+        onSaved(res.data.id as string);
+      } else {
+        const res = await routesApi.createRoute({ name, ...routeData });
+        onSaved(res.data.id as string);
+      }
+    } catch {
+      reportError("Couldn't save the route. Please try again.");
+    } finally {
+      setState('idle');
     }
-    setState('idle');
   }
 
   return (
