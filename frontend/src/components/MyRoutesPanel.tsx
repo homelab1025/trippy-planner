@@ -4,6 +4,7 @@ import { format } from 'date-fns'
 import { routesApi } from '../apiClient'
 import type { RouteListItem } from '../api'
 import { ConfirmDialog } from './ConfirmDialog'
+import { reportError } from '../services/errorBus'
 
 interface Props {
   onLoadRoute: (gpxContent: string, avgSpeedKmh: number, startTime: string, id: string, name: string, checkpointsJson?: string) => void
@@ -21,34 +22,47 @@ export function MyRoutesPanel({ onLoadRoute, onDeleted, refreshKey }: Props) {
   const loading = fetchedFor !== refreshKey
 
   const fetchRoutes = useCallback(async () => {
-    const res = await routesApi.listRoutes()
-    setRoutes(res.data)
+    try {
+      const res = await routesApi.listRoutes()
+      setRoutes(res.data)
+    } catch {
+      reportError("Couldn't load your saved routes. Please try again.")
+    }
   }, [])
 
   useEffect(() => {
     let cancelled = false
     routesApi.listRoutes()
       .then(res => { if (!cancelled) setRoutes(res.data) })
+      .catch(() => { if (!cancelled) reportError("Couldn't load your saved routes. Please try again.") })
       .finally(() => { if (!cancelled) setFetchedFor(refreshKey) })
     return () => { cancelled = true }
   }, [refreshKey])
 
   async function handleClick(id: string, avgSpeedKmh: number, startTime: string, name: string) {
-    const res = await routesApi.getRoute(id)
-    onLoadRoute(res.data.gpxContent as string, avgSpeedKmh, startTime, id, name, res.data.checkpointsJson as string | undefined)
+    try {
+      const res = await routesApi.getRoute(id)
+      onLoadRoute(res.data.gpxContent as string, avgSpeedKmh, startTime, id, name, res.data.checkpointsJson as string | undefined)
+    } catch {
+      reportError("Couldn't load that route. Please try again.")
+    }
   }
 
   async function handleDuplicate(e: React.MouseEvent, id: string, name: string, avgSpeedKmh: number, startTime: string) {
     e.stopPropagation()
-    const res = await routesApi.getRoute(id)
-    await routesApi.createRoute({
-      name: `${name} (copy)`,
-      gpxContent: res.data.gpxContent as string,
-      avgSpeedKmh,
-      startTime,
-      checkpointsJson: res.data.checkpointsJson as string | undefined,
-    })
-    await fetchRoutes()
+    try {
+      const res = await routesApi.getRoute(id)
+      await routesApi.createRoute({
+        name: `${name} (copy)`,
+        gpxContent: res.data.gpxContent as string,
+        avgSpeedKmh,
+        startTime,
+        checkpointsJson: res.data.checkpointsJson as string | undefined,
+      })
+      await fetchRoutes()
+    } catch {
+      reportError("Couldn't duplicate the route. Please try again.")
+    }
   }
 
   function handleDeleteClick(e: React.MouseEvent, id: string, name: string, startTime: string) {
@@ -59,12 +73,17 @@ export function MyRoutesPanel({ onLoadRoute, onDeleted, refreshKey }: Props) {
   async function handleConfirmDelete() {
     if (!pendingDelete) return
     setDeleting(true)
-    await routesApi.deleteRoute(pendingDelete.id)
-    await fetchRoutes()
-    setDeleting(false)
-    const id = pendingDelete.id
-    setPendingDelete(null)
-    onDeleted(id)
+    try {
+      await routesApi.deleteRoute(pendingDelete.id)
+      await fetchRoutes()
+      const id = pendingDelete.id
+      setPendingDelete(null)
+      onDeleted(id)
+    } catch {
+      reportError("Couldn't delete the route. Please try again.")
+    } finally {
+      setDeleting(false)
+    }
   }
 
   function handleCancelDelete() {

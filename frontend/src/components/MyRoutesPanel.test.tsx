@@ -15,6 +15,10 @@ vi.mock('../apiClient', () => ({
   routesApi: mocks,
 }))
 
+vi.mock('../services/errorBus', () => ({
+  reportError: vi.fn(),
+}))
+
 const sampleItems = [
   { id: 'uuid-1', name: 'Alpine Loop', avgSpeedKmh: 18, isPublic: false,
     startTime: '2026-06-17T08:00:00Z', createdAt: '2026-06-17T08:00:00Z' },
@@ -146,5 +150,67 @@ describe('MyRoutesPanel', () => {
 
     expect(mocks.deleteRoute).not.toHaveBeenCalled()
     expect(screen.queryByText(`Delete 'Alpine Loop' on the ${expectedDate}?`)).not.toBeInTheDocument()
+  })
+
+  it('shows an error when the initial route list fails to load', async () => {
+    const { reportError } = await import('../services/errorBus')
+    mocks.listRoutes.mockRejectedValue(new Error('network down'))
+
+    render(<MyRoutesPanel onLoadRoute={vi.fn()} onDeleted={vi.fn()} />)
+
+    await waitFor(() => {
+      expect(reportError).toHaveBeenCalledWith("Couldn't load your saved routes. Please try again.")
+    })
+  })
+
+  it('shows an error when loading a route fails', async () => {
+    const { reportError } = await import('../services/errorBus')
+    mocks.listRoutes.mockResolvedValue({ data: sampleItems })
+    mocks.getRoute.mockRejectedValue(new Error('network down'))
+
+    const onLoadRoute = vi.fn()
+    render(<MyRoutesPanel onLoadRoute={onLoadRoute} onDeleted={vi.fn()} />)
+
+    await waitFor(() => screen.getByText('Alpine Loop'))
+    fireEvent.click(screen.getByText('Alpine Loop'))
+
+    await waitFor(() => {
+      expect(reportError).toHaveBeenCalledWith("Couldn't load that route. Please try again.")
+    })
+    expect(onLoadRoute).not.toHaveBeenCalled()
+  })
+
+  it('shows an error when duplicating a route fails', async () => {
+    const { reportError } = await import('../services/errorBus')
+    mocks.listRoutes.mockResolvedValue({ data: sampleItems })
+    mocks.getRoute.mockRejectedValue(new Error('network down'))
+
+    render(<MyRoutesPanel onLoadRoute={vi.fn()} onDeleted={vi.fn()} />)
+
+    await waitFor(() => screen.getByText('Alpine Loop'))
+    fireEvent.click(screen.getByRole('button', { name: /duplicate alpine loop/i }))
+
+    await waitFor(() => {
+      expect(reportError).toHaveBeenCalledWith("Couldn't duplicate the route. Please try again.")
+    })
+    expect(mocks.createRoute).not.toHaveBeenCalled()
+  })
+
+  it('shows an error and keeps the confirm dialog open when deleting fails', async () => {
+    const { reportError } = await import('../services/errorBus')
+    mocks.listRoutes.mockResolvedValue({ data: sampleItems })
+    mocks.deleteRoute.mockRejectedValue(new Error('network down'))
+
+    render(<MyRoutesPanel onLoadRoute={vi.fn()} onDeleted={vi.fn()} />)
+
+    await waitFor(() => screen.getByText('Alpine Loop'))
+    fireEvent.click(screen.getByRole('button', { name: /delete alpine loop/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^ok$/i }))
+
+    await waitFor(() => {
+      expect(reportError).toHaveBeenCalledWith("Couldn't delete the route. Please try again.")
+    })
+    // Dialog stays open so the user can retry or cancel, instead of silently closing.
+    expect(screen.getByText(`Delete 'Alpine Loop' on the ${expectedDate}?`)).toBeInTheDocument()
   })
 })
