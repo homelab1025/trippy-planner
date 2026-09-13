@@ -12,6 +12,10 @@ vi.mock('../apiClient', () => ({
   routesApi: mocks,
 }))
 
+vi.mock('../services/errorBus', () => ({
+  reportError: vi.fn(),
+}))
+
 describe('ShareToggle', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -48,6 +52,46 @@ describe('ShareToggle', () => {
 
     await waitFor(() => {
       expect(mocks.unshareRoute).toHaveBeenCalledWith('uuid-1')
+    })
+  })
+
+  it('shows an error and re-enables the button when sharing fails', async () => {
+    const { reportError } = await import('../services/errorBus')
+    mocks.shareRoute.mockRejectedValue(new Error('network down'))
+
+    render(<ShareToggle routeId="uuid-1" isPublic={false} shareToken={null} baseUrl="https://trippy.app" />)
+    fireEvent.click(screen.getByRole('button', { name: /share/i }))
+
+    await waitFor(() => {
+      expect(reportError).toHaveBeenCalledWith("Couldn't create a share link. Please try again.")
+      expect(screen.getByRole('button', { name: /share/i })).not.toBeDisabled()
+    })
+  })
+
+  it('shows an error and re-enables the button when unsharing fails', async () => {
+    const { reportError } = await import('../services/errorBus')
+    mocks.unshareRoute.mockRejectedValue(new Error('network down'))
+
+    render(<ShareToggle routeId="uuid-1" isPublic={true} shareToken="tok123" baseUrl="https://trippy.app" />)
+    fireEvent.click(screen.getByRole('button', { name: /stop sharing/i }))
+
+    await waitFor(() => {
+      expect(reportError).toHaveBeenCalledWith("Couldn't stop sharing. Please try again.")
+      expect(screen.getByRole('button', { name: /stop sharing/i })).not.toBeDisabled()
+    })
+  })
+
+  it('shows an error when copying the link fails', async () => {
+    const { reportError } = await import('../services/errorBus')
+    Object.assign(navigator, {
+      clipboard: { writeText: vi.fn().mockRejectedValue(new Error('denied')) },
+    })
+
+    render(<ShareToggle routeId="uuid-1" isPublic={true} shareToken="tok123" baseUrl="https://trippy.app" />)
+    fireEvent.click(screen.getByRole('button', { name: /copy/i }))
+
+    await waitFor(() => {
+      expect(reportError).toHaveBeenCalledWith("Couldn't copy the link — please copy it manually.")
     })
   })
 })
