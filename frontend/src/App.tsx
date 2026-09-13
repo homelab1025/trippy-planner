@@ -27,6 +27,8 @@ import { PrecipBarRow } from './components/PrecipBarRow';
 import { CheckpointTrackRow } from './components/CheckpointTrackRow';
 import { CHART_HEIGHT } from './components/chartConstants';
 import { Tooltip } from './components/Tooltip';
+import { ErrorPanel } from './components/ErrorPanel';
+import { reportError } from './services/errorBus';
 import { useWeatherChartData } from './hooks/useWeatherChartData';
 import type { ChartDataPoint, WeatherSample } from './hooks/useWeatherChartData';
 import type { Checkpoint } from './utils/speedProfile';
@@ -197,7 +199,7 @@ function App() {
     } catch (error) {
       console.error('Failed to parse GPX:', error);
       const message = error instanceof Error ? error.message : 'Failed to parse GPX file. Please ensure it is a valid track.';
-      alert(message);
+      reportError(message);
     } finally {
       setLoading(false);
       setWeatherLoading(false);
@@ -509,6 +511,7 @@ function App() {
 
         {/* Sidebar — single-open accordion via collapse-open + activePanel state */}
         <div className="flex flex-col overflow-y-auto lg:pt-7">
+          <ErrorPanel />
 
           {/* Ride Details */}
           <div className={`control-card collapse collapse-arrow bg-base-100 shadow rounded-b-none rounded-t-box border border-base-300 ${activePanel === 'ride' ? 'collapse-open' : ''}`}>
