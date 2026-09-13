@@ -29,6 +29,7 @@ import { CHART_HEIGHT } from './components/chartConstants';
 import { Tooltip } from './components/Tooltip';
 import { ErrorPanel } from './components/ErrorPanel';
 import { reportError } from './services/errorBus';
+import { onSessionExpired } from './services/sessionEvents';
 import { useWeatherChartData } from './hooks/useWeatherChartData';
 import type { ChartDataPoint, WeatherSample } from './hooks/useWeatherChartData';
 import type { Checkpoint } from './utils/speedProfile';
@@ -402,6 +403,11 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally runs once on mount
   }, []);
 
+  // Lets the apiClient response interceptor (apiClient.ts) tell us the
+  // session was invalidated server-side, without holding a reference into
+  // React state itself.
+  React.useEffect(() => onSessionExpired(() => setUser(null)), []);
+
   // Mirror the working route to localStorage so it survives a full-page reload
   // (e.g. the one triggered by clicking a magic-link email — see #44).
   React.useEffect(() => {
@@ -467,10 +473,11 @@ function App() {
                 try {
                   await authApi.deleteSession()
                 } catch {
-                  // ignore - proceed to clear local session regardless
+                  reportError("Couldn't reach the server to end your session, but you've been signed out locally.")
+                } finally {
+                  clearToken()
+                  setUser(null)
                 }
-                clearToken()
-                setUser(null)
               }}
               onSignIn={() => setSignInOpen(true)}
             />

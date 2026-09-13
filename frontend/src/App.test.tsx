@@ -48,7 +48,7 @@ vi.mock('./auth', () => ({
 }));
 
 vi.mock('./apiClient', () => ({
-  authApi: { getMe: vi.fn() },
+  authApi: { getMe: vi.fn(), deleteSession: vi.fn() },
   routesApi: {
     createRoute: vi.fn(),
     updateRoute: vi.fn(),
@@ -142,6 +142,10 @@ vi.mock('./components/HoverPane', () => ({
       data-temp={hoveredData?.temp ?? ''}
     />
   ),
+}));
+
+vi.mock('./services/sessionEvents', () => ({
+  onSessionExpired: vi.fn(),
 }));
 
 vi.mock('./assets/logo.png', () => ({ default: 'logo.png' }));
@@ -654,6 +658,66 @@ describe('token landing', () => {
     await waitFor(() => {
       expect(setToken).toHaveBeenCalledWith('mytesttoken')
       expect(window.location.search).toBe('')
+    })
+  })
+})
+
+describe('sign-out', () => {
+  beforeEach(() => {
+    // Earlier blocks in this file (e.g. 'token landing') render <App /> without
+    // unmounting it afterward, and every render registers a fresh onSessionExpired
+    // listener — clear both so this block starts from a clean DOM and a clean
+    // mock-call history.
+    cleanup()
+    vi.clearAllMocks()
+  })
+
+  it('signs out locally and reports an error when the server call fails', async () => {
+    const { isAuthenticated } = await import('./auth')
+    const { authApi, routesApi } = await import('./apiClient')
+    vi.mocked(isAuthenticated).mockReturnValue(true)
+    vi.mocked(authApi.getMe).mockResolvedValue({ data: { id: 1, email: 'a@b.com' } })
+    vi.mocked(authApi.deleteSession).mockRejectedValue(new Error('network down'))
+    vi.mocked(routesApi.listRoutes).mockResolvedValue({ data: [] })
+
+    render(<App />)
+    await waitFor(() => screen.getByRole('button', { name: /sign out/i }))
+    fireEvent.click(screen.getByRole('button', { name: /sign out/i }))
+
+    await waitFor(() => {
+      expect(reportError).toHaveBeenCalledWith("Couldn't reach the server to end your session, but you've been signed out locally.")
+      expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument()
+    })
+  })
+})
+
+describe('session expiry', () => {
+  beforeEach(() => {
+    // See the 'sign-out' block above: previous renders left mounted and
+    // onSessionExpired listeners registered from them would otherwise make
+    // `mock.calls[0]` below point at a stale, unmounted App instance.
+    cleanup()
+    vi.clearAllMocks()
+  })
+
+  it('signs the user out when a session-expired event fires', async () => {
+    const { isAuthenticated } = await import('./auth')
+    const { authApi, routesApi } = await import('./apiClient')
+    const { onSessionExpired } = await import('./services/sessionEvents')
+    vi.mocked(isAuthenticated).mockReturnValue(true)
+    vi.mocked(authApi.getMe).mockResolvedValue({ data: { id: 1, email: 'a@b.com' } })
+    vi.mocked(routesApi.listRoutes).mockResolvedValue({ data: [] })
+
+    render(<App />)
+    await waitFor(() => screen.getByRole('button', { name: /sign out/i }))
+
+    act(() => {
+      // Simulate the apiClient interceptor detecting a 401 on some background call.
+      vi.mocked(onSessionExpired).mock.calls[0][0]()
+    })
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument()
     })
   })
 })
