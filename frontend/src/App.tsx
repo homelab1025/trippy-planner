@@ -24,6 +24,7 @@ import { HoverPane } from './components/HoverPane';
 import { WindArrowRow } from './components/WindArrowRow';
 import { PrecipBarRow } from './components/PrecipBarRow';
 import { CheckpointTrackRow } from './components/CheckpointTrackRow';
+import { CHART_HEIGHT } from './components/chartConstants';
 import { Tooltip } from './components/Tooltip';
 import { useWeatherChartData } from './hooks/useWeatherChartData';
 import type { ChartDataPoint, WeatherSample } from './hooks/useWeatherChartData';
@@ -820,14 +821,14 @@ function App() {
           {/* Elevation + precip + hover pane card */}
           <div className="card bg-base-100 shadow flex-shrink-0 overflow-hidden p-5 flex flex-row">
             {!route ? (
-              <div className="flex flex-col items-center justify-center flex-1 text-base-content/40 gap-4" style={{ height: 300 }}>
+              <div className="flex flex-col items-center justify-center flex-1 text-base-content/40 gap-4" style={{ height: CHART_HEIGHT }}>
                 <CloudRain size={32} />
                 <p>Weather timeline will appear here</p>
               </div>
             ) : (
               <>
                 <div className="elevation-row flex flex-col flex-1 min-w-0">
-                  <div style={{ height: 300 }}>
+                  <div style={{ height: CHART_HEIGHT }}>
                     <ElevationChart
                       data={elevationData}
                       climbs={climbs}
