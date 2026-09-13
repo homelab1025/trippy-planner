@@ -83,15 +83,20 @@ describe('ShareToggle', () => {
 
   it('shows an error when copying the link fails', async () => {
     const { reportError } = await import('../services/errorBus')
+    const originalClipboard = navigator.clipboard
     Object.assign(navigator, {
       clipboard: { writeText: vi.fn().mockRejectedValue(new Error('denied')) },
     })
 
-    render(<ShareToggle routeId="uuid-1" isPublic={true} shareToken="tok123" baseUrl="https://trippy.app" />)
-    fireEvent.click(screen.getByRole('button', { name: /copy/i }))
+    try {
+      render(<ShareToggle routeId="uuid-1" isPublic={true} shareToken="tok123" baseUrl="https://trippy.app" />)
+      fireEvent.click(screen.getByRole('button', { name: /copy/i }))
 
-    await waitFor(() => {
-      expect(reportError).toHaveBeenCalledWith("Couldn't copy the link — please copy it manually.")
-    })
+      await waitFor(() => {
+        expect(reportError).toHaveBeenCalledWith("Couldn't copy the link — please copy it manually.")
+      })
+    } finally {
+      Object.assign(navigator, { clipboard: originalClipboard })
+    }
   })
 })
