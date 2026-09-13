@@ -5,6 +5,7 @@ import { App } from './App';
 import { DEFAULT_PROVIDER, PROVIDERS } from './services/weatherProviders';
 import { parseGPXAsync } from './workers/gpxWorkerClient';
 import { DP_EPSILON_METERS, DP_MAX_GAP_METERS } from './utils/douglasPeucker';
+import { reportError } from './services/errorBus';
 // auth is mocked via vi.mock — no direct imports needed
 
 // ── Fixtures ────────────────────────────────────────────────────────────────
@@ -145,6 +146,15 @@ vi.mock('./components/HoverPane', () => ({
 
 vi.mock('./assets/logo.png', () => ({ default: 'logo.png' }));
 
+vi.mock('./services/errorBus', () => ({
+  reportError: vi.fn(),
+  // App.tsx mounts <ErrorPanel /> unconditionally, and ErrorPanel subscribes via
+  // subscribeErrors/dismissError — stub them too so mounting it doesn't crash
+  // tests that only care about reportError being called.
+  subscribeErrors: vi.fn(() => () => {}),
+  dismissError: vi.fn(),
+}));
+
 // App persists the working route to real localStorage (see routeStorage.ts). Clear it
 // before every test regardless of describe block, so one test's upload doesn't get
 // rehydrated on mount by a later, unrelated test.
@@ -180,7 +190,6 @@ describe('App', () => {
     );
     capturedHoverCb = null;
     capturedOnCheckpointsChange = null;
-    vi.spyOn(window, 'alert').mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -432,12 +441,12 @@ describe('App', () => {
     expect(toggle.checked).toBe(false); // back to clock
   });
 
-  it('parse error shows alert, does not set route, does not fetch weather', async () => {
+  it('parse error reports it to the error panel, does not set route, does not fetch weather', async () => {
     vi.mocked(parseGPXAsync).mockRejectedValue(new Error('No tracks found'));
     render(<App />);
     await uploadFile();
 
-    await waitFor(() => expect(window.alert).toHaveBeenCalledWith('No tracks found'));
+    await waitFor(() => expect(reportError).toHaveBeenCalledWith('No tracks found'));
     expect(DEFAULT_PROVIDER.fetchWeather).not.toHaveBeenCalled();
     expect(screen.queryByTestId('elevation-chart')).not.toBeInTheDocument();
     expect(screen.queryByTestId('wind-chart')).not.toBeInTheDocument();
@@ -451,8 +460,8 @@ describe('App', () => {
     // Auto-fetch runs on load and fails
     await waitFor(() => expect(DEFAULT_PROVIDER.fetchWeather).toHaveBeenCalled());
 
-    // No wrong alert about GPX parsing failure
-    expect(window.alert).not.toHaveBeenCalled();
+    // No wrong error report about GPX parsing failure
+    expect(reportError).not.toHaveBeenCalled();
     // Charts render (route was set despite weather failure)
     expect(screen.getByTestId('elevation-chart')).toBeInTheDocument();
     // Button does not show — isDirty requires lastFetchedParams !== null
