@@ -35,7 +35,7 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8080/api/actuator/health"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:8081/actuator/health"]
       interval: 10s
       timeout: 5s
       retries: 5

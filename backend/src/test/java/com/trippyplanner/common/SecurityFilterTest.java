@@ -74,67 +74,6 @@ class SecurityFilterTest {
     }
 
     @Test
-    void allowsActuatorHealthFromLocalhost() throws Exception {
-        var req = new MockHttpServletRequest("GET", "/api/actuator/health");
-        req.addHeader("Host", "localhost:8080");
-        var res = new MockHttpServletResponse();
-        var chain = new MockFilterChain();
-
-        filter.doFilter(req, res, chain);
-
-        assertThat(chain.getRequest()).isNotNull();
-    }
-
-    @Test
-    void allowsActuatorHealthFromUppercaseLocalhost() throws Exception {
-        var req = new MockHttpServletRequest("GET", "/api/actuator/health");
-        req.addHeader("Host", "LOCALHOST:8080");
-        var res = new MockHttpServletResponse();
-        var chain = new MockFilterChain();
-
-        filter.doFilter(req, res, chain);
-
-        assertThat(chain.getRequest()).isNotNull();
-    }
-
-    @Test
-    void allowsActuatorHealthFromTrippyLabWicked() throws Exception {
-        var req = new MockHttpServletRequest("GET", "/api/actuator/health");
-        req.addHeader("Host", "trippy.lab.wicked");
-        var res = new MockHttpServletResponse();
-        var chain = new MockFilterChain();
-
-        filter.doFilter(req, res, chain);
-
-        assertThat(chain.getRequest()).isNotNull();
-    }
-
-    @Test
-    void blocksActuatorHealthFromDisallowedHost() throws Exception {
-        var req = new MockHttpServletRequest("GET", "/api/actuator/health");
-        req.addHeader("Host", "evil.example.com");
-        var res = new MockHttpServletResponse();
-        var chain = new MockFilterChain();
-
-        filter.doFilter(req, res, chain);
-
-        assertThat(res.getStatus()).isEqualTo(401);
-        assertThat(chain.getRequest()).isNull();
-    }
-
-    @Test
-    void blocksActuatorHealthWithNoHostHeader() throws Exception {
-        var req = new MockHttpServletRequest("GET", "/api/actuator/health");
-        var res = new MockHttpServletResponse();
-        var chain = new MockFilterChain();
-
-        filter.doFilter(req, res, chain);
-
-        assertThat(res.getStatus()).isEqualTo(401);
-        assertThat(chain.getRequest()).isNull();
-    }
-
-    @Test
     void returns401WhenNoAuthHeader() throws Exception {
         var req = new MockHttpServletRequest("GET", "/api/routes");
         var res = new MockHttpServletResponse();

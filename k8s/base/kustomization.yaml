@@ -3,4 +3,5 @@ resources:
   - service.yaml
   - backend-deployment.yaml
   - backend-service.yaml
+  - backend-servicemonitor.yaml
   - ingress.yaml
