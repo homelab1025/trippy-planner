@@ -11,6 +11,10 @@ vi.mock('../apiClient', () => ({
   authApi: { requestMagicLink: mocks.requestMagicLink },
 }));
 
+vi.mock('../services/errorBus', () => ({
+  reportError: vi.fn(),
+}));
+
 describe('SignInPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -47,5 +51,22 @@ describe('SignInPanel', () => {
     render(<SignInPanel open={true} onClose={onClose} />);
     fireEvent.click(screen.getByRole('button', { name: /close/i }));
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it('shows an error and resets to idle when the magic link request fails', async () => {
+    const { reportError } = await import('../services/errorBus');
+    mocks.requestMagicLink.mockRejectedValue(new Error('network down'));
+
+    render(<SignInPanel open={true} onClose={vi.fn()} />);
+    fireEvent.change(screen.getByPlaceholderText(/your email/i), {
+      target: { value: 'rider@example.com' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /send link/i }));
+
+    await waitFor(() => {
+      expect(reportError).toHaveBeenCalledWith("Couldn't send the sign-in link. Please try again.");
+      // Back to idle, not stuck on "Sending…"
+      expect(screen.getByRole('button', { name: /send link/i })).toBeInTheDocument();
+    });
   });
 });
