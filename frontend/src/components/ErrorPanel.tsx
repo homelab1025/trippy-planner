@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { subscribeErrors, dismissError, type ErrorEntry } from '../services/errorBus';
 
-export function ErrorPanel(): JSX.Element | null {
+export function ErrorPanel() {
   const [entries, setEntries] = useState<ErrorEntry[]>([]);
 
   useEffect(() => subscribeErrors(setEntries), []);
