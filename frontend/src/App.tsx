@@ -393,7 +393,10 @@ function App() {
         setDpEpsilon(epsilon);
         setDpMaxGap(maxGap);
         loadRouteFromGpxText(stored.gpxContent, stored.avgSpeedKmh, start, epsilon, maxGap, storedCheckpoints)
-          .catch(() => clearStoredRoute());
+          .catch(() => {
+            reportError("Couldn't restore your last route. Please re-upload it.");
+            clearStoredRoute();
+          });
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally runs once on mount
