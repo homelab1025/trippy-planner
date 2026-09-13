@@ -31,3 +31,4 @@ The table below is kept sorted chronologically.
 | 2026-08-23 | [Custom Tooltip component; Tech Details params re-parse via a single commit function](2026-08-23-custom-tooltip-and-live-tech-params.md) | Accepted |
 | 2026-09-01 | [Ship the alpine reskin behind a URL flag, then collapse to a single theme](2026-09-01-alpine-theme-collapse.md) | Accepted |
 | 2026-09-10 | [Checkpoint-based arrival-time model](2026-09-10-checkpoint-arrival-time-model.md) | Accepted |
+| 2026-09-13 | [Serve Prometheus metrics on a separate, cluster-internal management port](2026-09-13-prometheus-metrics-separate-port.md) | Accepted |
