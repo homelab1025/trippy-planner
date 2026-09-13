@@ -745,6 +745,30 @@ describe('public route view', () => {
       expect(screen.getByText(/viewing a shared route/i)).toBeInTheDocument()
     })
   })
+
+  it('reports an error when a shared route is fetched but its GPX fails to parse', async () => {
+    window.history.replaceState({}, '', '/share/publictoken123')
+
+    const { shareApi, authApi } = await import('./apiClient')
+    vi.mocked(shareApi.getSharedRoute).mockResolvedValue({
+      data: {
+        id: 'uuid-1',
+        name: 'Shared Alpine Loop',
+        gpxContent: '<gpx><trk><trkseg></trkseg></trk></gpx>',
+        avgSpeedKmh: 20,
+        startTime: '2026-06-17T08:00:00Z',
+        isPublic: true,
+      },
+    })
+    vi.mocked(authApi.getMe).mockRejectedValue(new Error('unauthorized'))
+    vi.mocked(parseGPXAsync).mockRejectedValue(new Error('corrupt gpx'))
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(reportError).toHaveBeenCalledWith("Couldn't load the shared route. Please try again.")
+    })
+  })
 })
 
 describe('save / update lifecycle', () => {

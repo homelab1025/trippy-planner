@@ -374,7 +374,10 @@ function App() {
           setAvgSpeed(speed);
           setStartTime(start);
           setRouteName(data.name as string);
-          loadRouteFromGpxText(data.gpxContent as string, speed, start, dpEpsilon, dpMaxGap, sharedCheckpoints);
+          return loadRouteFromGpxText(data.gpxContent as string, speed, start, dpEpsilon, dpMaxGap, sharedCheckpoints)
+            .catch(() => {
+              reportError("Couldn't load the shared route. Please try again.");
+            });
         })
         .catch(() => {
           // Token invalid or route made private — let user upload
