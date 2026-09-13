@@ -248,6 +248,7 @@ function App() {
       return true;
     } catch (error) {
       console.error('Weather fetch failed:', error);
+      reportError("Couldn't fetch weather for this route. Try refreshing.");
       setWeatherPoints([]);
       return false;
     }

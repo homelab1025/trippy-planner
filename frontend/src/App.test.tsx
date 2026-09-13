@@ -452,7 +452,7 @@ describe('App', () => {
     expect(screen.queryByTestId('wind-chart')).not.toBeInTheDocument();
   });
 
-  it('weather fetch error does not crash — charts still render', async () => {
+  it('weather fetch error reports it to the error panel, and charts still render', async () => {
     vi.mocked(DEFAULT_PROVIDER.fetchWeather).mockRejectedValue(new Error('Network error'));
     render(<App />);
     await uploadFile();
@@ -460,8 +460,7 @@ describe('App', () => {
     // Auto-fetch runs on load and fails
     await waitFor(() => expect(DEFAULT_PROVIDER.fetchWeather).toHaveBeenCalled());
 
-    // No wrong error report about GPX parsing failure
-    expect(reportError).not.toHaveBeenCalled();
+    expect(reportError).toHaveBeenCalledWith("Couldn't fetch weather for this route. Try refreshing.");
     // Charts render (route was set despite weather failure)
     expect(screen.getByTestId('elevation-chart')).toBeInTheDocument();
     // Button does not show — isDirty requires lastFetchedParams !== null
