@@ -1,6 +1,8 @@
 import axios from 'axios'
 import { AuthApi, RoutesApi, ShareApi, VersionApi } from './api'
-import { getToken } from './auth'
+import { getToken, clearToken } from './auth'
+import { reportError } from './services/errorBus'
+import { notifySessionExpired } from './services/sessionEvents'
 
 export const axiosInstance = axios.create()
 
@@ -11,6 +13,23 @@ axiosInstance.interceptors.request.use((config) => {
   }
   return config
 })
+
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  (error: unknown) => {
+    const status = axios.isAxiosError(error) ? error.response?.status : undefined
+    if (status === undefined) {
+      reportError('Network error — please check your connection and try again.')
+    } else if (status === 401) {
+      clearToken()
+      notifySessionExpired()
+      reportError('Your session has expired. Please sign in again.')
+    } else if (status >= 500) {
+      reportError('Something went wrong on our end. Please try again.')
+    }
+    return Promise.reject(error)
+  }
+)
 
 export const authApi = new AuthApi(undefined, undefined, axiosInstance)
 export const routesApi = new RoutesApi(undefined, undefined, axiosInstance)
