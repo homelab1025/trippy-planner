@@ -49,7 +49,7 @@ Kept separate from `errorBus` rather than folded in — it drives auth *state* (
 ### 3. `frontend/src/components/ErrorPanel.tsx` (new)
 
 ```ts
-export function ErrorPanel(): JSX.Element | null
+export function ErrorPanel()
 ```
 
 Subscribes to `errorBus` via `useEffect(() => subscribeErrors(setEntries), [])`. Renders `null` when there are no entries (so it takes up no layout space when quiet). Otherwise renders a `flex flex-col gap-2` stack, one daisyUI `alert alert-error shadow` per entry, each with its message and a `✕` dismiss button (same visual pattern as `SignInPanel`'s modal close button) wired to `dismissError(entry.id)`.
@@ -74,7 +74,7 @@ Always re-throws (`return Promise.reject(error)`), so every existing and newly-a
 Every mutating call below gets a `try`/`catch`/`finally` so failure always (a) resets whatever loading/disabled state it set and (b) reports a specific message. Messages are short and actionable, no error codes or stack traces.
 
 - **`App.tsx` `handleFileUpload`** (GPX parse — local/sync, not through `apiClient`): existing `catch`'s `alert(message)` becomes `reportError(message)`. `message` keeps its existing derivation (parse error's own message, or the "Failed to parse GPX file…" fallback).
-- **`App.tsx` `updateWeather`**: existing `catch` (weather providers use `fetch`, not axios, so the interceptor doesn't cover this) adds `reportError("Couldn't fetch weather for this route. Try refreshing.")`. Still returns `false`; existing "unavailable" UI handling of empty `weatherPoints` is unchanged.
+- **`App.tsx` `updateWeather`**: existing `catch` (weather providers use axios's own global default instance, not the shared `axiosInstance` the interceptor is attached to, so the interceptor doesn't cover this) adds `reportError("Couldn't fetch weather for this route. Try refreshing.")`. Still returns `false`; existing "unavailable" UI handling of empty `weatherPoints` is unchanged.
 - **`App.tsx` mount effect, stored-route restore**: the existing `.catch(() => clearStoredRoute())` gets `reportError("Couldn't restore your last route. Please re-upload it.")` added before clearing storage.
 - **`App.tsx` sign-out handler**: keep clearing the local token/`user` unconditionally (already correct — don't block local sign-out on a flaky server), but the `catch` (currently discards the error) adds `reportError("Couldn't reach the server to end your session, but you've been signed out locally.")`.
 - **`SignInPanel.tsx` `handleSendLink`**: wrap the existing `await authApi.requestMagicLink(...)` in `try`/`catch`. On failure: `reportError("Couldn't send the sign-in link. Please try again.")` and `setState('idle')` (today it has no catch at all and gets stuck on `'sending'` forever on failure).
