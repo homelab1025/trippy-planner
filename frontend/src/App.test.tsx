@@ -166,6 +166,13 @@ beforeEach(() => {
   localStorage.clear();
 });
 
+// Several describe blocks below render <App /> and never unmount it locally. Unmount
+// everything after every test, in every describe block, so no block leaks a mounted
+// App (and its listeners) into a later one.
+afterEach(() => {
+  cleanup();
+});
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 async function uploadFile() {
@@ -635,9 +642,6 @@ describe('App', () => {
       expect(reportError).toHaveBeenCalledWith("Couldn't restore your last route. Please re-upload it.");
     });
     expect(localStorage.getItem('trippy_current_route')).toBeNull();
-
-    // Reset mock to resolved state for subsequent tests
-    vi.mocked(parseGPXAsync).mockResolvedValue(mockRoute);
   });
 });
 
@@ -664,11 +668,8 @@ describe('token landing', () => {
 
 describe('sign-out', () => {
   beforeEach(() => {
-    // Earlier blocks in this file (e.g. 'token landing') render <App /> without
-    // unmounting it afterward, and every render registers a fresh onSessionExpired
-    // listener — clear both so this block starts from a clean DOM and a clean
-    // mock-call history.
-    cleanup()
+    // DOM cleanup between tests is handled by the file-level afterEach above.
+    // Mock call-history isn't touched by DOM cleanup, so it still needs clearing here.
     vi.clearAllMocks()
   })
 
@@ -693,10 +694,9 @@ describe('sign-out', () => {
 
 describe('session expiry', () => {
   beforeEach(() => {
-    // See the 'sign-out' block above: previous renders left mounted and
-    // onSessionExpired listeners registered from them would otherwise make
-    // `mock.calls[0]` below point at a stale, unmounted App instance.
-    cleanup()
+    // DOM cleanup between tests is handled by the file-level afterEach above.
+    // Mock call-history isn't touched by DOM cleanup, so it still needs clearing here
+    // (otherwise `mock.calls[0]` below could point at a stale registration).
     vi.clearAllMocks()
   })
 
