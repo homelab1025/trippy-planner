@@ -90,4 +90,11 @@ describe('apiClient', () => {
     await expect(rejected(error)).rejects.toBe(error)
     expect(mocks.reportError).not.toHaveBeenCalled()
   })
+
+  it('versionApi uses a silent axios instance with no response interceptor', async () => {
+    const { silentAxiosInstance } = await import('./apiClient')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const handlers = (silentAxiosInstance.interceptors.response as any).handlers
+    expect(handlers.length).toBe(0)
+  })
 })

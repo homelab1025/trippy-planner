@@ -34,4 +34,10 @@ axiosInstance.interceptors.response.use(
 export const authApi = new AuthApi(undefined, undefined, axiosInstance)
 export const routesApi = new RoutesApi(undefined, undefined, axiosInstance)
 export const shareApi = new ShareApi(undefined, undefined, axiosInstance)
-export const versionApi = new VersionApi(undefined, undefined, axiosInstance)
+
+// versionApi is a purely cosmetic background probe (App.tsx's Tech Details panel) that's
+// always designed to fail silently — it must not go through the response interceptor, or a
+// merely-unreachable backend surfaces an unsolicited "Network error" banner on every page load.
+export const silentAxiosInstance = axios.create()
+
+export const versionApi = new VersionApi(undefined, undefined, silentAxiosInstance)
