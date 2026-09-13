@@ -51,27 +51,24 @@ const MapComponent: React.FC<MapComponentProps> = ({ route, hoveredPoint, checkp
       <FitBounds route={route} />
       <Polyline positions={positions} color={palette.routeLine} weight={5} opacity={0.7} />
 
-      {checkpoints?.map(cp => {
-        const locked = cp.label === 'Start' || cp.label === 'Finish';
-        return (
-          <CircleMarker
-            key={cp.label}
-            center={[cp.lat, cp.lng]}
-            radius={7}
-            pathOptions={{
-              fillColor: locked ? palette.checkpointLocked : palette.checkpointWaypoint,
-              fillOpacity: 1,
-              stroke: true,
-              color: 'white',
-              weight: 2,
-            }}
-          >
-            <Tooltip direction="top">
-              {(cp.distanceM / 1000).toFixed(1)} km · {cp.arrivalTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </Tooltip>
-          </CircleMarker>
-        );
-      })}
+      {checkpoints?.map(cp => (
+        <CircleMarker
+          key={cp.label}
+          center={[cp.lat, cp.lng]}
+          radius={7}
+          pathOptions={{
+            fillColor: palette.checkpointWaypoint,
+            fillOpacity: 1,
+            stroke: true,
+            color: 'white',
+            weight: 2,
+          }}
+        >
+          <Tooltip direction="top">
+            {(cp.distanceM / 1000).toFixed(1)} km · {cp.arrivalTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </Tooltip>
+        </CircleMarker>
+      ))}
 
       {hoveredPoint && (<>
         <CircleMarker

@@ -428,14 +428,16 @@ function App() {
     setHoveredData(point);
   }, [route, chartData]);
 
+  // Only intermediate waypoints get map pins — the route's start and end are
+  // already implied by the polyline, so they don't need their own markers.
   const checkpointMarkers = useMemo(() => {
     if (!route) return [];
     const seq = buildSequence(startTime, effectiveCheckpoints);
-    return seq.map((p, i) => ({
+    return seq.slice(1, -1).map((p, i) => ({
       ...latLngAtDistance(route.points, p.distanceM),
       distanceM: p.distanceM,
       arrivalTime: p.arrivalTime,
-      label: i === 0 ? 'Start' : i === seq.length - 1 ? 'Finish' : `CP ${i}`,
+      label: `CP ${i + 1}`,
     }));
   }, [route, startTime, effectiveCheckpoints]);
 
