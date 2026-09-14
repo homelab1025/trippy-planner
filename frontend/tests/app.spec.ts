@@ -118,13 +118,11 @@ test('hover over elevation chart shows polished orange marker on map', async ({ 
   await expect(page.locator('.leaflet-overlay-pane svg path[fill="#ea9a4e"]')).toHaveCount(2);
 });
 
-test('uploading a non-GPX file shows alert and leaves app in empty state', async ({ page }) => {
+test('uploading a non-GPX file shows an error in the error panel and leaves app in empty state', async ({ page }) => {
   await page.goto('/');
-  const dialogPromise = page.waitForEvent('dialog');
   await page.setInputFiles('input[type="file"]', 'tests/fixtures/invalid.txt');
-  const dialog = await dialogPromise;
-  await dialog.dismiss();
-  // After dismissal, map/stats should still be absent
+  await expect(page.getByRole('alert')).toBeVisible();
+  // Map/stats should still be absent
   await expect(page.getByText('Upload a GPX file to see your route')).toBeVisible();
 });
 
@@ -185,11 +183,8 @@ test('version remains in Tech Details after GPX upload', async ({ page }) => {
 
 test('uploading a route-only GPX shows a route-specific error message', async ({ page }) => {
   await page.goto('/');
-  const dialogPromise = page.waitForEvent('dialog');
   await page.setInputFiles('input[type="file"]', '../samples/fells_loop.gpx');
-  const dialog = await dialogPromise;
-  expect(dialog.message()).toContain('This GPX file contains a route, not a recorded track.');
-  await dialog.dismiss();
+  await expect(page.getByRole('alert')).toContainText('This GPX file contains a route, not a recorded track.');
   // App stays in empty state
   await expect(page.getByText('Upload a GPX file to see your route')).toBeVisible();
 });
