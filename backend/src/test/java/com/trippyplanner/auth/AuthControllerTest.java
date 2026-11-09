@@ -15,6 +15,7 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mockito;
+import static com.trippyplanner.auth.AuthenticatedRequests.authenticatedAs;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -74,7 +75,7 @@ class AuthControllerTest {
         when(MocksConfig.userRepository.findEmailById(42L)).thenReturn(Optional.of("me@example.com"));
 
         mvc.perform(get("/auth/me")
-                .requestAttr("userId", 42L))
+                .with(authenticatedAs(42L)))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.id").value(42))
             .andExpect(jsonPath("$.email").value("me@example.com"));
@@ -83,7 +84,7 @@ class AuthControllerTest {
     @Test
     void deleteSessionReturns204() throws Exception {
         mvc.perform(delete("/auth/session")
-                .requestAttr("sessionToken", "mytoken"))
+                .with(authenticatedAs(1L, "mytoken")))
             .andExpect(status().isNoContent());
 
         verify(MocksConfig.sessionRepository).delete("mytoken");

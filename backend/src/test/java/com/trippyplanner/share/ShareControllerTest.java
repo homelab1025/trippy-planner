@@ -1,7 +1,7 @@
 package com.trippyplanner.share;
 
 import com.trippyplanner.model.Route;
-import com.trippyplanner.routes.RouteRepository;
+import com.trippyplanner.routes.api.RouteQueryService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -39,7 +39,7 @@ class ShareControllerTest {
         r.setCreatedAt(OffsetDateTime.now());
         r.setGpxContent("<gpx/>");
 
-        when(MocksConfig.routeRepository.findByShareToken("validtoken")).thenReturn(Optional.of(r));
+        when(MocksConfig.routeQueryService.findByShareToken("validtoken")).thenReturn(Optional.of(r));
 
         mvc.perform(get("/share/validtoken"))
             .andExpect(status().isOk())
@@ -49,7 +49,7 @@ class ShareControllerTest {
 
     @Test
     void returns404ForUnknownToken() throws Exception {
-        when(MocksConfig.routeRepository.findByShareToken("notoken")).thenReturn(Optional.empty());
+        when(MocksConfig.routeQueryService.findByShareToken("notoken")).thenReturn(Optional.empty());
 
         mvc.perform(get("/share/notoken"))
             .andExpect(status().isNotFound());
@@ -57,12 +57,12 @@ class ShareControllerTest {
 
     @TestConfiguration
     static class MocksConfig {
-        static RouteRepository routeRepository;
+        static RouteQueryService routeQueryService;
 
         @Bean
-        RouteRepository routeRepository() {
-            routeRepository = mock(RouteRepository.class);
-            return routeRepository;
+        RouteQueryService routeQueryService() {
+            routeQueryService = mock(RouteQueryService.class);
+            return routeQueryService;
         }
     }
 }

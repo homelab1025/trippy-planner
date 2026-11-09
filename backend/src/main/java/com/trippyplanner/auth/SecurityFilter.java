@@ -1,6 +1,6 @@
-package com.trippyplanner.common;
+package com.trippyplanner.auth;
 
-import com.trippyplanner.auth.SessionRepository;
+import com.trippyplanner.auth.api.CurrentUser;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -11,7 +11,9 @@ import java.io.IOException;
 import java.util.Set;
 import java.util.Optional;
 
-public class SecurityFilter implements Filter {
+final class SecurityFilter implements Filter {
+
+    static final String CURRENT_USER_ATTRIBUTE = CurrentUser.class.getName();
 
     private static final Set<String> PUBLIC_PATHS = Set.of(
         "/auth/magic-link",
@@ -24,7 +26,7 @@ public class SecurityFilter implements Filter {
 
     private final SessionRepository sessionRepository;
 
-    public SecurityFilter(SessionRepository sessionRepository) {
+    SecurityFilter(SessionRepository sessionRepository) {
         this.sessionRepository = sessionRepository;
     }
 
@@ -65,8 +67,7 @@ public class SecurityFilter implements Filter {
             return;
         }
 
-        request.setAttribute("userId", userId.get());
-        request.setAttribute("sessionToken", token);
+        request.setAttribute(CURRENT_USER_ATTRIBUTE, new CurrentUser(userId.get(), token));
         chain.doFilter(req, res);
     }
 }

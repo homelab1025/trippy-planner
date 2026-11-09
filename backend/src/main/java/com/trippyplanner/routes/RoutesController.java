@@ -1,9 +1,9 @@
 package com.trippyplanner.routes;
 
 import com.trippyplanner.api.RoutesApi;
+import com.trippyplanner.auth.api.CurrentUser;
 import com.trippyplanner.common.TokenGenerator;
 import com.trippyplanner.model.*;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -17,52 +17,49 @@ public class RoutesController implements RoutesApi {
 
     private final RouteRepository routeRepository;
     private final TokenGenerator tokenGenerator;
-    private final HttpServletRequest request;
 
-    public RoutesController(RouteRepository routeRepository, TokenGenerator tokenGenerator,
-            HttpServletRequest request) {
+    public RoutesController(RouteRepository routeRepository, TokenGenerator tokenGenerator) {
         this.routeRepository = routeRepository;
         this.tokenGenerator = tokenGenerator;
-        this.request = request;
     }
 
     @Override
-    public ResponseEntity<List<RouteListItem>> listRoutes() {
-        return ResponseEntity.ok(routeRepository.findAllByUserId(currentUserId()));
+    public ResponseEntity<List<RouteListItem>> listRoutes(CurrentUser currentUser) {
+        return ResponseEntity.ok(routeRepository.findAllByUserId(currentUser.userId()));
     }
 
     @Override
-    public ResponseEntity<Route> createRoute(CreateRouteRequest body) {
-        Route route = routeRepository.save(currentUserId(), body);
+    public ResponseEntity<Route> createRoute(CreateRouteRequest body, CurrentUser currentUser) {
+        Route route = routeRepository.save(currentUser.userId(), body);
         return ResponseEntity.status(HttpStatus.CREATED).body(route);
     }
 
     @Override
-    public ResponseEntity<Route> getRoute(UUID id) {
+    public ResponseEntity<Route> getRoute(UUID id, CurrentUser currentUser) {
         Route route = routeRepository.findById(id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        assertOwnership(id, currentUserId());
+        assertOwnership(id, currentUser.userId());
         return ResponseEntity.ok(route);
     }
 
     @Override
-    public ResponseEntity<Route> updateRoute(UUID id, UpdateRouteRequest body) {
-        assertOwnership(id, currentUserId());
+    public ResponseEntity<Route> updateRoute(UUID id, UpdateRouteRequest body, CurrentUser currentUser) {
+        assertOwnership(id, currentUser.userId());
         Route updated = routeRepository.update(id, body)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         return ResponseEntity.ok(updated);
     }
 
     @Override
-    public ResponseEntity<Void> deleteRoute(UUID id) {
-        assertOwnership(id, currentUserId());
+    public ResponseEntity<Void> deleteRoute(UUID id, CurrentUser currentUser) {
+        assertOwnership(id, currentUser.userId());
         routeRepository.delete(id);
         return ResponseEntity.noContent().build();
     }
 
     @Override
-    public ResponseEntity<ShareResponse> shareRoute(UUID id) {
-        assertOwnership(id, currentUserId());
+    public ResponseEntity<ShareResponse> shareRoute(UUID id, CurrentUser currentUser) {
+        assertOwnership(id, currentUser.userId());
         String token = routeRepository.findShareToken(id)
             .orElseGet(() -> routeRepository.share(id, tokenGenerator.generate()));
         ShareResponse response = new ShareResponse();
@@ -71,14 +68,10 @@ public class RoutesController implements RoutesApi {
     }
 
     @Override
-    public ResponseEntity<Void> unshareRoute(UUID id) {
-        assertOwnership(id, currentUserId());
+    public ResponseEntity<Void> unshareRoute(UUID id, CurrentUser currentUser) {
+        assertOwnership(id, currentUser.userId());
         routeRepository.unshare(id);
         return ResponseEntity.noContent().build();
-    }
-
-    private long currentUserId() {
-        return (Long) request.getAttribute("userId");
     }
 
     private void assertOwnership(UUID routeId, long userId) {

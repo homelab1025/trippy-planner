@@ -1,10 +1,10 @@
 package com.trippyplanner.auth;
 
 import com.trippyplanner.api.AuthApi;
+import com.trippyplanner.auth.api.CurrentUser;
 import com.trippyplanner.common.TokenGenerator;
 import com.trippyplanner.model.MagicLinkRequest;
 import com.trippyplanner.model.User;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -16,7 +16,6 @@ public class AuthController implements AuthApi {
     private final SessionRepository sessionRepository;
     private final TokenGenerator tokenGenerator;
     private final EmailService emailService;
-    private final HttpServletRequest request;
     private final long sessionExpiryMinutes;
 
     public AuthController(
@@ -24,13 +23,11 @@ public class AuthController implements AuthApi {
             SessionRepository sessionRepository,
             TokenGenerator tokenGenerator,
             EmailService emailService,
-            HttpServletRequest request,
             @Value("${app.session-expiry-minutes:43200}") long sessionExpiryMinutes) {
         this.userRepository = userRepository;
         this.sessionRepository = sessionRepository;
         this.tokenGenerator = tokenGenerator;
         this.emailService = emailService;
-        this.request = request;
         this.sessionExpiryMinutes = sessionExpiryMinutes;
     }
 
@@ -49,8 +46,8 @@ public class AuthController implements AuthApi {
     }
 
     @Override
-    public ResponseEntity<User> getMe() {
-        long userId = (Long) request.getAttribute("userId");
+    public ResponseEntity<User> getMe(CurrentUser currentUser) {
+        long userId = currentUser.userId();
         String email = userRepository.findEmailById(userId).orElseThrow();
         User user = new User();
         user.setId(userId);
@@ -59,9 +56,8 @@ public class AuthController implements AuthApi {
     }
 
     @Override
-    public ResponseEntity<Void> deleteSession() {
-        String token = (String) request.getAttribute("sessionToken");
-        sessionRepository.delete(token);
+    public ResponseEntity<Void> deleteSession(CurrentUser currentUser) {
+        sessionRepository.delete(currentUser.sessionToken());
         return ResponseEntity.noContent().build();
     }
 }
