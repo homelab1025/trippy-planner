@@ -1,5 +1,6 @@
 package com.trippyplanner.routes;
 
+import com.trippyplanner.auth.CurrentUser;
 import com.trippyplanner.common.TokenGenerator;
 import com.trippyplanner.model.Route;
 import com.trippyplanner.model.RouteListItem;
@@ -48,7 +49,7 @@ class RoutesControllerTest {
     void listRoutesReturns200() throws Exception {
         when(MocksConfig.routeRepository.findAllByUserId(1L)).thenReturn(List.of(new RouteListItem()));
 
-        mvc.perform(get("/routes").requestAttr("userId", 1L))
+        mvc.perform(get("/routes"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$").isArray());
     }
@@ -59,7 +60,7 @@ class RoutesControllerTest {
         when(MocksConfig.routeRepository.findById(id)).thenReturn(Optional.of(sampleRoute(id)));
         when(MocksConfig.routeRepository.findOwnerUserId(id)).thenReturn(Optional.of(1L));
 
-        mvc.perform(get("/routes/{id}", id).requestAttr("userId", 1L))
+        mvc.perform(get("/routes/{id}", id))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.name").value("My Route"));
     }
@@ -72,7 +73,6 @@ class RoutesControllerTest {
         when(MocksConfig.routeRepository.save(eq(1L), any())).thenReturn(created);
 
         mvc.perform(post("/routes")
-                .requestAttr("userId", 1L)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"name\":\"My Route\",\"gpxContent\":\"<gpx/>\",\"avgSpeedKmh\":20,"
                     + "\"startTime\":\"2026-01-01T08:00:00Z\","
@@ -87,7 +87,7 @@ class RoutesControllerTest {
         when(MocksConfig.routeRepository.findById(id)).thenReturn(Optional.of(sampleRoute(id)));
         when(MocksConfig.routeRepository.findOwnerUserId(id)).thenReturn(Optional.of(99L));
 
-        mvc.perform(get("/routes/{id}", id).requestAttr("userId", 1L))
+        mvc.perform(get("/routes/{id}", id))
             .andExpect(status().isForbidden());
     }
 
@@ -98,8 +98,7 @@ class RoutesControllerTest {
 
         mvc.perform(post("/routes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"name\":\"My Route\",\"gpxContent\":\"<gpx/>\",\"avgSpeedKmh\":20.0,\"startTime\":\"2026-06-17T08:00:00Z\"}")
-                .requestAttr("userId", 1L))
+                .content("{\"name\":\"My Route\",\"gpxContent\":\"<gpx/>\",\"avgSpeedKmh\":20.0,\"startTime\":\"2026-06-17T08:00:00Z\"}"))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.id").value(id.toString()));
     }
@@ -109,7 +108,7 @@ class RoutesControllerTest {
         UUID id = UUID.randomUUID();
         when(MocksConfig.routeRepository.findOwnerUserId(id)).thenReturn(Optional.of(1L));
 
-        mvc.perform(delete("/routes/{id}", id).requestAttr("userId", 1L))
+        mvc.perform(delete("/routes/{id}", id))
             .andExpect(status().isNoContent());
         verify(MocksConfig.routeRepository).delete(id);
     }
@@ -122,7 +121,7 @@ class RoutesControllerTest {
         when(MocksConfig.tokenGenerator.generate()).thenReturn("sharetoken12345678");
         when(MocksConfig.routeRepository.share(id, "sharetoken12345678")).thenReturn("sharetoken12345678");
 
-        mvc.perform(post("/routes/{id}/share", id).requestAttr("userId", 1L))
+        mvc.perform(post("/routes/{id}/share", id))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.shareToken").value("sharetoken12345678"));
     }
@@ -131,6 +130,13 @@ class RoutesControllerTest {
     static class MocksConfig {
         static RouteRepository routeRepository;
         static TokenGenerator tokenGenerator;
+
+        @Bean
+        CurrentUser currentUser() {
+            CurrentUser currentUser = mock(CurrentUser.class);
+            when(currentUser.userId()).thenReturn(1L);
+            return currentUser;
+        }
 
         @Bean
         RouteRepository routeRepository() {

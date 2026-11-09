@@ -12,7 +12,7 @@ import java.time.OffsetDateTime;
 import java.util.*;
 
 @Repository
-public class RouteRepository {
+class RouteRepository {
     private final JdbcTemplate jdbc;
 
     public RouteRepository(JdbcTemplate jdbc) {

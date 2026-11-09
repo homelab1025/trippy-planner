@@ -20,6 +20,7 @@
         <openapi-generator.version>7.23.0</openapi-generator.version>
         <mockito.version>5.17.0</mockito.version>
         <testcontainers.version>2.0.5</testcontainers.version>
+        <spring-modulith.version>2.1.2</spring-modulith.version>
     </properties>
 
     <dependencyManagement>
@@ -33,6 +34,14 @@
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-junit-jupiter</artifactId>
                 <version>${mockito.version}</version>
+            </dependency>
+            <!-- Simplifies version management for the module-boundary verification framework -->
+            <dependency>
+                <groupId>org.springframework.modulith</groupId>
+                <artifactId>spring-modulith-bom</artifactId>
+                <version>${spring-modulith.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -113,6 +122,17 @@
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers-junit-jupiter</artifactId>
             <version>${testcontainers.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- Compile scope: module configs use @ApplicationModule; boot-time verification runs on startup -->
+        <dependency>
+            <groupId>org.springframework.modulith</groupId>
+            <artifactId>spring-modulith-starter-core</artifactId>
+        </dependency>
+        <!-- Test: ModuleArchitectureTest builds the module model and writes docs -->
+        <dependency>
+            <groupId>org.springframework.modulith</groupId>
+            <artifactId>spring-modulith-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

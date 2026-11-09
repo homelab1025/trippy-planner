@@ -1,16 +1,15 @@
-package com.trippyplanner.common;
+package com.trippyplanner;
 
-import com.trippyplanner.auth.SessionRepository;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.filter.CommonsRequestLoggingFilter;
 
 @Configuration
-public class FilterConfig {
+class RequestLoggingConfig {
 
     @Bean
-    public FilterRegistrationBean<CommonsRequestLoggingFilter> requestLoggingFilter() {
+    FilterRegistrationBean<CommonsRequestLoggingFilter> requestLoggingFilter() {
         var filter = new CommonsRequestLoggingFilter();
         filter.setIncludeQueryString(true);
         filter.setIncludeClientInfo(true);
@@ -23,15 +22,6 @@ public class FilterConfig {
         bean.addUrlPatterns("/*");
         bean.setOrder(0);
 
-        return bean;
-    }
-
-    @Bean
-    public FilterRegistrationBean<SecurityFilter> securityFilter(SessionRepository sessionRepository) {
-        FilterRegistrationBean<SecurityFilter> bean = new FilterRegistrationBean<>();
-        bean.setFilter(new SecurityFilter(sessionRepository));
-        bean.addUrlPatterns("/*");
-        bean.setOrder(1);
         return bean;
     }
 }

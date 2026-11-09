@@ -32,3 +32,5 @@ The table below is kept sorted chronologically.
 | 2026-09-01 | [Ship the alpine reskin behind a URL flag, then collapse to a single theme](2026-09-01-alpine-theme-collapse.md) | Accepted |
 | 2026-09-10 | [Checkpoint-based arrival-time model](2026-09-10-checkpoint-arrival-time-model.md) | Accepted |
 | 2026-09-13 | [Serve Prometheus metrics on a separate, cluster-internal management port](2026-09-13-prometheus-metrics-separate-port.md) | Accepted |
+| 2026-11-09 | [Enforce backend module boundaries with ArchUnit](2026-11-09-backend-module-boundaries-archunit.md) | Superseded |
+| 2026-11-09 | [Enforce backend module boundaries with Spring Modulith](2026-11-09-backend-module-boundaries-spring-modulith.md) | Accepted |
