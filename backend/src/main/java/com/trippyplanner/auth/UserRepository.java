@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public class UserRepository {
+class UserRepository {
     private final JdbcTemplate jdbc;
 
     public UserRepository(JdbcTemplate jdbc) {

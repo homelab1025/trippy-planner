@@ -1,7 +1,6 @@
 package com.trippyplanner.routes;
 
 import com.trippyplanner.TestFlywayConfig;
-import com.trippyplanner.auth.UserRepository;
 import com.trippyplanner.model.CreateRouteRequest;
 import com.trippyplanner.model.RouteListItem;
 import com.trippyplanner.model.UpdateRouteRequest;
@@ -11,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jdbc.test.autoconfigure.DataJdbcTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Import;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJdbcTest
 @Testcontainers
-@Import({RouteRepository.class, UserRepository.class, TestFlywayConfig.class})
+@Import({RouteRepository.class, TestFlywayConfig.class})
 class RouteRepositoryTest {
 
     @Container
@@ -39,13 +39,14 @@ class RouteRepositoryTest {
     }
 
     @Autowired RouteRepository routeRepo;
-    @Autowired UserRepository userRepo;
+    @Autowired JdbcTemplate jdbc;
 
     long userId;
 
     @BeforeEach
     void setup() {
-        userId = userRepo.findOrCreate("route-test@example.com");
+        userId = jdbc.queryForObject(
+            "INSERT INTO users (email) VALUES (?) RETURNING id", Long.class, "route-test@example.com");
     }
 
     private CreateRouteRequest sampleRequest() {

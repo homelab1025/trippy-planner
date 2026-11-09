@@ -1,6 +1,5 @@
-package com.trippyplanner.common;
+package com.trippyplanner.auth;
 
-import com.trippyplanner.auth.SessionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

@@ -24,7 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestPropertySource(properties = {
     "app.session-expiry-minutes=43200"
 })
-@Import(AuthControllerTest.MocksConfig.class)
+@Import({AuthControllerTest.MocksConfig.class, RequestCurrentUser.class})
 class AuthControllerTest {
 
     @Autowired
