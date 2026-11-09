@@ -33,3 +33,4 @@ The table below is kept sorted chronologically.
 | 2026-09-10 | [Checkpoint-based arrival-time model](2026-09-10-checkpoint-arrival-time-model.md) | Accepted |
 | 2026-09-13 | [Serve Prometheus metrics on a separate, cluster-internal management port](2026-09-13-prometheus-metrics-separate-port.md) | Accepted |
 | 2026-11-09 | [Enforce backend module boundaries with ArchUnit](2026-11-09-backend-module-boundaries-archunit.md) | Accepted |
+| 2026-11-09 | [Onion architecture inside each backend module](2026-11-09-backend-onion-architecture.md) | Proposed |

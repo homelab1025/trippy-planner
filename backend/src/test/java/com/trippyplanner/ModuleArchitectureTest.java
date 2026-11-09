@@ -7,6 +7,7 @@ import com.tngtech.archunit.lang.ArchRule;
 
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideOutsideOfPackage;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.library.Architectures.layeredArchitecture;
 import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices;
@@ -22,6 +23,8 @@ class ModuleArchitectureTest {
 
     private static final String ROOT = "com.trippyplanner";
     private static final String TEST_SUPPORT = ROOT + ".testsupport..";
+    private static final String AUTH_API = ROOT + ".auth.api..";
+    private static final String ROUTES_API = ROOT + ".routes.api..";
 
     @ArchTest
     static final ArchRule modulesDependOnlyOnPermittedModules = layeredArchitecture()
@@ -47,11 +50,12 @@ class ModuleArchitectureTest {
     @ArchTest
     static final ArchRule routesInternalsAreHidden = internalsOnlyReachableThroughApi("routes");
 
+    // Stricter than "doesn't expose internals": a published API may not even pull in Spring or the generated DTOs
     @ArchTest
-    static final ArchRule authApiDoesNotLeakInternals = apiDoesNotDependOnInternals("auth");
-
-    @ArchTest
-    static final ArchRule routesApiDoesNotLeakInternals = apiDoesNotDependOnInternals("routes");
+    static final ArchRule publishedApisDependOnlyOnJdk = classes()
+        .that().resideInAnyPackage(AUTH_API, ROUTES_API)
+        .should().onlyDependOnClassesThat().resideInAnyPackage("java..", AUTH_API, ROUTES_API)
+        .because("other modules compile against these types, so they must not drag in framework or adapter types");
 
     // Safety net for packages added later but not yet listed as layers above. The generated contract
     // references auth.api.CurrentUser via x-spring-provide-args while AuthController implements AuthApi;
@@ -69,14 +73,5 @@ class ModuleArchitectureTest {
             .that().resideOutsideOfPackages(modulePackage, TEST_SUPPORT)
             .should().dependOnClassesThat(resideInAPackage(modulePackage).and(resideOutsideOfPackage(apiPackage)))
             .because(module + ".api is the only part of the " + module + " module other modules may use");
-    }
-
-    private static ArchRule apiDoesNotDependOnInternals(String module) {
-        String modulePackage = ROOT + "." + module + "..";
-        String apiPackage = ROOT + "." + module + ".api..";
-        return noClasses()
-            .that().resideInAPackage(apiPackage)
-            .should().dependOnClassesThat(resideInAPackage(modulePackage).and(resideOutsideOfPackage(apiPackage)))
-            .because("a published API that exposes internal types would let callers bypass the boundary");
     }
 }
