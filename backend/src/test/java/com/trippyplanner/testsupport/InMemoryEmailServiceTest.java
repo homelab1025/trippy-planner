@@ -1,6 +1,6 @@
 package com.trippyplanner.testsupport;
 
-import com.trippyplanner.auth.MagicLinkUrlBuilder;
+import com.trippyplanner.auth.adapter.email.MagicLinkUrlBuilder;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

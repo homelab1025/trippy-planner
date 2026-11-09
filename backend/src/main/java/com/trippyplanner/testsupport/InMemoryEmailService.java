@@ -1,7 +1,7 @@
 package com.trippyplanner.testsupport;
 
-import com.trippyplanner.auth.EmailService;
-import com.trippyplanner.auth.MagicLinkUrlBuilder;
+import com.trippyplanner.auth.application.EmailService;
+import com.trippyplanner.auth.adapter.email.MagicLinkUrlBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;

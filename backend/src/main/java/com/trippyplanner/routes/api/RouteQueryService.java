@@ -1,7 +1,5 @@
 package com.trippyplanner.routes.api;
 
-import com.trippyplanner.model.Route;
-
 import java.util.Optional;
 
 /**
@@ -9,5 +7,5 @@ import java.util.Optional;
  */
 public interface RouteQueryService {
 
-    Optional<Route> findByShareToken(String shareToken);
+    Optional<SharedRoute> findByShareToken(String shareToken);
 }
