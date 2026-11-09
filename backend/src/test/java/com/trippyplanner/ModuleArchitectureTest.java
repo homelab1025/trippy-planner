@@ -53,11 +53,14 @@ class ModuleArchitectureTest {
     @ArchTest
     static final ArchRule routesApiDoesNotLeakInternals = apiDoesNotDependOnInternals("routes");
 
-    // Safety net for packages added later but not yet listed as layers above
+    // Safety net for packages added later but not yet listed as layers above. The generated contract
+    // references auth.api.CurrentUser via x-spring-provide-args while AuthController implements AuthApi;
+    // that loop is inherent to generating from the contract, so only that edge is ignored.
     @ArchTest
     static final ArchRule topLevelPackagesAreFreeOfCycles = slices()
         .matching(ROOT + ".(*)..")
-        .should().beFreeOfCycles();
+        .should().beFreeOfCycles()
+        .ignoreDependency(resideInAPackage(ROOT + ".api"), resideInAPackage(ROOT + ".auth.api"));
 
     private static ArchRule internalsOnlyReachableThroughApi(String module) {
         String modulePackage = ROOT + "." + module + "..";

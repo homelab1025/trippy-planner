@@ -1,5 +1,6 @@
 package com.trippyplanner.auth;
 
+import com.trippyplanner.auth.api.CurrentUser;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -99,7 +100,7 @@ class SecurityFilterTest {
     }
 
     @Test
-    void setsUserIdAttributeForValidToken() throws Exception {
+    void setsCurrentUserForValidToken() throws Exception {
         when(sessionRepository.findValidUserId("valid-token")).thenReturn(Optional.of(42L));
 
         var req = new MockHttpServletRequest("GET", "/api/routes");
@@ -110,7 +111,7 @@ class SecurityFilterTest {
         filter.doFilter(req, res, chain);
 
         assertThat(chain.getRequest()).isNotNull();
-        assertThat(req.getAttribute("userId")).isEqualTo(42L);
-        assertThat(req.getAttribute("sessionToken")).isEqualTo("valid-token");
+        assertThat(req.getAttribute(SecurityFilter.CURRENT_USER_ATTRIBUTE))
+            .isEqualTo(new CurrentUser(42L, "valid-token"));
     }
 }

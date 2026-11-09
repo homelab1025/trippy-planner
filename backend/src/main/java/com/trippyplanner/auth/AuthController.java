@@ -16,7 +16,6 @@ public class AuthController implements AuthApi {
     private final SessionRepository sessionRepository;
     private final TokenGenerator tokenGenerator;
     private final EmailService emailService;
-    private final CurrentUser currentUser;
     private final long sessionExpiryMinutes;
 
     public AuthController(
@@ -24,13 +23,11 @@ public class AuthController implements AuthApi {
             SessionRepository sessionRepository,
             TokenGenerator tokenGenerator,
             EmailService emailService,
-            CurrentUser currentUser,
             @Value("${app.session-expiry-minutes:43200}") long sessionExpiryMinutes) {
         this.userRepository = userRepository;
         this.sessionRepository = sessionRepository;
         this.tokenGenerator = tokenGenerator;
         this.emailService = emailService;
-        this.currentUser = currentUser;
         this.sessionExpiryMinutes = sessionExpiryMinutes;
     }
 
@@ -49,7 +46,7 @@ public class AuthController implements AuthApi {
     }
 
     @Override
-    public ResponseEntity<User> getMe() {
+    public ResponseEntity<User> getMe(CurrentUser currentUser) {
         long userId = currentUser.userId();
         String email = userRepository.findEmailById(userId).orElseThrow();
         User user = new User();
@@ -59,7 +56,7 @@ public class AuthController implements AuthApi {
     }
 
     @Override
-    public ResponseEntity<Void> deleteSession() {
+    public ResponseEntity<Void> deleteSession(CurrentUser currentUser) {
         sessionRepository.delete(currentUser.sessionToken());
         return ResponseEntity.noContent().build();
     }

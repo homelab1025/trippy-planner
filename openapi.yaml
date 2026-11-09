@@ -11,6 +11,8 @@ servers:
 
 components:
   securitySchemes:
+    # Operations using bearerAuth also declare x-spring-provide-args so the Spring
+    # backend receives the caller as a typed CurrentUser argument; other generators ignore it.
     bearerAuth:
       type: http
       scheme: bearer
@@ -137,6 +139,8 @@ paths:
       operationId: getMe
       security:
         - bearerAuth: []
+      x-spring-provide-args:
+        - com.trippyplanner.auth.api.CurrentUser currentUser
       responses:
         '200':
           description: Current user
@@ -154,6 +158,8 @@ paths:
       operationId: deleteSession
       security:
         - bearerAuth: []
+      x-spring-provide-args:
+        - com.trippyplanner.auth.api.CurrentUser currentUser
       responses:
         '204':
           description: Session deleted
@@ -165,6 +171,8 @@ paths:
       operationId: listRoutes
       security:
         - bearerAuth: []
+      x-spring-provide-args:
+        - com.trippyplanner.auth.api.CurrentUser currentUser
       responses:
         '200':
           description: User's routes (no gpxContent)
@@ -180,6 +188,8 @@ paths:
       operationId: createRoute
       security:
         - bearerAuth: []
+      x-spring-provide-args:
+        - com.trippyplanner.auth.api.CurrentUser currentUser
       requestBody:
         required: true
         content:
@@ -208,6 +218,8 @@ paths:
       operationId: getRoute
       security:
         - bearerAuth: []
+      x-spring-provide-args:
+        - com.trippyplanner.auth.api.CurrentUser currentUser
       responses:
         '200':
           description: Full route including gpxContent
@@ -225,6 +237,8 @@ paths:
       operationId: updateRoute
       security:
         - bearerAuth: []
+      x-spring-provide-args:
+        - com.trippyplanner.auth.api.CurrentUser currentUser
       requestBody:
         required: true
         content:
@@ -244,6 +258,8 @@ paths:
       operationId: deleteRoute
       security:
         - bearerAuth: []
+      x-spring-provide-args:
+        - com.trippyplanner.auth.api.CurrentUser currentUser
       responses:
         '204':
           description: Route deleted
@@ -262,6 +278,8 @@ paths:
       operationId: shareRoute
       security:
         - bearerAuth: []
+      x-spring-provide-args:
+        - com.trippyplanner.auth.api.CurrentUser currentUser
       responses:
         '200':
           description: Share token (idempotent — returns existing if already public)
@@ -275,6 +293,8 @@ paths:
       operationId: unshareRoute
       security:
         - bearerAuth: []
+      x-spring-provide-args:
+        - com.trippyplanner.auth.api.CurrentUser currentUser
       responses:
         '204':
           description: Route made private, share link invalidated

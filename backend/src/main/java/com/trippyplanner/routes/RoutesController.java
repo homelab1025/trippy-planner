@@ -17,28 +17,25 @@ public class RoutesController implements RoutesApi {
 
     private final RouteRepository routeRepository;
     private final TokenGenerator tokenGenerator;
-    private final CurrentUser currentUser;
 
-    public RoutesController(RouteRepository routeRepository, TokenGenerator tokenGenerator,
-            CurrentUser currentUser) {
+    public RoutesController(RouteRepository routeRepository, TokenGenerator tokenGenerator) {
         this.routeRepository = routeRepository;
         this.tokenGenerator = tokenGenerator;
-        this.currentUser = currentUser;
     }
 
     @Override
-    public ResponseEntity<List<RouteListItem>> listRoutes() {
+    public ResponseEntity<List<RouteListItem>> listRoutes(CurrentUser currentUser) {
         return ResponseEntity.ok(routeRepository.findAllByUserId(currentUser.userId()));
     }
 
     @Override
-    public ResponseEntity<Route> createRoute(CreateRouteRequest body) {
+    public ResponseEntity<Route> createRoute(CreateRouteRequest body, CurrentUser currentUser) {
         Route route = routeRepository.save(currentUser.userId(), body);
         return ResponseEntity.status(HttpStatus.CREATED).body(route);
     }
 
     @Override
-    public ResponseEntity<Route> getRoute(UUID id) {
+    public ResponseEntity<Route> getRoute(UUID id, CurrentUser currentUser) {
         Route route = routeRepository.findById(id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         assertOwnership(id, currentUser.userId());
@@ -46,7 +43,7 @@ public class RoutesController implements RoutesApi {
     }
 
     @Override
-    public ResponseEntity<Route> updateRoute(UUID id, UpdateRouteRequest body) {
+    public ResponseEntity<Route> updateRoute(UUID id, UpdateRouteRequest body, CurrentUser currentUser) {
         assertOwnership(id, currentUser.userId());
         Route updated = routeRepository.update(id, body)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
@@ -54,14 +51,14 @@ public class RoutesController implements RoutesApi {
     }
 
     @Override
-    public ResponseEntity<Void> deleteRoute(UUID id) {
+    public ResponseEntity<Void> deleteRoute(UUID id, CurrentUser currentUser) {
         assertOwnership(id, currentUser.userId());
         routeRepository.delete(id);
         return ResponseEntity.noContent().build();
     }
 
     @Override
-    public ResponseEntity<ShareResponse> shareRoute(UUID id) {
+    public ResponseEntity<ShareResponse> shareRoute(UUID id, CurrentUser currentUser) {
         assertOwnership(id, currentUser.userId());
         String token = routeRepository.findShareToken(id)
             .orElseGet(() -> routeRepository.share(id, tokenGenerator.generate()));
@@ -71,7 +68,7 @@ public class RoutesController implements RoutesApi {
     }
 
     @Override
-    public ResponseEntity<Void> unshareRoute(UUID id) {
+    public ResponseEntity<Void> unshareRoute(UUID id, CurrentUser currentUser) {
         assertOwnership(id, currentUser.userId());
         routeRepository.unshare(id);
         return ResponseEntity.noContent().build();
