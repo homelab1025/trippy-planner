@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public class SessionRepository {
+class SessionRepository {
     private final JdbcTemplate jdbc;
 
     public SessionRepository(JdbcTemplate jdbc) {

@@ -52,7 +52,7 @@ The repo is a monorepo with two sub-projects:
 
   `frontend/src/App.tsx` owns the `route`, `avgSpeed`, `startTime`, and `weatherPoints` state. A `useEffect` re-runs weather fetching whenever any of those change.
 
-- **Backend** (`backend/`) — Java Spring Boot service (JVM, fat JAR). Generates controller interfaces and model DTOs from `openapi.yaml` at build time. Implements REST endpoints for auth (`AuthController`), route persistence (`RoutesController`), and public sharing (`ShareController`).
+- **Backend** (`backend/`) — Java Spring Boot service (JVM, fat JAR). Generates controller interfaces and model DTOs from `openapi.yaml` at build time. Implements REST endpoints for auth (`AuthController`), route persistence (`RoutesController`), and public sharing (`ShareController`). Each top-level package (`auth`, `routes`, `share`, `version`, `common`) is a Spring Modulith module; its public surface is the module's root package (e.g. `auth.CurrentUser`, `routes.RouteQueryService`) and `ModuleArchitectureTest` (`ApplicationModules.of(...).verify()`) enforces the allowed module dependencies, writing PlantUML diagrams to `target/spring-modulith-docs/` — see `docs/adr/2026-11-09-backend-module-boundaries-spring-modulith.md`.
 
 - **API contract** (`openapi.yaml`) — single source of truth. Both frontend and backend generate code from it at build time via `make generate`.
 
