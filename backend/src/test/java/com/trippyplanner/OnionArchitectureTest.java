@@ -10,11 +10,14 @@ import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPac
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.library.Architectures.onionArchitecture;
+import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices;
 
 /**
- * Enforces onion layering inside every module: {@code domain.model} at the core, then {@code application}
- * (use cases plus the ports they need), then {@code adapter.*} at the edge. Module boundaries themselves are
- * enforced by {@link ModuleArchitectureTest}; the two are orthogonal.
+ * Enforces the backend-level onion: {@code domain.model} at the core, then {@code application} (use-case
+ * services plus the ports they need), then {@code adapter.*} at the edge. This is the whole backend's
+ * layering rather than a per-module one, so the old module boundaries ({@code share} → {@code routes} →
+ * {@code auth} → {@code common}) were subsumed when the rings were flattened and there is no separate
+ * module test any more. The generated OpenAPI packages are a shared wire contract, not a ring.
  */
 @AnalyzeClasses(packages = "com.trippyplanner", importOptions = ImportOption.DoNotIncludeTests.class)
 class OnionArchitectureTest {
@@ -22,9 +25,9 @@ class OnionArchitectureTest {
     private static final String GENERATED_API = "com.trippyplanner.api..";
     private static final String GENERATED_MODEL = "com.trippyplanner.model..";
 
-    // Optional layers: not every module has every ring (e.g. share is just a web adapter over routes.api)
+    // Rings are optional: not every concern has every layer (share and version are single web adapters).
     @ArchTest
-    static final ArchRule modulesFollowOnionArchitecture = onionArchitecture()
+    static final ArchRule backendFollowsOnionArchitecture = onionArchitecture()
         .domainModels("..domain.model..")
         .domainServices("..domain.service..")
         .applicationServices("..application..")
@@ -32,10 +35,13 @@ class OnionArchitectureTest {
         .adapter("persistence", "..adapter.persistence..")
         .adapter("email", "..adapter.email..")
         .withOptionalLayers(true)
-        // e2e/local scaffolding plugs into auth's EmailService port; it is exempt here as in ModuleArchitectureTest
-        .ignoreDependency(resideInAPackage("com.trippyplanner.testsupport.."), alwaysTrue());
+        // e2e/local scaffolding plugs into the EmailService port; it is exempt from the onion
+        .ignoreDependency(resideInAPackage("com.trippyplanner.testsupport.."), alwaysTrue())
+        // The generated wire contract (com.trippyplanner.api..) sits outside the onion and references the
+        // principal type via x-spring-provide-args; that coupling is inherent to generating controllers.
+        .ignoreDependency(resideInAPackage(GENERATED_API), alwaysTrue());
 
-    // Onion only constrains dependencies between its own rings; this keeps frameworks out of the core too
+    // Onion only constrains dependencies between its own rings; these keep frameworks out of the core too
     @ArchTest
     static final ArchRule domainDependsOnlyOnJdk = classes()
         .that().resideInAPackage("..domain..")
@@ -55,4 +61,10 @@ class OnionArchitectureTest {
         .that().resideOutsideOfPackages("..adapter.web..", GENERATED_API, GENERATED_MODEL, "com.trippyplanner.testsupport..")
         .should().dependOnClassesThat().resideInAnyPackage(GENERATED_API, GENERATED_MODEL)
         .because("the OpenAPI DTOs are the web adapter's wire format, not the domain model");
+
+    // Onion constrains cross-ring direction; this closes the same-ring gap it leaves behind.
+    @ArchTest
+    static final ArchRule topLevelPackagesAreFreeOfCycles = slices()
+        .matching("com.trippyplanner.(*)..")
+        .should().beFreeOfCycles();
 }
