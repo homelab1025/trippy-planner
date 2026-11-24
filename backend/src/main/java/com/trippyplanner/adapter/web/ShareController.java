@@ -19,8 +19,11 @@ public class ShareController implements ShareApi {
 
     @Override
     public ResponseEntity<Route> getSharedRoute(String shareToken) {
-        return routeService.findByShareToken(shareToken)
-            .map(route -> ResponseEntity.ok(RouteDtoMapper.toSharedDto(route)))
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        var route = routeService.findByShareToken(shareToken);
+        var gpxContent = routeService.findSharedGpx(shareToken);
+        if (route.isEmpty() || gpxContent.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+        return ResponseEntity.ok(RouteDtoMapper.toDto(route.get(), gpxContent.get()));
     }
 }

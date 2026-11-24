@@ -1,11 +1,9 @@
 package com.trippyplanner.adapter.web;
 
 import com.trippyplanner.application.RouteService;
-import com.trippyplanner.domain.model.NewRoute;
 import com.trippyplanner.domain.model.Route;
 import com.trippyplanner.domain.model.RouteAccessDeniedException;
 import com.trippyplanner.domain.model.RouteNotFoundException;
-import com.trippyplanner.domain.model.RouteSummary;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -40,30 +38,40 @@ class RoutesControllerTest {
     }
 
     private static Route sampleRoute(UUID id, String checkpointsJson) {
-        return new Route(id, "My Route", 20.0, OffsetDateTime.now(), false, OffsetDateTime.now(), "<gpx/>",
-            checkpointsJson);
+        return Route.builder()
+            .id(id)
+            .ownerId(1L)
+            .name("My Route")
+            .avgSpeedKmh(20.0)
+            .startTime(OffsetDateTime.now())
+            .checkpointsJson(checkpointsJson)
+            .createdAt(OffsetDateTime.now())
+            .build();
     }
 
     @Test
     void listRoutesReturns200() throws Exception {
         UUID id = UUID.randomUUID();
-        when(MocksConfig.routeService.list(1L)).thenReturn(List.of(
-            new RouteSummary(id, "My Route", 20.0, OffsetDateTime.now(), false, OffsetDateTime.now())));
+        when(MocksConfig.routeService.list(1L)).thenReturn(List.of(sampleRoute(id, null)));
 
         mvc.perform(get("/routes").with(authenticatedAs(1L)))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$[0].id").value(id.toString()))
-            .andExpect(jsonPath("$[0].name").value("My Route"));
+            .andExpect(jsonPath("$[0].name").value("My Route"))
+            .andExpect(jsonPath("$[0].gpxContent").doesNotExist());
     }
 
     @Test
     void getRouteReturns200WhenOwner() throws Exception {
         UUID id = UUID.randomUUID();
         when(MocksConfig.routeService.get(1L, id)).thenReturn(sampleRoute(id, null));
+        when(MocksConfig.routeService.getGpx(1L, id)).thenReturn("<gpx/>");
 
         mvc.perform(get("/routes/{id}", id).with(authenticatedAs(1L)))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.name").value("My Route"));
+            .andExpect(jsonPath("$.name").value("My Route"))
+            .andExpect(jsonPath("$.gpxContent").value("<gpx/>"))
+            .andExpect(jsonPath("$.isPublic").value(false));
     }
 
     @Test
@@ -88,7 +96,7 @@ class RoutesControllerTest {
     void createRouteReturns201AndPassesThroughCheckpointsJson() throws Exception {
         UUID id = UUID.randomUUID();
         String checkpoints = "[{\"id\":\"end\",\"distanceM\":1000}]";
-        when(MocksConfig.routeService.create(eq(1L), any())).thenReturn(sampleRoute(id, checkpoints));
+        when(MocksConfig.routeService.create(eq(1L), any(), eq("<gpx/>"))).thenReturn(sampleRoute(id, checkpoints));
 
         mvc.perform(post("/routes").with(authenticatedAs(1L))
                 .contentType(MediaType.APPLICATION_JSON)
@@ -97,12 +105,32 @@ class RoutesControllerTest {
                     + "\"checkpointsJson\":\"[{\\\"id\\\":\\\"end\\\",\\\"distanceM\\\":1000}]\"}"))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.id").value(id.toString()))
-            .andExpect(jsonPath("$.checkpointsJson").value(checkpoints));
+            .andExpect(jsonPath("$.checkpointsJson").value(checkpoints))
+            .andExpect(jsonPath("$.gpxContent").value("<gpx/>"));
 
-        var captor = org.mockito.ArgumentCaptor.forClass(NewRoute.class);
-        verify(MocksConfig.routeService).create(eq(1L), captor.capture());
-        assertThat(captor.getValue().checkpointsJson()).isEqualTo(checkpoints);
-        assertThat(captor.getValue().avgSpeedKmh()).isEqualTo(20.0);
+        var captor = org.mockito.ArgumentCaptor.forClass(Route.Builder.class);
+        verify(MocksConfig.routeService).create(eq(1L), captor.capture(), eq("<gpx/>"));
+        Route details = captor.getValue().id(id).createdAt(OffsetDateTime.now()).build();
+        assertThat(details.checkpointsJson()).isEqualTo(checkpoints);
+        assertThat(details.avgSpeedKmh()).isEqualTo(20.0);
+    }
+
+    @Test
+    void updateRouteAppliesOnlyFieldsPresentInTheRequest() throws Exception {
+        UUID id = UUID.randomUUID();
+        Route stored = sampleRoute(id, "[]");
+        when(MocksConfig.routeService.update(eq(1L), eq(id), any()))
+            .thenAnswer(inv -> inv.<java.util.function.UnaryOperator<Route>>getArgument(2).apply(stored));
+        when(MocksConfig.routeService.getGpx(1L, id)).thenReturn("<gpx/>");
+
+        mvc.perform(put("/routes/{id}", id).with(authenticatedAs(1L))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"Renamed\"}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.name").value("Renamed"))
+            .andExpect(jsonPath("$.avgSpeedKmh").value(20.0))
+            .andExpect(jsonPath("$.checkpointsJson").value("[]"))
+            .andExpect(jsonPath("$.gpxContent").value("<gpx/>"));
     }
 
     @Test

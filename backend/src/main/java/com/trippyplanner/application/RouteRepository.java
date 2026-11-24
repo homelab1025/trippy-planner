@@ -1,9 +1,6 @@
 package com.trippyplanner.application;
 
-import com.trippyplanner.domain.model.NewRoute;
 import com.trippyplanner.domain.model.Route;
-import com.trippyplanner.domain.model.RouteSummary;
-import com.trippyplanner.domain.model.RouteUpdate;
 
 import java.util.List;
 import java.util.Optional;
@@ -11,23 +8,26 @@ import java.util.UUID;
 
 public interface RouteRepository {
 
-    List<RouteSummary> findAllByUserId(long userId);
+    List<Route> findAllByOwnerId(long ownerId);
 
     Optional<Route> findById(UUID id);
 
-    Optional<Long> findOwnerUserId(UUID id);
+    Optional<Route> findByShareToken(String shareToken);
 
-    Route save(long userId, NewRoute route);
+    Optional<String> findGpx(UUID id);
 
-    Optional<Route> update(UUID id, RouteUpdate update);
+    /**
+     * Returns the route as stored, so database-side normalisation (e.g. numeric rounding) is visible to callers.
+     */
+    Route insert(Route route, String gpxContent);
+
+    /**
+     * Overwrites the user-editable fields (last write wins). Sharing state and the immutable GPX are not written,
+     * so a concurrent edit can't resurrect a revoked share token.
+     */
+    Optional<Route> update(Route route);
+
+    Optional<Route> updateSharing(Route route);
 
     void delete(UUID id);
-
-    String share(UUID id, String token);
-
-    void unshare(UUID id);
-
-    Optional<Route> findByShareToken(String token);
-
-    Optional<String> findShareToken(UUID id);
 }

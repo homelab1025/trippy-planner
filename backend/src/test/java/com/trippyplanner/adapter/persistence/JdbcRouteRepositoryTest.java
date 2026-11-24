@@ -2,9 +2,7 @@ package com.trippyplanner.adapter.persistence;
 
 import com.trippyplanner.TestFlywayConfig;
 import com.trippyplanner.application.RouteRepository;
-import com.trippyplanner.domain.model.NewRoute;
-import com.trippyplanner.domain.model.RouteSummary;
-import com.trippyplanner.domain.model.RouteUpdate;
+import com.trippyplanner.domain.model.Route;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +17,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.OffsetDateTime;
-import java.util.List;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -50,90 +48,109 @@ class JdbcRouteRepositoryTest {
             "INSERT INTO users (email) VALUES (?) RETURNING id", Long.class, "route-test@example.com");
     }
 
-    private NewRoute sampleRequest() {
-        return sampleRequest(null);
+    private Route sampleRoute() {
+        return sampleRoute(null);
     }
 
-    private NewRoute sampleRequest(String checkpointsJson) {
-        return new NewRoute("Test Route", "<gpx/>", 20.0, OffsetDateTime.now(), checkpointsJson);
+    private Route sampleRoute(String checkpointsJson) {
+        return Route.builder()
+            .id(UUID.randomUUID())
+            .ownerId(userId)
+            .name("Test Route")
+            .avgSpeedKmh(20.0)
+            .startTime(OffsetDateTime.parse("2026-01-01T08:00:00Z"))
+            .checkpointsJson(checkpointsJson)
+            .createdAt(OffsetDateTime.now().truncatedTo(ChronoUnit.MICROS))
+            .build();
     }
 
     @Test
-    void savesAndRetrievesRoute() {
-        var saved = routeRepo.save(userId, sampleRequest());
-        assertThat(saved.id()).isNotNull();
+    void insertsAndRetrievesRoute() {
+        var route = sampleRoute();
+        var saved = routeRepo.insert(route, "<gpx/>");
+        assertThat(saved.id()).isEqualTo(route.id());
+        assertThat(saved.ownerId()).isEqualTo(userId);
         assertThat(saved.name()).isEqualTo("Test Route");
-        assertThat(saved.gpxContent()).isEqualTo("<gpx/>");
+        assertThat(saved.createdAt()).isEqualTo(route.createdAt());
+        assertThat(saved.isPublic()).isFalse();
     }
 
     @Test
-    void listsByUserId() {
-        routeRepo.save(userId, sampleRequest());
-        routeRepo.save(userId, sampleRequest());
-        List<RouteSummary> list = routeRepo.findAllByUserId(userId);
-        assertThat(list).hasSize(2);
+    void storesGpxSeparatelyFromMetadata() {
+        var saved = routeRepo.insert(sampleRoute(), "<gpx/>");
+        assertThat(routeRepo.findGpx(saved.id())).contains("<gpx/>");
+        assertThat(routeRepo.findGpx(UUID.randomUUID())).isEmpty();
     }
 
     @Test
-    void updatesNameOnly() {
-        var saved = routeRepo.save(userId, sampleRequest());
-        var update = new RouteUpdate("Updated Name", null, null, null);
-        var updated = routeRepo.update(saved.id(), update).orElseThrow();
+    void insertReturnsDatabaseNormalisedValues() {
+        var saved = routeRepo.insert(sampleRoute().withAvgSpeedKmh(20.555), "<gpx/>");
+        assertThat(saved.avgSpeedKmh()).isEqualTo(20.56);
+    }
+
+    @Test
+    void listsByOwnerId() {
+        routeRepo.insert(sampleRoute(), "<gpx/>");
+        routeRepo.insert(sampleRoute(), "<gpx/>");
+        assertThat(routeRepo.findAllByOwnerId(userId)).hasSize(2);
+        assertThat(routeRepo.findAllByOwnerId(userId + 1)).isEmpty();
+    }
+
+    @Test
+    void updateOverwritesEditableFields() {
+        var saved = routeRepo.insert(sampleRoute(), "<gpx/>");
+        var updated = routeRepo.update(saved.withName("Updated Name").withCheckpointsJson("[]")).orElseThrow();
         assertThat(updated.name()).isEqualTo("Updated Name");
+        assertThat(updated.checkpointsJson()).isEqualTo("[]");
         assertThat(updated.avgSpeedKmh()).isEqualTo(20.0);
+        assertThat(routeRepo.findGpx(saved.id())).contains("<gpx/>");
+    }
+
+    @Test
+    void updateDoesNotWriteSharingState() {
+        var saved = routeRepo.insert(sampleRoute(), "<gpx/>");
+        routeRepo.updateSharing(saved.share("sharetoken123"));
+
+        // a stale copy loaded before sharing must not revert it
+        routeRepo.update(saved.withName("Renamed"));
+
+        assertThat(routeRepo.findByShareToken("sharetoken123")).isPresent();
+    }
+
+    @Test
+    void updateOfMissingRouteReturnsEmpty() {
+        assertThat(routeRepo.update(sampleRoute())).isEmpty();
     }
 
     @Test
     void deletesRoute() {
-        var saved = routeRepo.save(userId, sampleRequest());
+        var saved = routeRepo.insert(sampleRoute(), "<gpx/>");
         routeRepo.delete(saved.id());
         assertThat(routeRepo.findById(saved.id())).isEmpty();
     }
 
     @Test
     void sharesAndUnsharesRoute() {
-        var saved = routeRepo.save(userId, sampleRequest());
-        String token = routeRepo.share(saved.id(), "sharetoken123");
-        assertThat(routeRepo.findByShareToken(token)).isPresent();
+        var saved = routeRepo.insert(sampleRoute(), "<gpx/>");
+        var shared = routeRepo.updateSharing(saved.share("sharetoken123")).orElseThrow();
+        assertThat(shared.shareToken()).isEqualTo("sharetoken123");
+        assertThat(routeRepo.findByShareToken("sharetoken123")).isPresent();
 
-        routeRepo.unshare(saved.id());
-        assertThat(routeRepo.findByShareToken(token)).isEmpty();
-    }
-
-    @Test
-    void shareIsIdempotent() {
-        var saved = routeRepo.save(userId, sampleRequest());
-        routeRepo.share(saved.id(), "token-first");
-        assertThat(routeRepo.findShareToken(saved.id())).contains("token-first");
-    }
-
-    @Test
-    void findOwnerUserId() {
-        var saved = routeRepo.save(userId, sampleRequest());
-        assertThat(routeRepo.findOwnerUserId(saved.id())).contains(userId);
-        assertThat(routeRepo.findOwnerUserId(UUID.randomUUID())).isEmpty();
+        routeRepo.updateSharing(shared.unshare());
+        assertThat(routeRepo.findByShareToken("sharetoken123")).isEmpty();
+        assertThat(routeRepo.findById(saved.id()).orElseThrow().isPublic()).isFalse();
     }
 
     @Test
     void checkpointsJsonIsNullByDefault() {
-        var saved = routeRepo.save(userId, sampleRequest());
+        var saved = routeRepo.insert(sampleRoute(), "<gpx/>");
         assertThat(saved.checkpointsJson()).isNull();
     }
 
     @Test
     void savesAndRetrievesCheckpointsJson() {
-        var req = sampleRequest("[{\"id\":\"end\",\"distanceM\":1000}]");
-        var saved = routeRepo.save(userId, req);
-        assertThat(saved.checkpointsJson()).isEqualTo("[{\"id\":\"end\",\"distanceM\":1000}]");
+        var saved = routeRepo.insert(sampleRoute("[{\"id\":\"end\",\"distanceM\":1000}]"), "<gpx/>");
         var reloaded = routeRepo.findById(saved.id()).orElseThrow();
         assertThat(reloaded.checkpointsJson()).isEqualTo("[{\"id\":\"end\",\"distanceM\":1000}]");
-    }
-
-    @Test
-    void updatesCheckpointsJson() {
-        var saved = routeRepo.save(userId, sampleRequest());
-        var update = new RouteUpdate(null, null, null, "[{\"id\":\"end\",\"distanceM\":500}]");
-        var updated = routeRepo.update(saved.id(), update).orElseThrow();
-        assertThat(updated.checkpointsJson()).isEqualTo("[{\"id\":\"end\",\"distanceM\":500}]");
     }
 }

@@ -32,25 +32,26 @@ public class RoutesController implements RoutesApi {
     @Override
     public ResponseEntity<List<RouteListItem>> listRoutes(CurrentUser currentUser) {
         return ResponseEntity.ok(routeService.list(currentUser.userId()).stream()
-            .map(RouteDtoMapper::toDto)
+            .map(RouteDtoMapper::toListItem)
             .toList());
     }
 
     @Override
     public ResponseEntity<Route> createRoute(CreateRouteRequest body, CurrentUser currentUser) {
-        var route = routeService.create(currentUser.userId(), RouteDtoMapper.toDomain(body));
-        return ResponseEntity.status(HttpStatus.CREATED).body(RouteDtoMapper.toDto(route));
+        var route = routeService.create(currentUser.userId(), RouteDtoMapper.toDetails(body), body.getGpxContent());
+        return ResponseEntity.status(HttpStatus.CREATED).body(RouteDtoMapper.toDto(route, body.getGpxContent()));
     }
 
     @Override
     public ResponseEntity<Route> getRoute(UUID id, CurrentUser currentUser) {
-        return ResponseEntity.ok(RouteDtoMapper.toDto(routeService.get(currentUser.userId(), id)));
+        var route = routeService.get(currentUser.userId(), id);
+        return ResponseEntity.ok(RouteDtoMapper.toDto(route, routeService.getGpx(currentUser.userId(), id)));
     }
 
     @Override
     public ResponseEntity<Route> updateRoute(UUID id, UpdateRouteRequest body, CurrentUser currentUser) {
-        var route = routeService.update(currentUser.userId(), id, RouteDtoMapper.toDomain(body));
-        return ResponseEntity.ok(RouteDtoMapper.toDto(route));
+        var route = routeService.update(currentUser.userId(), id, RouteDtoMapper.toChanges(body));
+        return ResponseEntity.ok(RouteDtoMapper.toDto(route, routeService.getGpx(currentUser.userId(), id)));
     }
 
     @Override

@@ -1,12 +1,11 @@
 package com.trippyplanner.adapter.web;
 
+import com.trippyplanner.domain.model.Route;
 import com.trippyplanner.model.CreateRouteRequest;
 import com.trippyplanner.model.RouteListItem;
 import com.trippyplanner.model.UpdateRouteRequest;
-import com.trippyplanner.domain.model.NewRoute;
-import com.trippyplanner.domain.model.Route;
-import com.trippyplanner.domain.model.RouteSummary;
-import com.trippyplanner.domain.model.RouteUpdate;
+
+import java.util.function.UnaryOperator;
 
 final class RouteDtoMapper {
 
@@ -14,7 +13,7 @@ final class RouteDtoMapper {
         throw new AssertionError();
     }
 
-    static com.trippyplanner.model.Route toDto(Route route) {
+    static com.trippyplanner.model.Route toDto(Route route, String gpxContent) {
         var dto = new com.trippyplanner.model.Route();
         dto.setId(route.id());
         dto.setName(route.name());
@@ -22,35 +21,47 @@ final class RouteDtoMapper {
         dto.setStartTime(route.startTime());
         dto.setIsPublic(route.isPublic());
         dto.setCreatedAt(route.createdAt());
-        dto.setGpxContent(route.gpxContent());
+        dto.setGpxContent(gpxContent);
         dto.setCheckpointsJson(route.checkpointsJson());
         return dto;
     }
 
-    static com.trippyplanner.model.Route toSharedDto(Route route) {
-        com.trippyplanner.model.Route dto = toDto(route);
-        dto.setIsPublic(true);
-        return dto;
-    }
-
-    static RouteListItem toDto(RouteSummary summary) {
+    static RouteListItem toListItem(Route route) {
         var dto = new RouteListItem();
-        dto.setId(summary.id());
-        dto.setName(summary.name());
-        dto.setAvgSpeedKmh(summary.avgSpeedKmh());
-        dto.setStartTime(summary.startTime());
-        dto.setIsPublic(summary.isPublic());
-        dto.setCreatedAt(summary.createdAt());
+        dto.setId(route.id());
+        dto.setName(route.name());
+        dto.setAvgSpeedKmh(route.avgSpeedKmh());
+        dto.setStartTime(route.startTime());
+        dto.setIsPublic(route.isPublic());
+        dto.setCreatedAt(route.createdAt());
         return dto;
     }
 
-    static NewRoute toDomain(CreateRouteRequest request) {
-        return new NewRoute(request.getName(), request.getGpxContent(), request.getAvgSpeedKmh(),
-            request.getStartTime(), request.getCheckpointsJson());
+    static Route.Builder toDetails(CreateRouteRequest request) {
+        return Route.builder()
+            .name(request.getName())
+            .avgSpeedKmh(request.getAvgSpeedKmh())
+            .startTime(request.getStartTime())
+            .checkpointsJson(request.getCheckpointsJson());
     }
 
-    static RouteUpdate toDomain(UpdateRouteRequest request) {
-        return new RouteUpdate(request.getName(), request.getAvgSpeedKmh(), request.getStartTime(),
-            request.getCheckpointsJson());
+    // PATCH semantics: a null field in the request leaves the stored value unchanged
+    static UnaryOperator<Route> toChanges(UpdateRouteRequest request) {
+        return route -> {
+            Route changed = route;
+            if (request.getName() != null) {
+                changed = changed.withName(request.getName());
+            }
+            if (request.getAvgSpeedKmh() != null) {
+                changed = changed.withAvgSpeedKmh(request.getAvgSpeedKmh());
+            }
+            if (request.getStartTime() != null) {
+                changed = changed.withStartTime(request.getStartTime());
+            }
+            if (request.getCheckpointsJson() != null) {
+                changed = changed.withCheckpointsJson(request.getCheckpointsJson());
+            }
+            return changed;
+        };
     }
 }

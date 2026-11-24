@@ -30,10 +30,18 @@ class ShareControllerTest {
 
     @Test
     void returnsPublicRoute() throws Exception {
-        Route r = new Route(UUID.randomUUID(), "Shared Route", 20.0, OffsetDateTime.now(),
-            true, OffsetDateTime.now(), "<gpx/>", null);
+        Route r = Route.builder()
+            .id(UUID.randomUUID())
+            .ownerId(1L)
+            .name("Shared Route")
+            .avgSpeedKmh(20.0)
+            .startTime(OffsetDateTime.now())
+            .shareToken("validtoken")
+            .createdAt(OffsetDateTime.now())
+            .build();
 
         when(MocksConfig.routeService.findByShareToken("validtoken")).thenReturn(Optional.of(r));
+        when(MocksConfig.routeService.findSharedGpx("validtoken")).thenReturn(Optional.of("<gpx/>"));
 
         mvc.perform(get("/share/validtoken"))
             .andExpect(status().isOk())

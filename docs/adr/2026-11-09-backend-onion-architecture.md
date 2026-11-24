@@ -30,7 +30,7 @@ optional):
 
 | Ring | Package | Contents |
 |---|---|---|
-| Domain model | `domain.model` | Records + domain exceptions; JDK only — `Route`, `RouteSummary`, `NewRoute`, `RouteUpdate`, `RouteNotFoundException`, `RouteAccessDeniedException`, `CurrentUser` |
+| Domain model | `domain.model` | JDK only — the `Route` aggregate, `CurrentUser`, `RouteNotFoundException`, `RouteAccessDeniedException` |
 | Application | `application` | Use-case services + the ports they need: `RouteService`, `AuthService`, and the `RouteRepository` / `UserRepository` / `SessionRepository` / `EmailService` interfaces + `TokenGenerator` |
 | Adapters | `adapter.{web,persistence,email}` | Controllers, `SecurityFilter`, `RouteDtoMapper`; JDBC implementations of the ports; Resend |
 
@@ -40,15 +40,36 @@ optional):
   `application.RouteService` directly.
 - The `routes.api` share-seam (`RouteQueryService` / `SharedRoute` /
   `DefaultRouteQueryService`) is gone. `RouteService` gains
-  `findByShareToken`, and `ShareController` maps the domain `Route` to the
-  DTO via `RouteDtoMapper.toSharedDto`, which forces `isPublic = true` to
-  preserve the old behaviour.
+  `findByShareToken` / `findSharedGpx`, and `ShareController` maps the
+  domain `Route` plus its GPX to the DTO via `RouteDtoMapper`.
 - `CurrentUser` moves from `auth.api` into `domain.model`. The generated
   `com.trippyplanner.api` contract references it via
   `x-spring-provide-args` on the 9 `bearerAuth` operations in
   `openapi.yaml`; that edge sits outside the onion, so the rule ignores
   dependencies originating from the generated contract, mirroring the
   `testsupport` exemption.
+- **One `Route` aggregate, not one record per API operation.** An earlier
+  draft had `NewRoute`, `RouteUpdate` and `RouteSummary` mirroring
+  `CreateRouteRequest`, `UpdateRouteRequest` and `RouteListItem`; they were
+  shapes of HTTP operations, not domain concepts. `Route` now owns its
+  invariants and behaviour (`isOwnedBy`, idempotent `share`, `unshare`,
+  `with…` edits); `isPublic` is derived from the share token.
+  - *Creation:* the web adapter fills a `Route.Builder` with the
+    user-supplied fields and `RouteService.create` sets id, owner, creation
+    time (from an injected `Clock`) and sharing state, so they can't be
+    forged.
+  - *Updates:* the web adapter turns the request's PATCH semantics (null =
+    unchanged) into a `UnaryOperator<Route>`; the service loads the route,
+    applies it, rejects identity changes, and saves the editable fields
+    (last write wins). Sharing state is written by a separate
+    `updateSharing`, so a concurrent edit can't resurrect a revoked share
+    token.
+  - *GPX is not part of `Route`.* It is immutable after creation, large,
+    and only ever needed for one route at a time, so it travels as a
+    `String` through dedicated methods (`RouteRepository.insert(route,
+    gpx)` / `findGpx`, `RouteService.getGpx` / `findSharedGpx`). The list
+    view simply returns `Route`s. The HTTP contract is unchanged: the
+    controllers combine metadata and GPX where the API returns both.
 - Ports live in `application`, not a `domain.service` ring (the hexagonal
   reading: with no domain logic that needs a repository, a separate ring
   would be empty).
@@ -77,6 +98,12 @@ mean paying for two overlapping layers.
   consumes it and inner→outer is forbidden, so it cannot live in an adapter
   ring; `domain.model` is the only ring both the generated contract and the
   application can reach.
+- **A separate `route_gpx` table.** It would mirror the model in the schema,
+  but Postgres already stores large `TEXT` values out of line (TOAST), so
+  metadata reads and updates don't touch the GPX today. It would cost a
+  data migration with an irreversible column drop, a two-release rollout for
+  zero-downtime deploys, and transactional inserts. Deferred until GPX
+  storage itself changes (e.g. to object storage).
 - **Spring Modulith / Maven multi-module.** As in the module-boundaries
   ADR: more framework and build cost than a ~ten-endpoint service warrants.
 
@@ -89,10 +116,10 @@ mean paying for two overlapping layers.
   reach any `RouteService` method (including writes), not just a read seam.
   For a read-only share endpoint today this is harmless, but a future
   module that should be read-only has no ArchUnit guard for it.
-- **`Route` still exists twice** (generated DTO + domain record), with one
-  mapping (`RouteDtoMapper`, including `toSharedDto`) — one fewer than the
-  per-module version, since `SharedRoute` / `DefaultRouteQueryService` are
-  gone.
+- **One domain type per concept.** The domain has a single `Route`; the
+  API's four route shapes are mapped onto it in `RouteDtoMapper`. A new
+  route field still touches the OpenAPI schema, `Route`, the mapper and the
+  JDBC row mapper, but no longer a parallel family of domain records.
 - **Less compiler help.** Services and ports are `public` to cross
   packages, so ArchUnit is the sole structural guard. The JDBC adapters
   stay package-private, and `@Repository` CGLIB proxying means they are not
@@ -100,6 +127,14 @@ mean paying for two overlapping layers.
 - **The generated contract reaches into `domain.model`** via
   `x-spring-provide-args`; that one edge is ignored by the onion rule,
   exactly as the old `ModuleArchitectureTest` ignored its equivalent.
+- **Last write wins on route edits.** Two concurrent edits to the same
+  route overwrite each other's editable fields (previously each UPDATE
+  wrote only the fields it was given). Routes are single-user, so this
+  needs two tabs saving at the same moment; optimistic locking on
+  `updated_at` is the upgrade path if it ever matters.
+- **More queries on GPX-returning endpoints.** `GET /routes/{id}`,
+  `PUT /routes/{id}` and `GET /share/{token}` load metadata and GPX
+  separately (one or two extra round-trips). Negligible at this scale.
 - **Faster use-case tests.** `RouteServiceTest` and `AuthServiceTest` are
   plain Mockito tests; controller tests cover only HTTP mapping.
 - **Same HTTP behaviour.** Status codes and error bodies are unchanged: the
