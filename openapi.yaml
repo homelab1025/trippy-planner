@@ -140,7 +140,7 @@ paths:
       security:
         - bearerAuth: []
       x-spring-provide-args:
-        - com.trippyplanner.domain.model.CurrentUser currentUser
+        - com.trippyplanner.adapter.web.CurrentUser currentUser
       responses:
         '200':
           description: Current user
@@ -159,7 +159,7 @@ paths:
       security:
         - bearerAuth: []
       x-spring-provide-args:
-        - com.trippyplanner.domain.model.CurrentUser currentUser
+        - com.trippyplanner.adapter.web.CurrentUser currentUser
       responses:
         '204':
           description: Session deleted
@@ -172,7 +172,7 @@ paths:
       security:
         - bearerAuth: []
       x-spring-provide-args:
-        - com.trippyplanner.domain.model.CurrentUser currentUser
+        - com.trippyplanner.adapter.web.CurrentUser currentUser
       responses:
         '200':
           description: User's routes (no gpxContent)
@@ -189,7 +189,7 @@ paths:
       security:
         - bearerAuth: []
       x-spring-provide-args:
-        - com.trippyplanner.domain.model.CurrentUser currentUser
+        - com.trippyplanner.adapter.web.CurrentUser currentUser
       requestBody:
         required: true
         content:
@@ -219,7 +219,7 @@ paths:
       security:
         - bearerAuth: []
       x-spring-provide-args:
-        - com.trippyplanner.domain.model.CurrentUser currentUser
+        - com.trippyplanner.adapter.web.CurrentUser currentUser
       responses:
         '200':
           description: Full route including gpxContent
@@ -238,7 +238,7 @@ paths:
       security:
         - bearerAuth: []
       x-spring-provide-args:
-        - com.trippyplanner.domain.model.CurrentUser currentUser
+        - com.trippyplanner.adapter.web.CurrentUser currentUser
       requestBody:
         required: true
         content:
@@ -259,7 +259,7 @@ paths:
       security:
         - bearerAuth: []
       x-spring-provide-args:
-        - com.trippyplanner.domain.model.CurrentUser currentUser
+        - com.trippyplanner.adapter.web.CurrentUser currentUser
       responses:
         '204':
           description: Route deleted
@@ -279,7 +279,7 @@ paths:
       security:
         - bearerAuth: []
       x-spring-provide-args:
-        - com.trippyplanner.domain.model.CurrentUser currentUser
+        - com.trippyplanner.adapter.web.CurrentUser currentUser
       responses:
         '200':
           description: Share token (idempotent — returns existing if already public)
@@ -294,7 +294,7 @@ paths:
       security:
         - bearerAuth: []
       x-spring-provide-args:
-        - com.trippyplanner.domain.model.CurrentUser currentUser
+        - com.trippyplanner.adapter.web.CurrentUser currentUser
       responses:
         '204':
           description: Route made private, share link invalidated

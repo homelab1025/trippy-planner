@@ -63,8 +63,11 @@ class OnionArchitectureTest {
         .because("the OpenAPI DTOs are the web adapter's wire format, not the domain model");
 
     // Onion constrains cross-ring direction; this closes the same-ring gap it leaves behind.
+    // The generated *Api interfaces are web-adapter code that happens to be generated: controllers implement them
+    // and they take adapter.web.CurrentUser via x-spring-provide-args, so that edge is ignored like in the onion rule.
     @ArchTest
     static final ArchRule topLevelPackagesAreFreeOfCycles = slices()
         .matching("com.trippyplanner.(*)..")
-        .should().beFreeOfCycles();
+        .should().beFreeOfCycles()
+        .ignoreDependency(resideInAPackage(GENERATED_API), alwaysTrue());
 }

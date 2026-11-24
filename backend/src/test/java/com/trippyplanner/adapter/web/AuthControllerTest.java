@@ -1,6 +1,5 @@
 package com.trippyplanner.adapter.web;
 
-import com.trippyplanner.domain.model.CurrentUser;
 import com.trippyplanner.application.AuthService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,7 +41,7 @@ class AuthControllerTest {
 
     @Test
     void getMeReturnsCurrentUser() throws Exception {
-        when(MocksConfig.authService.findEmail(new CurrentUser(42L, "test-session-token")))
+        when(MocksConfig.authService.findEmail(42L))
             .thenReturn("me@example.com");
 
         mvc.perform(get("/auth/me").with(authenticatedAs(42L)))
@@ -56,7 +55,7 @@ class AuthControllerTest {
         mvc.perform(delete("/auth/session").with(authenticatedAs(1L, "mytoken")))
             .andExpect(status().isNoContent());
 
-        verify(MocksConfig.authService).signOut(new CurrentUser(1L, "mytoken"));
+        verify(MocksConfig.authService).signOut("mytoken");
     }
 
     @TestConfiguration

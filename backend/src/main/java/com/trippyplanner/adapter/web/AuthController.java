@@ -1,7 +1,6 @@
 package com.trippyplanner.adapter.web;
 
 import com.trippyplanner.api.AuthApi;
-import com.trippyplanner.domain.model.CurrentUser;
 import com.trippyplanner.application.AuthService;
 import com.trippyplanner.model.MagicLinkRequest;
 import com.trippyplanner.model.User;
@@ -27,13 +26,13 @@ public class AuthController implements AuthApi {
     public ResponseEntity<User> getMe(CurrentUser currentUser) {
         User user = new User();
         user.setId(currentUser.userId());
-        user.setEmail(authService.findEmail(currentUser));
+        user.setEmail(authService.findEmail(currentUser.userId()));
         return ResponseEntity.ok(user);
     }
 
     @Override
     public ResponseEntity<Void> deleteSession(CurrentUser currentUser) {
-        authService.signOut(currentUser);
+        authService.signOut(currentUser.sessionToken());
         return ResponseEntity.noContent().build();
     }
 }

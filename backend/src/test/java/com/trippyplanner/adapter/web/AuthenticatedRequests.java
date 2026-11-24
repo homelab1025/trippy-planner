@@ -1,6 +1,5 @@
 package com.trippyplanner.adapter.web;
 
-import com.trippyplanner.domain.model.CurrentUser;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 /**

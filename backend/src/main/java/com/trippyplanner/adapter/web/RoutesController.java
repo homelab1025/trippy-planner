@@ -1,7 +1,6 @@
 package com.trippyplanner.adapter.web;
 
 import com.trippyplanner.api.RoutesApi;
-import com.trippyplanner.domain.model.CurrentUser;
 import com.trippyplanner.model.CreateRouteRequest;
 import com.trippyplanner.model.Route;
 import com.trippyplanner.model.RouteListItem;

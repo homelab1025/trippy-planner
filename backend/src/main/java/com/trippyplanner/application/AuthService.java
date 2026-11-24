@@ -1,6 +1,5 @@
 package com.trippyplanner.application;
 
-import com.trippyplanner.domain.model.CurrentUser;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -40,16 +39,18 @@ public class AuthService {
         emailService.sendMagicLink(email, token);
     }
 
-    public Optional<CurrentUser> authenticate(String sessionToken) {
-        return sessionRepository.findValidUserId(sessionToken)
-            .map(userId -> new CurrentUser(userId, sessionToken));
+    /**
+     * Returns the id of the user the session belongs to, if the session exists and hasn't expired.
+     */
+    public Optional<Long> authenticate(String sessionToken) {
+        return sessionRepository.findValidUserId(sessionToken);
     }
 
-    public String findEmail(CurrentUser currentUser) {
-        return userRepository.findEmailById(currentUser.userId()).orElseThrow();
+    public String findEmail(long userId) {
+        return userRepository.findEmailById(userId).orElseThrow();
     }
 
-    public void signOut(CurrentUser currentUser) {
-        sessionRepository.delete(currentUser.sessionToken());
+    public void signOut(String sessionToken) {
+        sessionRepository.delete(sessionToken);
     }
 }

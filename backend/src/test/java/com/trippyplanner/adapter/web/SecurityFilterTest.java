@@ -1,6 +1,5 @@
 package com.trippyplanner.adapter.web;
 
-import com.trippyplanner.domain.model.CurrentUser;
 import com.trippyplanner.application.AuthService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -102,7 +101,7 @@ class SecurityFilterTest {
 
     @Test
     void setsCurrentUserForValidToken() throws Exception {
-        when(authService.authenticate("valid-token")).thenReturn(Optional.of(new CurrentUser(42L, "valid-token")));
+        when(authService.authenticate("valid-token")).thenReturn(Optional.of(42L));
 
         var req = new MockHttpServletRequest("GET", "/api/routes");
         req.addHeader("Authorization", "Bearer valid-token");

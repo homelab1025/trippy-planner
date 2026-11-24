@@ -30,9 +30,9 @@ optional):
 
 | Ring | Package | Contents |
 |---|---|---|
-| Domain model | `domain.model` | JDK only — the `Route` aggregate, `CurrentUser`, `RouteNotFoundException`, `RouteAccessDeniedException` |
+| Domain model | `domain.model` | JDK only — the `Route` aggregate, `RouteNotFoundException`, `RouteAccessDeniedException` |
 | Application | `application` | Use-case services + the ports they need: `RouteService`, `AuthService`, and the `RouteRepository` / `UserRepository` / `SessionRepository` / `EmailService` interfaces + `TokenGenerator` |
-| Adapters | `adapter.{web,persistence,email}` | Controllers, `SecurityFilter`, `RouteDtoMapper`; JDBC implementations of the ports; Resend |
+| Adapters | `adapter.{web,persistence,email}` | Controllers, `SecurityFilter`, `CurrentUser`, `RouteDtoMapper`; JDBC implementations of the ports; Resend |
 
 - `ModuleArchitectureTest` is deleted and the module-boundaries ADR is
   superseded. `share` and `version` collapse into `adapter.web`; there is
@@ -42,12 +42,19 @@ optional):
   `DefaultRouteQueryService`) is gone. `RouteService` gains
   `findByShareToken` / `findSharedGpx`, and `ShareController` maps the
   domain `Route` plus its GPX to the DTO via `RouteDtoMapper`.
-- `CurrentUser` moves from `auth.api` into `domain.model`. The generated
-  `com.trippyplanner.api` contract references it via
+- **`CurrentUser` is a web-adapter type** (`adapter.web.CurrentUser`), not
+  a domain one. It is the authenticated caller of an HTTP request: a user
+  id plus the bearer session token, which is a transport detail. Nothing in
+  the domain or application needs it: `AuthService` speaks plain values
+  (`authenticate(token) → Optional<Long>`, `findEmail(userId)`,
+  `signOut(sessionToken)`), `RouteService` takes a `long` user id, and
+  `SecurityFilter` builds the `CurrentUser`. The generated
+  `com.trippyplanner.api` interfaces reference it via
   `x-spring-provide-args` on the 9 `bearerAuth` operations in
-  `openapi.yaml`; that edge sits outside the onion, so the rule ignores
-  dependencies originating from the generated contract, mirroring the
-  `testsupport` exemption.
+  `openapi.yaml`. Those interfaces are web-adapter code that happens to be
+  generated (controllers implement them), so the onion and cycle rules
+  ignore dependencies originating from them, mirroring the `testsupport`
+  exemption.
 - **One `Route` aggregate, not one record per API operation.** An earlier
   draft had `NewRoute`, `RouteUpdate` and `RouteSummary` mirroring
   `CreateRouteRequest`, `UpdateRouteRequest` and `RouteListItem`; they were
@@ -96,10 +103,14 @@ mean paying for two overlapping layers.
   keeps a `routes.api` package and a third copy of the route type
   (`SharedRoute`). Dropped: the seam existed only to satisfy the module
   boundary, which is gone.
-- **`CurrentUser` in a web/adapter ring.** `AuthService` (application)
-  consumes it and inner→outer is forbidden, so it cannot live in an adapter
-  ring; `domain.model` is the only ring both the generated contract and the
-  application can reach.
+- **`CurrentUser` in `domain.model` or `application`.** An earlier draft put
+  it in `domain.model`, reasoning that it was the only ring both the
+  generated contract and `AuthService` could reach. That was wrong: the
+  generated contract is exempt from the rules, so it can reach any ring,
+  and the domain has no use for an HTTP principal. `application` would
+  avoid the generated-interface cycle exemption, but carries the session
+  token into the use-case layer. Revisit with a token-free
+  `application.Caller` if authorisation ever needs more than a user id.
 - **A separate `route_gpx` table.** It would mirror the model in the schema,
   but Postgres already stores large `TEXT` values out of line (TOAST), so
   metadata reads and updates don't touch the GPX today. It would cost a
@@ -126,9 +137,11 @@ mean paying for two overlapping layers.
   packages, so ArchUnit is the sole structural guard. The JDBC adapters
   stay package-private, and `@Repository` CGLIB proxying means they are not
   `final`.
-- **The generated contract reaches into `domain.model`** via
-  `x-spring-provide-args`; that one edge is ignored by the onion rule,
-  exactly as the old `ModuleArchitectureTest` ignored its equivalent.
+- **The generated contract and `adapter.web` depend on each other**
+  (controllers implement the `*Api` interfaces; the interfaces take
+  `CurrentUser`). Both the onion and the cycle rule ignore dependencies
+  originating from the generated package. `openapi.yaml` names the Java
+  package of `CurrentUser`, which only the Spring generator reads.
 - **Last write wins on route edits.** Two concurrent edits to the same
   route overwrite each other's editable fields (previously each UPDATE
   wrote only the fields it was given). Routes are single-user, so this

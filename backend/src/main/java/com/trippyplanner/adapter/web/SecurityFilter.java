@@ -1,6 +1,5 @@
 package com.trippyplanner.adapter.web;
 
-import com.trippyplanner.domain.model.CurrentUser;
 import com.trippyplanner.application.AuthService;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
@@ -61,7 +60,8 @@ final class SecurityFilter implements Filter {
         }
 
         String token = authHeader.substring(7);
-        Optional<CurrentUser> currentUser = authService.authenticate(token);
+        Optional<CurrentUser> currentUser = authService.authenticate(token)
+            .map(userId -> new CurrentUser(userId, token));
 
         if (currentUser.isEmpty()) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);

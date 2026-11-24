@@ -1,6 +1,5 @@
 package com.trippyplanner.adapter.web;
 
-import com.trippyplanner.domain.model.CurrentUser;
 import org.springframework.core.MethodParameter;
 import org.springframework.web.bind.support.WebDataBinderFactory;
 import org.springframework.web.context.request.NativeWebRequest;

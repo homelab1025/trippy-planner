@@ -1,6 +1,5 @@
 package com.trippyplanner.application;
 
-import com.trippyplanner.domain.model.CurrentUser;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -58,7 +57,7 @@ class AuthServiceTest {
     void authenticateReturnsUserForValidSession() {
         when(sessionRepository.findValidUserId("valid")).thenReturn(Optional.of(42L));
 
-        assertThat(authService.authenticate("valid")).contains(new CurrentUser(42L, "valid"));
+        assertThat(authService.authenticate("valid")).contains(42L);
     }
 
     @Test
@@ -70,7 +69,7 @@ class AuthServiceTest {
 
     @Test
     void signOutDeletesTheCallersSession() {
-        authService.signOut(new CurrentUser(1L, "mytoken"));
+        authService.signOut("mytoken");
 
         verify(sessionRepository).delete("mytoken");
     }
