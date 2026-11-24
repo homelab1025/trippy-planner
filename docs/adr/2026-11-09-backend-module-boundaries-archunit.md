@@ -1,7 +1,7 @@
 # ADR: Enforce backend module boundaries with ArchUnit
 
 **Date:** 2026-11-09
-**Status:** Accepted
+**Status:** Superseded by [Backend-level onion architecture](2026-11-09-backend-onion-architecture.md)
 **Related:** [ADR: Backend service, magic-link auth, and route persistence architecture](2026-07-18-backend-auth-and-persistence-architecture.md)
 
 ## Context
