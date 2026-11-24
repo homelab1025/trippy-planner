@@ -66,14 +66,6 @@ public record Route(
         return new Route(id, ownerId, name, avgSpeedKmh, startTime, newCheckpointsJson, shareToken, createdAt);
     }
 
-    /**
-     * True if {@code other} is the same route with only user-editable fields changed.
-     */
-    public boolean hasSameIdentityAs(Route other) {
-        return id.equals(other.id) && ownerId == other.ownerId && createdAt.equals(other.createdAt)
-            && Objects.equals(shareToken, other.shareToken);
-    }
-
     private Route withShareToken(String newShareToken) {
         return new Route(id, ownerId, name, avgSpeedKmh, startTime, checkpointsJson, newShareToken, createdAt);
     }

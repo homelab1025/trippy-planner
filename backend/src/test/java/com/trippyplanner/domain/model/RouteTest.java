@@ -49,17 +49,13 @@ class RouteTest {
     }
 
     @Test
-    void editsKeepIdentity() {
-        Route route = sample().build();
+    void editsKeepIdentityAndSharing() {
+        Route route = sample().build().share("token");
         Route edited = route.withName("Renamed").withAvgSpeedKmh(25.0).withCheckpointsJson("[]");
-        assertThat(edited.hasSameIdentityAs(route)).isTrue();
+        assertThat(edited.id()).isEqualTo(route.id());
+        assertThat(edited.ownerId()).isEqualTo(route.ownerId());
+        assertThat(edited.createdAt()).isEqualTo(route.createdAt());
+        assertThat(edited.shareToken()).isEqualTo("token");
         assertThat(edited.name()).isEqualTo("Renamed");
-    }
-
-    @Test
-    void identityChangesAreDetected() {
-        Route route = sample().build();
-        assertThat(sample().id(UUID.randomUUID()).build().hasSameIdentityAs(route)).isFalse();
-        assertThat(route.share("token").hasSameIdentityAs(route)).isFalse();
     }
 }

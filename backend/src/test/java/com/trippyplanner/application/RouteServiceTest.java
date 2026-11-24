@@ -53,6 +53,10 @@ class RouteServiceTest {
             .build();
     }
 
+    private static UpdateRouteCommand rename(String name) {
+        return new UpdateRouteCommand(name, null, null, null);
+    }
+
     private void stored(Route route) {
         when(routeRepository.findById(routeId)).thenReturn(Optional.of(route));
     }
@@ -60,13 +64,11 @@ class RouteServiceTest {
     @Test
     void createAssignsIdentityOwnerAndCreationTimeItself() {
         when(routeRepository.insert(any(), eq("<gpx/>"))).thenAnswer(inv -> inv.getArgument(0));
-        Route.Builder forged = Route.builder()
-            .id(routeId).ownerId(STRANGER).shareToken("forged")
-            .name("New").avgSpeedKmh(18.0).startTime(OffsetDateTime.parse("2026-01-01T08:00:00Z"));
+        var command = new CreateRouteCommand("New", 18.0, OffsetDateTime.parse("2026-01-01T08:00:00Z"), null);
 
-        Route created = routeService.create(OWNER, forged, "<gpx/>");
+        Route created = routeService.create(OWNER, command, "<gpx/>");
 
-        assertThat(created.id()).isNotEqualTo(routeId);
+        assertThat(created.id()).isNotNull();
         assertThat(created.ownerId()).isEqualTo(OWNER);
         assertThat(created.isPublic()).isFalse();
         assertThat(created.createdAt()).isEqualTo(OffsetDateTime.parse("2026-11-24T10:00:00.123456Z"));
@@ -110,7 +112,7 @@ class RouteServiceTest {
 
         assertThatThrownBy(() -> routeService.delete(STRANGER, routeId))
             .isInstanceOf(RouteAccessDeniedException.class);
-        assertThatThrownBy(() -> routeService.update(STRANGER, routeId, r -> r.withName("x")))
+        assertThatThrownBy(() -> routeService.update(STRANGER, routeId, rename("x")))
             .isInstanceOf(RouteAccessDeniedException.class);
         assertThatThrownBy(() -> routeService.unshare(STRANGER, routeId))
             .isInstanceOf(RouteAccessDeniedException.class);
@@ -132,7 +134,7 @@ class RouteServiceTest {
         stored(sampleRoute());
         when(routeRepository.update(any())).thenAnswer(inv -> Optional.of(inv.getArgument(0)));
 
-        Route updated = routeService.update(OWNER, routeId, r -> r.withName("Renamed"));
+        Route updated = routeService.update(OWNER, routeId, rename("Renamed"));
 
         assertThat(updated.name()).isEqualTo("Renamed");
         ArgumentCaptor<Route> saved = ArgumentCaptor.forClass(Route.class);
@@ -144,18 +146,18 @@ class RouteServiceTest {
     void updateWithoutChangesDoesNotWrite() {
         stored(sampleRoute());
 
-        routeService.update(OWNER, routeId, r -> r);
+        routeService.update(OWNER, routeId, new UpdateRouteCommand(null, null, null, null));
+        routeService.update(OWNER, routeId, rename("My Route"));
 
         verify(routeRepository, never()).update(any());
     }
 
     @Test
-    void updateRejectsIdentityChanges() {
-        stored(sampleRoute());
+    void updateKeepsSharingState() {
+        stored(sampleRoute().share("token"));
+        when(routeRepository.update(any())).thenAnswer(inv -> Optional.of(inv.getArgument(0)));
 
-        assertThatThrownBy(() -> routeService.update(OWNER, routeId, r -> r.share("sneaky")))
-            .isInstanceOf(IllegalArgumentException.class);
-        verify(routeRepository, never()).update(any());
+        assertThat(routeService.update(OWNER, routeId, rename("Renamed")).shareToken()).isEqualTo("token");
     }
 
     @Test

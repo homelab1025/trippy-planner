@@ -38,7 +38,7 @@ public class RoutesController implements RoutesApi {
 
     @Override
     public ResponseEntity<Route> createRoute(CreateRouteRequest body, CurrentUser currentUser) {
-        var route = routeService.create(currentUser.userId(), RouteDtoMapper.toDetails(body), body.getGpxContent());
+        var route = routeService.create(currentUser.userId(), RouteDtoMapper.toCommand(body), body.getGpxContent());
         return ResponseEntity.status(HttpStatus.CREATED).body(RouteDtoMapper.toDto(route, body.getGpxContent()));
     }
 
@@ -50,7 +50,7 @@ public class RoutesController implements RoutesApi {
 
     @Override
     public ResponseEntity<Route> updateRoute(UUID id, UpdateRouteRequest body, CurrentUser currentUser) {
-        var route = routeService.update(currentUser.userId(), id, RouteDtoMapper.toChanges(body));
+        var route = routeService.update(currentUser.userId(), id, RouteDtoMapper.toCommand(body));
         return ResponseEntity.ok(RouteDtoMapper.toDto(route, routeService.getGpx(currentUser.userId(), id)));
     }
 

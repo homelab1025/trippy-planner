@@ -1,11 +1,11 @@
 package com.trippyplanner.adapter.web;
 
+import com.trippyplanner.application.CreateRouteCommand;
+import com.trippyplanner.application.UpdateRouteCommand;
 import com.trippyplanner.domain.model.Route;
 import com.trippyplanner.model.CreateRouteRequest;
 import com.trippyplanner.model.RouteListItem;
 import com.trippyplanner.model.UpdateRouteRequest;
-
-import java.util.function.UnaryOperator;
 
 final class RouteDtoMapper {
 
@@ -37,31 +37,13 @@ final class RouteDtoMapper {
         return dto;
     }
 
-    static Route.Builder toDetails(CreateRouteRequest request) {
-        return Route.builder()
-            .name(request.getName())
-            .avgSpeedKmh(request.getAvgSpeedKmh())
-            .startTime(request.getStartTime())
-            .checkpointsJson(request.getCheckpointsJson());
+    static CreateRouteCommand toCommand(CreateRouteRequest request) {
+        return new CreateRouteCommand(request.getName(), request.getAvgSpeedKmh(), request.getStartTime(),
+            request.getCheckpointsJson());
     }
 
-    // PATCH semantics: a null field in the request leaves the stored value unchanged
-    static UnaryOperator<Route> toChanges(UpdateRouteRequest request) {
-        return route -> {
-            Route changed = route;
-            if (request.getName() != null) {
-                changed = changed.withName(request.getName());
-            }
-            if (request.getAvgSpeedKmh() != null) {
-                changed = changed.withAvgSpeedKmh(request.getAvgSpeedKmh());
-            }
-            if (request.getStartTime() != null) {
-                changed = changed.withStartTime(request.getStartTime());
-            }
-            if (request.getCheckpointsJson() != null) {
-                changed = changed.withCheckpointsJson(request.getCheckpointsJson());
-            }
-            return changed;
-        };
+    static UpdateRouteCommand toCommand(UpdateRouteRequest request) {
+        return new UpdateRouteCommand(request.getName(), request.getAvgSpeedKmh(), request.getStartTime(),
+            request.getCheckpointsJson());
     }
 }

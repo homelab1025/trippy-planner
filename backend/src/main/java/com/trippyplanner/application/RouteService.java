@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.UnaryOperator;
 
 @Service
 public class RouteService {
@@ -31,16 +30,15 @@ public class RouteService {
         return routeRepository.findAllByOwnerId(userId);
     }
 
-    /**
-     * {@code details} carries the user-supplied fields; identity, ownership, creation time and sharing state are
-     * always set here, so a caller can't forge them.
-     */
-    public Route create(long userId, Route.Builder details, String gpxContent) {
+    public Route create(long userId, CreateRouteCommand command, String gpxContent) {
         Objects.requireNonNull(gpxContent, "gpxContent");
-        Route route = details
+        Route route = Route.builder()
             .id(UUID.randomUUID())
             .ownerId(userId)
-            .shareToken(null)
+            .name(command.name())
+            .avgSpeedKmh(command.avgSpeedKmh())
+            .startTime(command.startTime())
+            .checkpointsJson(command.checkpointsJson())
             // Postgres stores microseconds; truncating keeps the in-memory value equal to the stored one
             .createdAt(OffsetDateTime.now(clock).truncatedTo(ChronoUnit.MICROS))
             .build();
@@ -57,14 +55,12 @@ public class RouteService {
     }
 
     /**
-     * Applies {@code changes} to the stored route and saves the whole row; concurrent edits are last-write-wins.
+     * Saves the editable fields of the stored route with {@code command} applied; concurrent edits are
+     * last-write-wins.
      */
-    public Route update(long userId, UUID routeId, UnaryOperator<Route> changes) {
+    public Route update(long userId, UUID routeId, UpdateRouteCommand command) {
         Route current = loadOwned(userId, routeId);
-        Route changed = changes.apply(current);
-        if (!current.hasSameIdentityAs(changed)) {
-            throw new IllegalArgumentException("An update may only change user-editable fields");
-        }
+        Route changed = apply(command, current);
         if (changed.equals(current)) {
             return current;
         }
@@ -97,6 +93,23 @@ public class RouteService {
 
     public Optional<String> findSharedGpx(String shareToken) {
         return routeRepository.findByShareToken(shareToken).flatMap(route -> routeRepository.findGpx(route.id()));
+    }
+
+    private static Route apply(UpdateRouteCommand command, Route route) {
+        Route changed = route;
+        if (command.name() != null) {
+            changed = changed.withName(command.name());
+        }
+        if (command.avgSpeedKmh() != null) {
+            changed = changed.withAvgSpeedKmh(command.avgSpeedKmh());
+        }
+        if (command.startTime() != null) {
+            changed = changed.withStartTime(command.startTime());
+        }
+        if (command.checkpointsJson() != null) {
+            changed = changed.withCheckpointsJson(command.checkpointsJson());
+        }
+        return changed;
     }
 
     private Route saveSharing(Route route) {

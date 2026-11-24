@@ -54,16 +54,18 @@ optional):
   shapes of HTTP operations, not domain concepts. `Route` now owns its
   invariants and behaviour (`isOwnedBy`, idempotent `share`, `unshare`,
   `with…` edits); `isPublic` is derived from the share token.
-  - *Creation:* the web adapter fills a `Route.Builder` with the
-    user-supplied fields and `RouteService.create` sets id, owner, creation
-    time (from an injected `Clock`) and sharing state, so they can't be
-    forged.
-  - *Updates:* the web adapter turns the request's PATCH semantics (null =
-    unchanged) into a `UnaryOperator<Route>`; the service loads the route,
-    applies it, rejects identity changes, and saves the editable fields
-    (last write wins). Sharing state is written by a separate
-    `updateSharing`, so a concurrent edit can't resurrect a revoked share
-    token.
+  - *Use-case inputs are application commands, not domain types.*
+    `CreateRouteCommand` and `UpdateRouteCommand` (in `application`) carry
+    only caller-editable fields, so identity, owner and sharing state can't
+    be supplied at all. `RouteService.create` builds the `Route`, assigning
+    id, owner and creation time (from an injected `Clock`). The commands do
+    mirror the request DTOs; that is accepted, because use-case inputs are
+    expected to follow the API while the domain model stays free of it.
+  - *Updates:* `UpdateRouteCommand` keeps the API's "null = unchanged"
+    semantics; the service loads the route, applies the non-null fields via
+    `Route.with…`, and saves the editable fields (last write wins). Sharing
+    state is written by a separate `updateSharing`, so a concurrent edit
+    can't resurrect a revoked share token.
   - *GPX is not part of `Route`.* It is immutable after creation, large,
     and only ever needed for one route at a time, so it travels as a
     `String` through dedicated methods (`RouteRepository.insert(route,

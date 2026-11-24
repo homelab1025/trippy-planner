@@ -1,6 +1,8 @@
 package com.trippyplanner.adapter.web;
 
+import com.trippyplanner.application.CreateRouteCommand;
 import com.trippyplanner.application.RouteService;
+import com.trippyplanner.application.UpdateRouteCommand;
 import com.trippyplanner.domain.model.Route;
 import com.trippyplanner.domain.model.RouteAccessDeniedException;
 import com.trippyplanner.domain.model.RouteNotFoundException;
@@ -108,19 +110,17 @@ class RoutesControllerTest {
             .andExpect(jsonPath("$.checkpointsJson").value(checkpoints))
             .andExpect(jsonPath("$.gpxContent").value("<gpx/>"));
 
-        var captor = org.mockito.ArgumentCaptor.forClass(Route.Builder.class);
+        var captor = org.mockito.ArgumentCaptor.forClass(CreateRouteCommand.class);
         verify(MocksConfig.routeService).create(eq(1L), captor.capture(), eq("<gpx/>"));
-        Route details = captor.getValue().id(id).createdAt(OffsetDateTime.now()).build();
-        assertThat(details.checkpointsJson()).isEqualTo(checkpoints);
-        assertThat(details.avgSpeedKmh()).isEqualTo(20.0);
+        assertThat(captor.getValue().checkpointsJson()).isEqualTo(checkpoints);
+        assertThat(captor.getValue().avgSpeedKmh()).isEqualTo(20.0);
     }
 
     @Test
-    void updateRouteAppliesOnlyFieldsPresentInTheRequest() throws Exception {
+    void updateRoutePassesOnlyFieldsPresentInTheRequest() throws Exception {
         UUID id = UUID.randomUUID();
-        Route stored = sampleRoute(id, "[]");
         when(MocksConfig.routeService.update(eq(1L), eq(id), any()))
-            .thenAnswer(inv -> inv.<java.util.function.UnaryOperator<Route>>getArgument(2).apply(stored));
+            .thenReturn(sampleRoute(id, "[]").withName("Renamed"));
         when(MocksConfig.routeService.getGpx(1L, id)).thenReturn("<gpx/>");
 
         mvc.perform(put("/routes/{id}", id).with(authenticatedAs(1L))
@@ -128,9 +128,9 @@ class RoutesControllerTest {
                 .content("{\"name\":\"Renamed\"}"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.name").value("Renamed"))
-            .andExpect(jsonPath("$.avgSpeedKmh").value(20.0))
-            .andExpect(jsonPath("$.checkpointsJson").value("[]"))
             .andExpect(jsonPath("$.gpxContent").value("<gpx/>"));
+
+        verify(MocksConfig.routeService).update(1L, id, new UpdateRouteCommand("Renamed", null, null, null));
     }
 
     @Test
