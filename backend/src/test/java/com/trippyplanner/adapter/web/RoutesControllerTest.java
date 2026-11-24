@@ -134,6 +134,17 @@ class RoutesControllerTest {
     }
 
     @Test
+    void createRouteReturns400WhenRequiredFieldIsMissing() throws Exception {
+        mvc.perform(post("/routes").with(authenticatedAs(1L))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"My Route\",\"gpxContent\":\"<gpx/>\","
+                    + "\"startTime\":\"2026-01-01T08:00:00Z\"}"))
+            .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(MocksConfig.routeService);
+    }
+
+    @Test
     void deleteRouteReturns204() throws Exception {
         UUID id = UUID.randomUUID();
 

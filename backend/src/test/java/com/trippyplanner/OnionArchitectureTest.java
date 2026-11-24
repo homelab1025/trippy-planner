@@ -1,9 +1,12 @@
 package com.trippyplanner;
 
+import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
+import com.tngtech.archunit.library.dependencies.SliceAssignment;
+import com.tngtech.archunit.library.dependencies.SliceIdentifier;
 
 import static com.tngtech.archunit.base.DescribedPredicate.alwaysTrue;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage;
@@ -62,12 +65,25 @@ class OnionArchitectureTest {
         .should().dependOnClassesThat().resideInAnyPackage(GENERATED_API, GENERATED_MODEL)
         .because("the OpenAPI DTOs are the web adapter's wire format, not the domain model");
 
-    // Onion constrains cross-ring direction; this closes the same-ring gap it leaves behind.
-    // The generated *Api interfaces are web-adapter code that happens to be generated: controllers implement them
-    // and they take adapter.web.CurrentUser via x-spring-provide-args, so that edge is ignored like in the onion rule.
+    // Onion forbids cycles between rings but not inside one (e.g. RouteService <-> AuthService), so each top-level
+    // class is its own slice; nested classes such as Route.Builder belong to their outer class. The generated
+    // contract is left out: controllers implement its *Api interfaces, which take adapter.web.CurrentUser.
     @ArchTest
-    static final ArchRule topLevelPackagesAreFreeOfCycles = slices()
-        .matching("com.trippyplanner.(*)..")
-        .should().beFreeOfCycles()
-        .ignoreDependency(resideInAPackage(GENERATED_API), alwaysTrue());
+    static final ArchRule classesAreFreeOfCycles = slices()
+        .assignedFrom(new SliceAssignment() {
+            @Override
+            public SliceIdentifier getIdentifierOf(JavaClass javaClass) {
+                if (javaClass.getPackageName().startsWith("com.trippyplanner.api")
+                        || javaClass.getPackageName().startsWith("com.trippyplanner.model")) {
+                    return SliceIdentifier.ignore();
+                }
+                return SliceIdentifier.of(javaClass.getName().split("\\$")[0]);
+            }
+
+            @Override
+            public String getDescription() {
+                return "top-level classes";
+            }
+        })
+        .should().beFreeOfCycles();
 }

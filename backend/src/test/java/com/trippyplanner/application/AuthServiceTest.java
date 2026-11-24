@@ -1,5 +1,6 @@
 package com.trippyplanner.application;
 
+import com.trippyplanner.domain.model.UserNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -9,6 +10,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -65,6 +67,13 @@ class AuthServiceTest {
         when(sessionRepository.findValidUserId("expired")).thenReturn(Optional.empty());
 
         assertThat(authService.authenticate("expired")).isEmpty();
+    }
+
+    @Test
+    void findEmailThrowsUserNotFoundWhenUserIsGone() {
+        when(userRepository.findEmailById(42L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> authService.findEmail(42L)).isInstanceOf(UserNotFoundException.class);
     }
 
     @Test

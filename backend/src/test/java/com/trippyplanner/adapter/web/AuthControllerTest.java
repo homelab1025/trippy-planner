@@ -1,6 +1,7 @@
 package com.trippyplanner.adapter.web;
 
 import com.trippyplanner.application.AuthService;
+import com.trippyplanner.domain.model.UserNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -48,6 +49,14 @@ class AuthControllerTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.id").value(42))
             .andExpect(jsonPath("$.email").value("me@example.com"));
+    }
+
+    @Test
+    void getMeReturns404WhenUserIsGone() throws Exception {
+        when(MocksConfig.authService.findEmail(42L)).thenThrow(new UserNotFoundException(42L));
+
+        mvc.perform(get("/auth/me").with(authenticatedAs(42L)))
+            .andExpect(status().isNotFound());
     }
 
     @Test

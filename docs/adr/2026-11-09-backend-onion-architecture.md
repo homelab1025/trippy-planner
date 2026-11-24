@@ -52,9 +52,9 @@ optional):
   `com.trippyplanner.api` interfaces reference it via
   `x-spring-provide-args` on the 9 `bearerAuth` operations in
   `openapi.yaml`. Those interfaces are web-adapter code that happens to be
-  generated (controllers implement them), so the onion and cycle rules
-  ignore dependencies originating from them, mirroring the `testsupport`
-  exemption.
+  generated (controllers implement them), so the onion rule ignores
+  dependencies originating from them and the cycle rule leaves the
+  generated packages out, mirroring the `testsupport` exemption.
 - **One `Route` aggregate, not one record per API operation.** An earlier
   draft had `NewRoute`, `RouteUpdate` and `RouteSummary` mirroring
   `CreateRouteRequest`, `UpdateRouteRequest` and `RouteListItem`; they were
@@ -85,7 +85,13 @@ optional):
 - Extra rules cover what onion alone doesn't: the domain depends only on
   the JDK; `application` must not depend on Spring Web/HTTP/JDBC, the
   servlet API, or the generated DTOs; only `adapter.web` may touch the
-  generated contract; and top-level packages are free of cycles.
+  generated contract; and there are no cycles between classes, which also
+  covers cycles inside a single ring (each top-level class is its own
+  slice, nested classes count as part of their outer class).
+- Domain exceptions (`RouteNotFoundException`, `RouteAccessDeniedException`,
+  `UserNotFoundException`) are mapped to 404/403 in one
+  `@RestControllerAdvice` (`DomainExceptionHandler`), so every controller
+  gets the same mapping.
 
 The module boundaries are intentionally **not** kept alongside the onion.
 A global onion and a module matrix are two competing views of the same type
@@ -139,8 +145,8 @@ mean paying for two overlapping layers.
   `final`.
 - **The generated contract and `adapter.web` depend on each other**
   (controllers implement the `*Api` interfaces; the interfaces take
-  `CurrentUser`). Both the onion and the cycle rule ignore dependencies
-  originating from the generated package. `openapi.yaml` names the Java
+  `CurrentUser`). The onion rule ignores dependencies originating from the
+  generated package, and the cycle rule excludes it. `openapi.yaml` names the Java
   package of `CurrentUser`, which only the Spring generator reads.
 - **Last write wins on route edits.** Two concurrent edits to the same
   route overwrite each other's editable fields (previously each UPDATE
@@ -152,6 +158,13 @@ mean paying for two overlapping layers.
   separately (one or two extra round-trips). Negligible at this scale.
 - **Faster use-case tests.** `RouteServiceTest` and `AuthServiceTest` are
   plain Mockito tests; controller tests cover only HTTP mapping.
-- **Same HTTP behaviour.** Status codes and error bodies are unchanged: the
-  404/403 handlers use `sendError` so Boot renders its standard error body,
-  as `ResponseStatusException` did.
+- **Same HTTP behaviour for valid requests.** Status codes and error bodies
+  are unchanged: the 404/403 handlers use `sendError` so Boot renders its
+  standard error body, as `ResponseStatusException` did.
+- **Invalid requests now get 400.** `spring-boot-starter-validation`
+  enforces the `@NotNull` / `@Email` / `@Valid` constraints the OpenAPI
+  generator already emits. Before, a missing required field (e.g.
+  `avgSpeedKmh`) caused a 500, and a malformed email in
+  `POST /auth/magic-link` was accepted.
+- **`GET /auth/me` returns 404 if the user row is gone** while its session
+  is still valid (previously a 500 from a bare `orElseThrow()`).

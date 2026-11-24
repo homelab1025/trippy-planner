@@ -1,5 +1,6 @@
 package com.trippyplanner.application;
 
+import com.trippyplanner.domain.model.UserNotFoundException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -47,7 +48,8 @@ public class AuthService {
     }
 
     public String findEmail(long userId) {
-        return userRepository.findEmailById(userId).orElseThrow();
+        // A valid session whose user row has gone, e.g. deleted between the session check and this lookup
+        return userRepository.findEmailById(userId).orElseThrow(() -> new UserNotFoundException(userId));
     }
 
     public void signOut(String sessionToken) {

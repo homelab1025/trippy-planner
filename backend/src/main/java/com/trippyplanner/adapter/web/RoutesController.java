@@ -7,15 +7,10 @@ import com.trippyplanner.model.RouteListItem;
 import com.trippyplanner.model.ShareResponse;
 import com.trippyplanner.model.UpdateRouteRequest;
 import com.trippyplanner.application.RouteService;
-import com.trippyplanner.domain.model.RouteAccessDeniedException;
-import com.trippyplanner.domain.model.RouteNotFoundException;
-import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
@@ -70,16 +65,5 @@ public class RoutesController implements RoutesApi {
     public ResponseEntity<Void> unshareRoute(UUID id, CurrentUser currentUser) {
         routeService.unshare(currentUser.userId(), id);
         return ResponseEntity.noContent().build();
-    }
-
-    // sendError (not a ResponseEntity) so Spring Boot renders its standard error body, as before the refactor
-    @ExceptionHandler(RouteNotFoundException.class)
-    void handleNotFound(HttpServletResponse response) throws IOException {
-        response.sendError(HttpServletResponse.SC_NOT_FOUND);
-    }
-
-    @ExceptionHandler(RouteAccessDeniedException.class)
-    void handleAccessDenied(HttpServletResponse response) throws IOException {
-        response.sendError(HttpServletResponse.SC_FORBIDDEN);
     }
 }
